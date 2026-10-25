@@ -141,8 +141,9 @@ const drawing=drawResult!==null,reach=reachOn(),navi=navis.pachinko;naviTick(nav
 drawNavi(ctx,navi,clock,{x:238,y:352,scale:.82,gentle,reduced});
 if(reach&&!gentle&&!reduced){ctx.save();ctx.shadowColor='#ff8fd0';ctx.shadowBlur=10+Math.sin(clock*2)*4;rr(x1+4,y1+4,x2-x1-8,y2-y1-8,14,null,'#ffc2e688');ctx.restore();}
 [0,1,2].forEach(i=>{const cx=262+i*98,cy=410;if(!drawing){drawColumn(cx,cy,screen[i]-1,0,spinPlan?clock-(resultUntil-3)+spinPlan.duration-spinPlan.stops[i]:9);return;}const m=columnMotion(i,drawTime);drawColumn(cx,cy,m.p,m.v,m.since);});
-if(bonus){ctx.save();ctx.shadowColor='#ff5fae';ctx.shadowBlur=gentle||reduced?3:10;text(`ROUND ${bonus.round} / ${BONUS.rounds}`,360,470,16,'#fff3fb','bold Georgia');ctx.restore();text(bonus.open?`COUNT ${bonus.count} / ${BONUS.count}`:'NEXT ROUND',360,490,11,'#f6e7f2');rr(x2-104,y1+12,92,30,8,'#2a0d24d0','#ffb6dc');text('右打ち ▶',x2-58,y1+33,17,'#ffffff','bold sans-serif');}
-else text(reach?'リ ー チ':drawing?'抽 選 中':clock<resultUntil?resultText:'A U R O R A',360,482,reach?14:12,reach?'#ffe3f3':'#f6e7f2');
+if(bonus){ctx.save();ctx.shadowColor='#ff5fae';ctx.shadowBlur=gentle||reduced?3:10;text(`ROUND ${bonus.round} / ${BONUS.rounds}`,360,470,16,'#fff3fb','bold Georgia');ctx.restore();text(bonus.open?`COUNT ${bonus.count} / ${BONUS.count}`:'NEXT ROUND',360,490,11,'#f6e7f2');rr(x2-108,y2-48,98,30,8,'#2a0d24d0','#ffb6dc');text('右打ち ▶',x2-59,y2-27,17,'#ffffff','bold sans-serif');}
+else if(launching&&+$('#power').value>=70){rr(x2-108,y2-48,98,30,8,'#2a0d24d0','#ffb6dc');text('◀ 左打ち',x2-59,y2-27,17,'#ffffff','bold sans-serif');}
+if(!bonus) text(reach?'リ ー チ':drawing?'抽 選 中':clock<resultUntil?resultText:'A U R O R A',360,482,reach?14:12,reach?'#ffe3f3':'#f6e7f2');
 for(let i=0;i<MAX_HOLDS;i++)circle(x1+24+i*16,y2-20,5,i<drawQueue?'#fff2fa':'#2a1630','#d78fbf');
 drawBubble(ctx,navi,clock,{box:[284,272,236],tail:[254,300],size:14,reduced});
 cabinetArt('aurora');lampGlow(reach||!!bonus);
