@@ -48,25 +48,73 @@ function rr(x,y,w,h,r,fill,stroke){ctx.beginPath();ctx.roundRect(x,y,w,h,r);if(f
 function grad(x,y,x2,y2,stops){const g=ctx.createLinearGradient(x,y,x2,y2);stops.forEach(([p,c])=>g.addColorStop(p,c));return g;}
 function text(t,x,y,size,color,font='Arial',align='center'){ctx.textAlign=align;ctx.font=`${size}px ${font}`;ctx.fillStyle=color;ctx.fillText(t,x,y);}
 function circle(x,y,r,fill,stroke){ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.stroke();}}
-const art={};for(const [key,src] of [['aurora','assets/aurora.webp'],['lcd','assets/lcd-illustration.jpg']]){const img=new Image();img.onload=()=>art[key]=img;img.src=src;}
-function lcdArt(x,y,w,h,focusX){ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();ctx.fillStyle='#0b1022';ctx.fillRect(x,y,w,h);const img=art.lcd;if(img){const still=gentle||reduced,zoom=1.06+(still?0:.05*Math.sin(clock*.11)),s=Math.max(w/img.width,h/img.height)*zoom,dw=img.width*s,dh=img.height*s,pan=still?0:Math.sin(clock*.07)*.08;ctx.drawImage(img,x+(w-dw)*Math.min(1,Math.max(0,focusX+pan)),y+(h-dh)*.35,dw,dh);}ctx.restore();}
+const art={};for(const [key,src] of [['aurora','assets/aurora.webp'],['lcd','assets/lcd-illustration.jpg']]){const img=new Image();img.onload=()=>{art[key]=img;if(key==='aurora')buildLamps(img);};img.src=src;}
+function lcdArt(x,y,w,h,focusX){ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();ctx.fillStyle='#0b1022';ctx.fillRect(x,y,w,h);const img=art.lcd;if(img){const still=reduced,sp=gentle?.6:1,zoom=1.08+(still?0:.05*Math.sin(clock*.11*sp)),s=Math.max(w/img.width,h/img.height)*zoom,dw=img.width*s,dh=img.height*s,pan=still?0:Math.sin(clock*.07*sp)*.1;ctx.drawImage(img,x+(w-dw)*Math.min(1,Math.max(0,focusX+pan)),y+(h-dh)*.35,dw,dh);}lcdFx(x,y,w,h);ctx.restore();}
 function cabinetArt(key){const img=art[key];if(img){ctx.drawImage(img,0,0,720,960);return;}rr(20,10,680,940,40,'#1b1d2a','#555');text('LOADING',360,480,14,'#99a');}
+// Pre-rendered sprites (offscreen canvases at device resolution) keep per-frame drawing cheap.
+function sprite(w,h,paint){const c=document.createElement('canvas');c.width=Math.ceil(w*dpr);c.height=Math.ceil(h*dpr);const g=c.getContext('2d');g.scale(dpr,dpr);paint(g);return c;}
+function stops(g,list){list.forEach(([p,c])=>g.addColorStop(p,c));return g;}
+// Pachinko ball: a polished steel sphere lit from the upper left. Dark equator band and a warm reflection of the board below, sharp specular, soft contact shadow.
+const BALL=sprite(20,20,g=>{const x=9,y=9,r=6;g.fillStyle=stops(g.createRadialGradient(x+1.8,y+2.8,0,x+1.8,y+2.8,7.5),[[0,'#0007'],[.6,'#0003'],[1,'#0000']]);g.fillRect(0,0,20,20);
+g.save();g.beginPath();g.arc(x,y,r,0,7);g.clip();g.fillStyle=stops(g.createRadialGradient(x-2,y-2.5,.4,x,y,r),[[0,'#ffffff'],[.3,'#e9eef2'],[.7,'#a3adb7'],[.92,'#59636e'],[1,'#3a424b']]);g.fillRect(0,0,20,20);
+g.fillStyle=stops(g.createLinearGradient(0,y-r,0,y+r),[[0,'#ffffff00'],[.42,'#ffffff00'],[.6,'#28303a3a'],[.74,'#28303a14'],[.86,'#e07ab028'],[1,'#ffd0e866']]);g.fillRect(0,0,20,20);
+g.fillStyle=stops(g.createRadialGradient(x+2.6,y+3.4,0,x+2.6,y+3.4,3.2),[[0,'#ffffffaa'],[1,'#ffffff00']]);g.fillRect(0,0,20,20);
+g.strokeStyle='#ffffff55';g.lineWidth=.8;g.beginPath();g.arc(x,y,r-.5,Math.PI*.15,Math.PI*.6);g.stroke();g.restore();
+g.fillStyle=stops(g.createRadialGradient(x-2.2,y-2.6,0,x-2.2,y-2.6,2.4),[[0,'#ffffff'],[.45,'#ffffffcc'],[1,'#ffffff00']]);g.beginPath();g.arc(x-2.2,y-2.6,2.4,0,7);g.fill();
+g.strokeStyle='#0d111680';g.lineWidth=.5;g.beginPath();g.arc(x,y,r,0,7);g.stroke();});
+// The front panel (ball tray dome and the lower trim) sits physically in front of the glass, so balls are clipped to the glass area and never drawn over it.
+function glassClip(){ctx.beginPath();ctx.arc(BOARD.cx,BOARD.cy,BOARD.r,0,7);ctx.clip();ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(720,0);ctx.lineTo(720,688);ctx.lineTo(456,688);ctx.ellipse(360,688,96,40,0,0,Math.PI,true);ctx.lineTo(0,688);ctx.closePath();ctx.clip();}
+// LCD numerals: chunky italic figures with an extruded edge, dark outline, gold rim and glossy fill, one sprite per digit.
+const DIGIT_W=96,DIGIT_H=104,DIGITS=[1,2,3,4,5,6,7,8,9].map(n=>sprite(DIGIT_W,DIGIT_H,g=>{const x=DIGIT_W/2,y=86;g.font='italic 900 82px "Arial Black","Helvetica Neue",Arial,sans-serif';g.textAlign='center';g.lineJoin='round';
+for(let d=6;d>0;d--){g.fillStyle=d>1?'#3a0b2c':'#5a1442';g.fillText(n,x+d*.6,y+d);}
+g.lineWidth=11;g.strokeStyle='#14040f';g.strokeText(n,x,y);g.lineWidth=5;g.strokeStyle=stops(g.createLinearGradient(0,18,0,90),[[0,'#fff6d6'],[.45,'#e6b85a'],[.55,'#9c6a1e'],[1,'#ffe4a0']]);g.strokeText(n,x,y);
+g.fillStyle=stops(g.createLinearGradient(0,18,0,90),[[0,'#ffffff'],[.4,'#ffd3ec'],[.55,'#ff6fb8'],[1,'#b81f72']]);g.fillText(n,x,y);
+g.save();g.globalCompositeOperation='source-atop';g.fillStyle=stops(g.createLinearGradient(0,18,0,60),[[0,'#ffffffcc'],[.6,'#ffffff33'],[.61,'#ffffff00']]);g.fillRect(0,0,DIGIT_W,58);g.restore();}));
+const COL_H=124,CELL=96,colCanvas=document.createElement('canvas');colCanvas.width=DIGIT_W*dpr;colCanvas.height=COL_H*dpr;const colCtx=colCanvas.getContext('2d');
+// Scroll position (in cells) of one LCD column at time t of the current draw. Columns accelerate from the previous number, cruise
+// (the middle one runs at half speed during a reach), decelerate evenly and land on the drawn number. The cruise speed is nudged per column
+// so the landing is exact; nothing here depends on whether the draw won, and there is no slow crawl past a matching number.
+function columnMotion(i,t){const s=spinPlan,base=reduced?4:gentle?10:14,Ta=reduced?0:.25,D=reduced?0:gentle?.6:.45,stop=s.stops[i],tr=s.reach&&i===1?s.stops[2]:Infinity,t0=stop-D;
+const run=x=>{const a=x<Ta?x*x/(2*Ta):Ta/2+(Math.min(x,tr)-Ta);return x>tr?a+.5*(x-tr):a;},rate=x=>(x<Ta?x/Ta:1)*(x>tr?.5:1),f0=rate(t0),K=run(t0)+f0*D/2;
+const prev=screen[i]-1,need=((s.numbers[i]-1-prev)%9+9)%9,v=(need+9*Math.max(1,Math.round((base*K-need)/9)))/K;
+let u,vel;if(t>=stop){u=K;vel=0;}else if(t>=t0){const q=t-t0;u=run(t0)+f0*(q-q*q/(2*D));vel=f0*(1-q/D);}else{u=run(t);vel=rate(t);}
+return {p:prev+v*u,v:v*vel,since:t-stop};}
+function drawColumn(cx,cy,p,v,since){const g=colCtx,blur=reduced?0:Math.min(CELL*.85,v*CELL/60),n=blur>2?6:1,settle=reduced||since<0?0:(gentle?.05:.09)*Math.exp(-9*since)*Math.sin(20*since);
+const pos=reduced?Math.round(p):p+settle,k=Math.floor(pos),f=pos-k;g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,DIGIT_W,COL_H);
+for(let j=0;j<n;j++){g.globalAlpha=n>1?1.7/n:1;const o=n>1?-blur/2+blur*j/(n-1):0;for(const d of [-1,0,1]){const y=COL_H/2-DIGIT_H/2+(f-d)*CELL+o;if(y>-DIGIT_H&&y<COL_H)g.drawImage(DIGITS[((k+d)%9+9)%9],0,y,DIGIT_W,DIGIT_H);}}
+g.globalAlpha=1;g.globalCompositeOperation='destination-in';g.fillStyle=stops(g.createLinearGradient(0,0,0,COL_H),[[0,'#0000'],[.2,'#000'],[.8,'#000'],[1,'#0000']]);g.fillRect(0,0,DIGIT_W,COL_H);g.globalCompositeOperation='source-over';
+const pop=reduced||since<0||since>.25?1:1+.07*(1-since/.25);ctx.save();ctx.translate(cx,cy);ctx.scale(pop,pop);ctx.drawImage(colCanvas,-DIGIT_W/2,-COL_H/2,DIGIT_W,COL_H);ctx.restore();}
+// Always-moving LCD background: the illustration drifts slowly and specks of light float upward. prefers-reduced-motion keeps it still.
+function lcdFx(x,y,w,h){if(reduced)return;ctx.save();ctx.globalCompositeOperation='lighter';const sp=gentle?.6:1;
+const ray=ctx.createLinearGradient(x+w*(.5+.35*Math.sin(clock*.23*sp)),y,x+w*.5,y+h);stops(ray,[[0,'#ffe9f655'],[.5,'#ffe9f611'],[1,'#ffe9f600']]);ctx.fillStyle=ray;ctx.fillRect(x,y,w,h);
+for(let i=0;i<26;i++){const r=1.2+(i*7%5)*.5,px=x+((i*83.7+Math.sin(clock*.4*sp+i)*14)%w+w)%w,py=y+h-(((clock*(10+i%6*4)*sp+i*41)%(h+20))),a=.25+.25*Math.sin(clock*1.3*sp+i*2.1);
+ctx.fillStyle=stops(ctx.createRadialGradient(px,py,0,px,py,r*3),[[0,`rgba(255,236,250,${Math.max(0,a)})`],[1,'#fff0']]);ctx.fillRect(px-r*3,py-r*3,r*6,r*6);}
+ctx.restore();}
+// Frame lamps: the bright LED strips of the cabinet artwork outside the glass, extracted once into a mask (plus a blurred bloom copy) and added
+// on top during a reach and after a win. Gentle mode keeps them dim and steady; prefers-reduced-motion keeps them lit without chasing.
+let lamps=null;function buildLamps(img){try{const c=document.createElement('canvas');c.width=720;c.height=960;const g=c.getContext('2d');g.drawImage(img,0,0,720,960);const d=g.getImageData(0,0,720,960),p=d.data;
+for(let i=0;i<p.length;i+=4){const x=i/4%720,y=i/4/720|0,mx=Math.max(p[i],p[i+1],p[i+2]),mn=Math.min(p[i],p[i+1],p[i+2]),sat=mx?(mx-mn)/mx:0,out=Math.hypot(x-BOARD.cx,y-BOARD.cy)>BOARD.r+4;p[i+3]=out&&p[i+3]>230&&mx>150&&sat>.42?Math.min(255,(mx-150)*4*sat):0;}
+g.putImageData(d,0,0);const b=document.createElement('canvas');b.width=360;b.height=480;const bg=b.getContext('2d');bg.filter='blur(4px)';bg.drawImage(c,0,0,360,480);bg.filter='none';bg.globalCompositeOperation='destination-in';bg.drawImage(img,0,0,360,480);lamps={sharp:c,bloom:b};}catch{lamps=null;}}
+function lampGlow(reach){const win=states.pachinko.win>0&&clock<resultUntil;if(!lamps||!(reach||win))return;const level=(win?Math.min(1,resultUntil-clock):1)*(gentle?.45:.9);
+ctx.save();ctx.globalCompositeOperation='lighter';const breathe=reduced?1:gentle?.85+.15*Math.sin(clock*2):.7+.3*Math.sin(clock*6);ctx.globalAlpha=level*breathe;ctx.drawImage(lamps.bloom,0,0,720,960);ctx.drawImage(lamps.sharp,0,0,720,960);
+if(!reduced&&!gentle){const a=clock*(win?3:2.2)%(Math.PI*2);ctx.beginPath();ctx.moveTo(BOARD.cx,BOARD.cy);ctx.arc(BOARD.cx,BOARD.cy,900,a,a+.9);ctx.closePath();ctx.moveTo(BOARD.cx,BOARD.cy);ctx.arc(BOARD.cx,BOARD.cy,900,a+Math.PI,a+Math.PI+.9);ctx.closePath();ctx.clip();ctx.globalAlpha=level;ctx.drawImage(lamps.bloom,0,0,720,960);ctx.drawImage(lamps.sharp,0,0,720,960);}
+ctx.restore();}
 function digits(label,value,x,y){text(label,x,y,9,'#c9d6f2');ctx.save();ctx.shadowColor='#ff9c55';ctx.shadowBlur=gentle?2:8;text(String(value).padStart(4,'0'),x,y+22,21,'#ffc27d','monospace');ctx.restore();}
 function sheen(x,y,w,h){ctx.fillStyle=grad(x,y,x+w,y+h,[[0,'#ffffff1c'],[.32,'#ffffff05'],[.33,'#ffffff14'],[.45,'#ffffff00'],[1,'#ffffff00']]);ctx.fillRect(x,y,w,h);}
 function winGlow(color){if(clock>=resultUntil)return;const t=resultUntil-clock,a=(gentle?.12:.3)*Math.min(1,t);ctx.save();ctx.globalCompositeOperation='lighter';const g=ctx.createRadialGradient(360,430,120,360,430,460);g.addColorStop(0,'#0000');g.addColorStop(1,color+Math.round(a*255).toString(16).padStart(2,'0'));ctx.fillStyle=g;ctx.fillRect(0,0,720,960);ctx.restore();}
 function renderPachinko(){const {x1,x2,y1,y2}=BOARD.display;lcdArt(x1-8,y1-8,x2-x1+16,y2-y1+16,.12);
 ctx.fillStyle=grad(0,y1+90,0,y2,[[0,'#06081200'],[.5,'#060812aa'],[1,'#060812dd']]);ctx.fillRect(x1,y1+90,x2-x1,y2-y1-90);
-const drawing=drawResult!==null,reach=reachOn(),speed=reduced?4:gentle?8:12;
+const drawing=drawResult!==null,reach=reachOn();
 if(reach&&!gentle&&!reduced){ctx.save();ctx.shadowColor='#ff8fd0';ctx.shadowBlur=10+Math.sin(clock*2)*4;rr(x1+4,y1+4,x2-x1-8,y2-y1-8,14,null,'#ffc2e688');ctx.restore();}
-[0,1,2].forEach(i=>{const stopped=!drawing||drawTime>=spinPlan.stops[i],n=!drawing?screen[i]:stopped?spinPlan.numbers[i]:Math.floor(drawTime*speed*(reach&&i===1?.5:1)+i*3)%9+1;ctx.save();ctx.shadowColor=stopped?'#ff5fb4':'#7fb7ff';ctx.shadowBlur=gentle?4:14;ctx.lineWidth=5;ctx.strokeStyle='#2a0f2d';ctx.font='bold italic 74px Georgia';ctx.textAlign='center';ctx.strokeText(n,262+i*98,436);ctx.fillStyle=grad(0,380,0,440,[[0,'#ffffff'],[.45,stopped?'#ffd1ea':'#a8d8ff'],[1,stopped?'#e0559b':'#4a86d8']]);ctx.fillText(n,262+i*98,436);ctx.restore();});
+[0,1,2].forEach(i=>{const cx=262+i*98,cy=410;if(!drawing){drawColumn(cx,cy,screen[i]-1,0,spinPlan?clock-(resultUntil-3)+spinPlan.duration-spinPlan.stops[i]:9);return;}const m=columnMotion(i,drawTime);drawColumn(cx,cy,m.p,m.v,m.since);});
 text(reach?'リ ー チ':drawing?'抽 選 中':clock<resultUntil?resultText:'A U R O R A',360,482,reach?14:12,reach?'#ffe3f3':'#f6e7f2');
 for(let i=0;i<MAX_HOLDS;i++)circle(x1+24+i*16,y2-20,5,i<drawQueue?'#fff2fa':'#2a1630','#d78fbf');
-cabinetArt('aurora');
+cabinetArt('aurora');lampGlow(reach);
 ctx.save();ctx.beginPath();ctx.arc(BOARD.cx,BOARD.cy,BOARD.r,0,7);ctx.rect(x2+8,y1-8,-(x2-x1+16),y2-y1+16);ctx.fillStyle='#0a061033';ctx.fill('evenodd');ctx.restore();
 ctx.save();ctx.lineCap='round';for(const [gx1,gy1,gx2,gy2] of BOARD.guides){ctx.shadowColor='#b9e2ff';ctx.shadowBlur=gentle?3:8;ctx.lineWidth=8;ctx.strokeStyle='#d8ecffa0';ctx.beginPath();ctx.moveTo(gx1,gy1);ctx.lineTo(gx2,gy2);ctx.stroke();ctx.shadowBlur=0;ctx.lineWidth=2;ctx.strokeStyle='#ffffff';ctx.beginPath();ctx.moveTo(gx1,gy1-2);ctx.lineTo(gx2,gy2-2);ctx.stroke();}ctx.restore();
 for(const p of pins){circle(p.x+1.2,p.y+2.2,3.6,'#000a');circle(p.x,p.y,3.2,grad(p.x-3,p.y-3,p.x+3,p.y+3,[[0,'#ffffff'],[.45,'#e2e6ea'],[1,'#69727c']]),'#2a2f36');}
 ctx.save();ctx.shadowColor='#ff74c4';ctx.shadowBlur=gentle?2:10;rr(338,606,44,16,5,grad(338,606,382,622,[[0,'#f7eccb'],[.5,'#b88d3c'],[1,'#f2d891']]),'#5b3b17');ctx.restore();rr(345,609,30,8,3,'#1a0b17');text('START',360,638,9,'#fff0f6');
-for(const b of balls){const g=ctx.createRadialGradient(b.x-2,b.y-2,.1,b.x,b.y,6);g.addColorStop(0,'#fff');g.addColorStop(.3,'#eef3f6');g.addColorStop(.65,'#97a6b2');g.addColorStop(1,'#2b3540');circle(b.x+1.5,b.y+2.5,6,'#000a');circle(b.x,b.y,6,g,'#1d242c');}
+ctx.save();glassClip();for(const b of balls)ctx.drawImage(BALL,b.x-9,b.y-9,20,20);ctx.restore();
 ctx.save();ctx.beginPath();ctx.arc(BOARD.cx,BOARD.cy,BOARD.r,0,7);ctx.clip();sheen(60,130,600,600);ctx.restore();
 const power=(+$('#power').value-25)/75;ctx.save();ctx.lineCap='round';ctx.lineWidth=5;ctx.strokeStyle='#0008';ctx.beginPath();ctx.arc(628,826,44,Math.PI*.75,Math.PI*2.25);ctx.stroke();ctx.strokeStyle='#ffd27a';ctx.shadowColor='#ffb347';ctx.shadowBlur=gentle?0:8;ctx.beginPath();ctx.arc(628,826,44,Math.PI*.75,Math.PI*(.75+1.5*power));ctx.stroke();ctx.restore();
 winGlow('#ff4fae');text('FREE PLAY · NO CASH VALUE',360,944,9,'#b9b2c8');}
