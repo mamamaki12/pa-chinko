@@ -4,7 +4,7 @@ export const REELS=[
 ['bell','watermelon','replay','bar','bell','seven','replay','cherry','bell','watermelon','replay','seven','bell','bar','replay','cherry','bell','watermelon','replay','seven','bar']];
 export const STRIP=REELS[0];
 // AURORA筐体画像（720×960）の盤面ガラスと中央液晶の位置に合わせた座標。
-export const BOARD={cx:360,cy:430,r:300,gravity:860,hit:9,display:{x1:188,x2:532,y1:256,y2:504},guides:[[92,528,250,572],[182,258,360,226],[360,226,538,258]]};
+export const BOARD={cx:360,cy:430,r:300,gravity:860,hit:9,display:{x1:188,x2:532,y1:256,y2:504},guides:[[92,528,258,575],[182,258,360,226],[360,226,538,258]]};
 // 独自の役抽選テーブル（16384分の）。BIGは7揃い150枚の一回払い、リプレイは次ゲームのメダル不要。
 export const ROLE_TABLE=[['big',40],['watermelon',200],['cherry',400],['bell',1800],['replay',2240]];
 export const ROLE_RANGE=16384;
