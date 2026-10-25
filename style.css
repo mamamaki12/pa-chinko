@@ -5,3 +5,12 @@
 .memo-label{margin:14px 0 6px!important;font-size:11px!important}.reflection textarea{width:100%;font:inherit;font-size:12px;background:#2b3833;color:#e3e8dd;border:1px solid #627165;border-radius:4px;padding:8px;resize:vertical}.reflection textarea:focus-visible,.urge-scale input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .history-memo{display:block;color:#93a198;white-space:pre-wrap;overflow-wrap:anywhere}.week-heading{font-size:11px;letter-spacing:1px;color:#c8cfc4;margin:18px 0 4px}#week-summary{list-style:none;margin:0 0 10px;padding:0}#week-summary li{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid #2f3934;font-size:11px;color:#a9b7ab}#week-summary b{font-size:11px;font-weight:400;color:#e3e7dd;text-align:right}#week-summary li.over b{color:#d9c79e}
 @media(max-width:640px){.week-box{grid-column:1/-1;display:flex;align-items:center;gap:12px;padding:10px 13px;margin:0}.week-box .label-row{font-size:7px}.week-box strong{font-size:15px;margin:0;white-space:nowrap}.week-box .progress{display:none}.week-box p{margin:0;font-size:8px}.reflection{padding:10px 12px 2px}}
+
+/* Large play screen: the cabinet is sized from the window height so the whole machine and its controls fit on one screen, as large as the column allows. */
+.workspace{grid-template-columns:200px minmax(340px,1fr) 220px;gap:24px}
+.cabinet-wrap,.cabinet-wrap[class]{width:min(100%,max(520px,calc((100vh - 150px)*.75)));width:min(100%,max(520px,calc((100svh - 150px)*.75)));max-width:none;min-width:min(100%,320px);padding:2px 0 0}
+.stage-top{padding:10px 16px}
+.machine-controls{margin-top:12px;padding-top:12px}
+.status{margin:10px 12px 12px}
+@media(max-width:1100px){.workspace{grid-template-columns:160px minmax(310px,1fr)}}
+@media(max-width:640px){main{padding:16px 8px 0}.stage{border-radius:6px}.stage-top{padding:8px 10px}.cabinet-wrap,.cabinet-wrap[class]{width:100%;min-width:0}.machine-controls{margin:12px 10px 0}}
