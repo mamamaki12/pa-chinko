@@ -38,4 +38,4 @@ npm run check
 
 ## 配信
 
-Sitesの本人限定公開を使用。`.openai/hosting.json` がSite IDと静的配信ディレクトリを保持します。公開用の6ファイル（index.html、style.css、app.js、engine.js、sound.js、journal.js）と `assets/` は `dist/` に同期してからコミットします。
+GitHub Pagesで公開（https://mamamaki12.github.io/pa-chinko/）。main に push すると `.github/workflows/pages.yml` がテストを実行し、`dist/` を公開します。Sitesの本人限定公開も併用し、`.openai/hosting.json` がSite IDと静的配信ディレクトリを保持します。公開用の6ファイル（index.html、style.css、app.js、engine.js、sound.js、journal.js）と `assets/` は `dist/` に同期してからコミットします。
