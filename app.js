@@ -49,7 +49,6 @@ function grad(x,y,x2,y2,stops){const g=ctx.createLinearGradient(x,y,x2,y2);stops
 function text(t,x,y,size,color,font='Arial',align='center'){ctx.textAlign=align;ctx.font=`${size}px ${font}`;ctx.fillStyle=color;ctx.fillText(t,x,y);}
 function circle(x,y,r,fill,stroke){ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.stroke();}}
 const art={};for(const [key,src] of [['aurora','assets/aurora.webp'],['lcd','assets/lcd-illustration.jpg']]){const img=new Image();img.onload=()=>{art[key]=img;if(key==='aurora')buildLamps(img);};img.src=src;}
-function lcdArt(x,y,w,h,focusX){ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();ctx.fillStyle='#0b1022';ctx.fillRect(x,y,w,h);const img=art.lcd;if(img){const still=reduced,sp=gentle?.6:1,zoom=1.08+(still?0:.05*Math.sin(clock*.11*sp)),s=Math.max(w/img.width,h/img.height)*zoom,dw=img.width*s,dh=img.height*s,pan=still?0:Math.sin(clock*.07*sp)*.1;ctx.drawImage(img,x+(w-dw)*Math.min(1,Math.max(0,focusX+pan)),y+(h-dh)*.35,dw,dh);}lcdFx(x,y,w,h);ctx.restore();}
 function cabinetArt(key){const img=art[key];if(img){ctx.drawImage(img,0,0,720,960);return;}rr(20,10,680,940,40,'#1b1d2a','#555');text('LOADING',360,480,14,'#99a');}
 // Pre-rendered sprites (offscreen canvases at device resolution) keep per-frame drawing cheap.
 function sprite(w,h,paint){const c=document.createElement('canvas');c.width=Math.ceil(w*dpr);c.height=Math.ceil(h*dpr);const g=c.getContext('2d');g.scale(dpr,dpr);paint(g);return c;}
@@ -85,9 +84,29 @@ for(let j=0;j<n;j++){g.globalAlpha=n>1?1.7/n:1;const o=n>1?-blur/2+blur*j/(n-1):
 g.globalAlpha=1;g.globalCompositeOperation='destination-in';g.fillStyle=stops(g.createLinearGradient(0,0,0,COL_H),[[0,'#0000'],[.2,'#000'],[.8,'#000'],[1,'#0000']]);g.fillRect(0,0,DIGIT_W,COL_H);g.globalCompositeOperation='source-over';
 const pop=reduced||since<0||since>.25?1:1+.07*(1-since/.25);ctx.save();ctx.translate(cx,cy);ctx.scale(pop,pop);ctx.drawImage(colCanvas,-DIGIT_W/2,-COL_H/2,DIGIT_W,COL_H);ctx.restore();}
 // Always-moving LCD background: the illustration drifts slowly and specks of light float upward. prefers-reduced-motion keeps it still.
-function lcdFx(x,y,w,h){if(reduced)return;ctx.save();ctx.globalCompositeOperation='lighter';const sp=gentle?.6:1;
-const ray=ctx.createLinearGradient(x+w*(.5+.35*Math.sin(clock*.23*sp)),y,x+w*.5,y+h);stops(ray,[[0,'#ffe9f655'],[.5,'#ffe9f611'],[1,'#ffe9f600']]);ctx.fillStyle=ray;ctx.fillRect(x,y,w,h);
-for(let i=0;i<26;i++){const r=1.2+(i*7%5)*.5,px=x+((i*83.7+Math.sin(clock*.4*sp+i)*14)%w+w)%w,py=y+h-(((clock*(10+i%6*4)*sp+i*41)%(h+20))),a=.25+.25*Math.sin(clock*1.3*sp+i*2.1);
+// LCD background, like the idle and spin screens of a real machine: the camera moves through several shots of the illustration
+// (push-in and pan, cross-fading with a light sweep between shots), clouds drift past in two parallax layers, petals flutter down,
+// shooting stars cross the sky and light rays turn slowly. Everything speeds up while a draw is spinning, the same for every draw.
+// Gentle mode keeps the motion but drops the flashes; prefers-reduced-motion shows one still shot.
+const SHOTS=[[.3,.42,1.12,1.4,.12],[.72,.36,1.38,1.12,-.16],[.5,.7,1.18,1.48,.1],[.86,.48,1.6,1.3,-.08],[.5,.3,1.04,1.22,0]],SHOT_LEN=7,FADE=1.1;
+const CLOUD=sprite(180,70,g=>{for(const [cx,cy,r] of [[40,44,24],[70,34,30],[105,30,34],[138,42,26],[90,50,30],[60,52,22],[122,52,22]]){g.fillStyle=stops(g.createRadialGradient(cx,cy,0,cx,cy,r),[[0,'#ffffffcc'],[.6,'#ffffff55'],[1,'#ffffff00']]);g.fillRect(cx-r,cy-r,r*2,r*2);}});
+const PETAL=sprite(14,10,g=>{g.fillStyle=stops(g.createLinearGradient(0,0,14,10),[[0,'#fff3fa'],[.5,'#ffb6da'],[1,'#e86aa8']]);g.beginPath();g.ellipse(7,5,6.5,3.6,0,0,7);g.fill();g.fillStyle='#ffffff88';g.beginPath();g.ellipse(5,3.8,2.6,1.2,-.3,0,7);g.fill();});
+let bgT=0,bgClock=0,bgRate=1;
+function shot(img,x,y,w,h,[fx,fy,z0,z1,dx],u,alpha){const z=z0+(z1-z0)*u,s=Math.max(w/img.width,h/img.height)*z,dw=img.width*s,dh=img.height*s,cx=Math.min(1,Math.max(0,fx+dx*(u-.5)));
+ctx.globalAlpha=alpha;ctx.drawImage(img,x+Math.min(0,Math.max(w-dw,w/2-cx*dw)),y+Math.min(0,Math.max(h-dh,h/2-fy*dh)),dw,dh);ctx.globalAlpha=1;}
+function lcdArt(x,y,w,h){ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();ctx.fillStyle='#0b1022';ctx.fillRect(x,y,w,h);const img=art.lcd;
+const target=drawResult===null?1:reachOn()?2.6:2.1;bgRate+=(target-bgRate)*Math.min(1,(clock-bgClock)*2);bgT+=Math.max(0,Math.min(.1,clock-bgClock))*bgRate*(gentle?.8:1);bgClock=clock;
+if(img){if(reduced)shot(img,x,y,w,h,SHOTS[0],.5,1);else{const n=Math.floor(bgT/SHOT_LEN),u=bgT/SHOT_LEN-n,cur=SHOTS[n%SHOTS.length],fade=Math.max(0,(u*SHOT_LEN-(SHOT_LEN-FADE))/FADE);
+shot(img,x,y,w,h,cur,u,1);if(fade>0){shot(img,x,y,w,h,SHOTS[(n+1)%SHOTS.length],0,fade*fade*(3-2*fade));if(!gentle){const sx=x-w*.4+w*1.8*fade;ctx.save();ctx.globalCompositeOperation='lighter';ctx.fillStyle=stops(ctx.createLinearGradient(sx-90,y,sx+90,y+h*.3),[[0,'#fff0'],[.5,`rgba(255,240,250,${.55*Math.sin(Math.PI*fade)})`],[1,'#fff0']]);ctx.fillRect(x,y,w,h);ctx.restore();}}}}
+lcdFx(x,y,w,h);ctx.restore();}
+function lcdFx(x,y,w,h){if(reduced)return;const t=bgT;ctx.save();
+ctx.globalCompositeOperation='lighter';ctx.translate(x+w*.5,y-30);ctx.rotate(Math.sin(t*.2)*.35);for(let k=-2;k<=2;k++){ctx.fillStyle=stops(ctx.createLinearGradient(0,0,0,h*1.2),[[0,'#fff2f838'],[1,'#fff2f800']]);ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(k*70-22,h*1.3);ctx.lineTo(k*70+22,h*1.3);ctx.closePath();ctx.fill();}ctx.setTransform(dpr,0,0,dpr,0,0);
+ctx.globalCompositeOperation='source-over';for(let i=0;i<5;i++){const sc=.7+(i%3)*.3,cw=180*sc,span=w+cw,px=x+span-((t*(14+i*7)+i*137)%span)-cw*.5,py=y+18+i*26+Math.sin(t*.3+i)*5;ctx.globalAlpha=.32+.06*(i%3);ctx.drawImage(CLOUD,px-cw/2,py-35*sc,cw,70*sc);}
+for(let i=0;i<22;i++){const fall=24+(i*13%5)*7,drift=10+(i*7%4)*5,cycle=(h+30)/fall,ph=(t+i*cycle/22)%cycle,py=y-15+ph*fall,px=x+((i*61.3-ph*drift+Math.sin(t*1.6+i)*12)%w+w)%w,rot=t*(1.2+i%3*.6)+i,flip=Math.cos(t*2.4+i*1.7);
+ctx.save();ctx.globalAlpha=.85;ctx.translate(px,py);ctx.rotate(rot);ctx.scale(1,Math.max(.15,Math.abs(flip)));ctx.drawImage(PETAL,-7,-5,14,10);ctx.restore();}
+ctx.globalAlpha=1;for(let i=0;i<2;i++){const cw=180*2.1,span=w+cw,px=x+span-((t*(46+i*20)+i*260)%span)-cw*.5,py=y+h-20-i*14;ctx.globalAlpha=.4;ctx.drawImage(CLOUD,px-cw/2,py-70,cw,147);}ctx.globalAlpha=1;
+ctx.globalCompositeOperation='lighter';const sk=t%3.4;if(sk<.9){const q=sk/.9,sx=x+w*(.15+.6*((Math.floor(t/3.4)*.37)%1))+q*160,sy=y+12+q*70,a=Math.sin(Math.PI*q);ctx.strokeStyle=stops(ctx.createLinearGradient(sx-90,sy-40,sx,sy),[[0,'#fff0'],[1,`rgba(255,250,255,${a})`]]);ctx.lineWidth=2.2;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(sx-90,sy-40);ctx.lineTo(sx,sy);ctx.stroke();ctx.fillStyle=stops(ctx.createRadialGradient(sx,sy,0,sx,sy,8),[[0,`rgba(255,255,255,${a})`],[1,'#fff0']]);ctx.fillRect(sx-8,sy-8,16,16);}
+for(let i=0;i<26;i++){const r=1.2+(i*7%5)*.5,px=x+((i*83.7+Math.sin(t*.4+i)*14)%w+w)%w,py=y+h-(((t*(10+i%6*4)+i*41)%(h+20))),a=.3+.3*Math.sin(t*1.3+i*2.1);
 ctx.fillStyle=stops(ctx.createRadialGradient(px,py,0,px,py,r*3),[[0,`rgba(255,236,250,${Math.max(0,a)})`],[1,'#fff0']]);ctx.fillRect(px-r*3,py-r*3,r*6,r*6);}
 ctx.restore();}
 // Frame lamps: the bright LED strips of the cabinet artwork outside the glass, extracted once into a mask (plus a blurred bloom copy) and added
@@ -102,7 +121,7 @@ ctx.restore();}
 function digits(label,value,x,y){text(label,x,y,9,'#c9d6f2');ctx.save();ctx.shadowColor='#ff9c55';ctx.shadowBlur=gentle?2:8;text(String(value).padStart(4,'0'),x,y+22,21,'#ffc27d','monospace');ctx.restore();}
 function sheen(x,y,w,h){ctx.fillStyle=grad(x,y,x+w,y+h,[[0,'#ffffff1c'],[.32,'#ffffff05'],[.33,'#ffffff14'],[.45,'#ffffff00'],[1,'#ffffff00']]);ctx.fillRect(x,y,w,h);}
 function winGlow(color){if(clock>=resultUntil)return;const t=resultUntil-clock,a=(gentle?.12:.3)*Math.min(1,t);ctx.save();ctx.globalCompositeOperation='lighter';const g=ctx.createRadialGradient(360,430,120,360,430,460);g.addColorStop(0,'#0000');g.addColorStop(1,color+Math.round(a*255).toString(16).padStart(2,'0'));ctx.fillStyle=g;ctx.fillRect(0,0,720,960);ctx.restore();}
-function renderPachinko(){const {x1,x2,y1,y2}=BOARD.display;lcdArt(x1-8,y1-8,x2-x1+16,y2-y1+16,.12);
+function renderPachinko(){const {x1,x2,y1,y2}=BOARD.display;lcdArt(x1-8,y1-8,x2-x1+16,y2-y1+16);
 ctx.fillStyle=grad(0,y1+90,0,y2,[[0,'#06081200'],[.5,'#060812aa'],[1,'#060812dd']]);ctx.fillRect(x1,y1+90,x2-x1,y2-y1-90);
 const drawing=drawResult!==null,reach=reachOn();
 if(reach&&!gentle&&!reduced){ctx.save();ctx.shadowColor='#ff8fd0';ctx.shadowBlur=10+Math.sin(clock*2)*4;rr(x1+4,y1+4,x2-x1-8,y2-y1-8,14,null,'#ffc2e688');ctx.restore();}
