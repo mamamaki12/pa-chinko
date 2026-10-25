@@ -48,7 +48,7 @@ function rr(x,y,w,h,r,fill,stroke){ctx.beginPath();ctx.roundRect(x,y,w,h,r);if(f
 function grad(x,y,x2,y2,stops){const g=ctx.createLinearGradient(x,y,x2,y2);stops.forEach(([p,c])=>g.addColorStop(p,c));return g;}
 function text(t,x,y,size,color,font='Arial',align='center'){ctx.textAlign=align;ctx.font=`${size}px ${font}`;ctx.fillStyle=color;ctx.fillText(t,x,y);}
 function circle(x,y,r,fill,stroke){ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.stroke();}}
-const art={};for(const [key,src] of [['aurora','assets/aurora.webp'],['lcd','assets/lcd-illustration.jpg']]){const img=new Image();img.onload=()=>{art[key]=img;if(key==='aurora')buildLamps(img);};img.src=src;}
+const art={};for(const [key,src] of [['aurora','assets/aurora.webp'],['astral','assets/astral.webp'],['lcd','assets/lcd-illustration.jpg']]){const img=new Image();img.onload=()=>{art[key]=img;if(key==='aurora')buildLamps(img);};img.src=src;}
 function cabinetArt(key){const img=art[key];if(img){ctx.drawImage(img,0,0,720,960);return;}rr(20,10,680,940,40,'#1b1d2a','#555');text('LOADING',360,480,14,'#99a');}
 // Pre-rendered sprites (offscreen canvases at device resolution) keep per-frame drawing cheap.
 function sprite(w,h,paint){const c=document.createElement('canvas');c.width=Math.ceil(w*dpr);c.height=Math.ceil(h*dpr);const g=c.getContext('2d');g.scale(dpr,dpr);paint(g);return c;}
@@ -139,7 +139,12 @@ const power=(+$('#power').value-25)/75;ctx.save();ctx.lineCap='round';ctx.lineWi
 winGlow('#ff4fae');text('FREE PLAY · NO CASH VALUE',360,944,9,'#b9b2c8');}
 function renderSlot(){const s=states.slot,now=performance.now(),stopReady=[0,1,2].map(i=>spinning&&velocities[i]!==0&&targets[i]===null);
 const leverAge=(now-(pressedAt.lever??-1e9))/1000,leverPull=held==='lever'?1:leverAge<.32?Math.sin(Math.min(1,leverAge/.32)*Math.PI):0;
-drawSlot(ctx,{clock,gentle:gentle||reduced,lcdImage:art.lcd,positions,velocities,spinning,stopReady,credit:s.credit,rounds:s.rounds,win:s.win,bet:spinning||betPlaced||replay?3:0,replay,canBet:canBet(),canLever:!paused&&!spinning&&(betPlaced||replay||s.credit>=3),showResult:clock<resultUntil,resultLeft:resultUntil-clock,leverPull,pressed:name=>held===name||now-(pressedAt[name]??-1e9)<140});}
+lcdArt(156,102,394,196);
+if(s.win>0&&clock<resultUntil){ctx.save();ctx.shadowColor='#5fb6ff';ctx.shadowBlur=gentle?4:16;ctx.lineWidth=5;ctx.strokeStyle='#0d1d45';ctx.font='bold 40px Georgia';ctx.textAlign='center';ctx.strokeText(`${s.win} MEDALS`,360,188);text(`${s.win} MEDALS`,360,188,40,'#eef6ff','bold Georgia');ctx.restore();}
+else if(replay)text('REPLAY',360,282,16,'#d8ecff','bold Georgia');
+cabinetArt('astral');
+drawSlot(ctx,{gentle:gentle||reduced,cabinet:art.astral,positions,velocities,stopReady,credit:s.credit,win:s.win,bet:spinning||betPlaced||replay?3:0,replay,canBet:canBet(),canLever:!paused&&!spinning&&(betPlaced||replay||s.credit>=3),showResult:clock<resultUntil,resultLeft:resultUntil-clock,leverPull,pressed:name=>held===name||now-(pressedAt[name]??-1e9)<140});
+winGlow('#4f9dff');text('FREE PLAY · NO CASH VALUE',360,944,9,'#b6c2dc');}
 function render(){ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,720,960);ctx.save();mode==='pachinko'?renderPachinko():renderSlot();ctx.restore();}
 function reachOn(){return drawResult!==null&&spinPlan.reach&&drawTime>=spinPlan.stops[2]&&drawTime<spinPlan.stops[1];}
 // Tapping the drawn lever, MAX BET and stop buttons on the canvas works like the buttons below it.
