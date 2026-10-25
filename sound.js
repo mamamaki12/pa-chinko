@@ -1,5 +1,5 @@
 // Original synthesized cabinet sounds (Web Audio only, no recorded audio). Win sounds stay short and quiet on purpose.
-let ctx,master,noise,lastPin=0,lastTick=0,hum=null,humSeen=0;
+let ctx,master,noise,lastPin=0,lastTick=0,lastVoice=0,hum=null,humSeen=0;
 const now=()=>ctx.currentTime;
 function init(){if(ctx)return;ctx=new AudioContext();const comp=ctx.createDynamicsCompressor();comp.threshold.value=-18;comp.ratio.value=4;master=ctx.createGain();master.gain.value=0;master.connect(comp);comp.connect(ctx.destination);noise=ctx.createBuffer(1,ctx.sampleRate*.5,ctx.sampleRate);const d=noise.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;}
 function env(g,t,peak,attack,decay){g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(peak,t+attack);g.gain.exponentialRampToValueAtTime(.0001,t+attack+decay);}
@@ -25,6 +25,8 @@ const sounds={
   spin(t){hiss(t,{freq:700,kind:'lowpass',peak:.18,decay:.09});osc(150,t,{peak:.15,decay:.12,drop:.45});osc(1650,t+.04,{peak:.025,decay:.05});},
   reel(t){humSeen=performance.now();if(!hum)startHum(t);},
   stop(t,i=0){hiss(t,{freq:600-i*80,kind:'lowpass',peak:.2,decay:.05});osc(190-i*20,t,{peak:.16,decay:.07,drop:.5});ping(t+.005,1900,.025);},
+  // LCD character's voice: short pitched blips while a line is typed out (no recorded speech).
+  voice(t,pitch=1){const p=performance.now();if(p-lastVoice<75)return;lastVoice=p;const f=(560+Math.random()*180)*pitch;osc(f,t,{type:'triangle',peak:.045,attack:.006,decay:.045,drop:1.1});osc(f*2.01,t,{peak:.012,attack:.006,decay:.03});},
   medal(t,count=1){bell(784,t,.06,.3);bell(1046.5,t+.1,.05,.35);const n=Math.min(8,Math.max(2,Math.ceil(count/10)));for(let i=0;i<n;i++)ping(t+.25+i*.09+Math.random()*.02,1700+Math.random()*700,.035);},
 };
 // Plays a named sound at the given volume (0–1). Unknown names are ignored.
