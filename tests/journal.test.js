@@ -1,0 +1,7 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {weekStart,weekSeconds,formatDuration,normalizeReflection,weeklySummary} from '../journal.js';
+test('週は月曜0時から始まる',()=>{const s=weekStart(new Date(2026,9,25,15));assert.equal(s.getDay(),1);assert.equal(s.getDate(),19);assert.equal(s.getHours(),0);assert.equal(weekStart(new Date(2026,9,19,0,5)).getDate(),19);});
+test('今週の記録だけを合計する',()=>{const now=new Date(2026,9,25,12),h=[{date:new Date(2026,9,25,10).toISOString(),seconds:600},{date:new Date(2026,9,19,1).toISOString(),seconds:300},{date:new Date(2026,9,18,23).toISOString(),seconds:900}];assert.equal(weekSeconds(h,now),900);});
+test('ふりかえりの値を整える',()=>{assert.deepEqual(normalizeReflection('3','  雨で暇だった '),{urge:3,memo:'雨で暇だった'});assert.deepEqual(normalizeReflection(undefined,''),{});assert.deepEqual(normalizeReflection('9','x'.repeat(300)),{memo:'x'.repeat(200)});});
+test('時間の表示と週ごとのまとめ',()=>{assert.equal(formatDuration(59),'0分');assert.equal(formatDuration(3600),'1時間');assert.equal(formatDuration(5460),'1時間31分');const now=new Date(2026,9,25,12),h=[{date:new Date(2026,9,24).toISOString(),seconds:600,urge:2},{date:new Date(2026,9,23).toISOString(),seconds:60,urge:5},{date:new Date(2026,9,14).toISOString(),seconds:120}];const w=weeklySummary(h,4,now);assert.equal(w.length,4);assert.equal(w[0].seconds,660);assert.equal(w[0].urge,3.5);assert.equal(w[1].seconds,120);assert.equal(w[1].urge,null);assert.equal(w[1].from.getDate(),12);assert.equal(w[3].count,0);});
