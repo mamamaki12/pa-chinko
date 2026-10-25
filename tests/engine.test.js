@@ -1,13 +1,26 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {STRIP,BOARD,payout,resolvePachinko,advanceBall,randomInt,collideDisplay,makePins,launchBall,advanceRail,inStart} from '../engine.js';
-test('配当と外れ、左チェリーの優先順位',()=>{assert.equal(payout(['seven','seven','seven']),150);assert.equal(payout(['bell','bell','bell']),15);assert.equal(payout(['cherry','cherry','cherry']),8);assert.equal(payout(['cherry','bell','bar']),2);assert.equal(payout(['bell','bar','seven']),0);});
+import {BOARD,makePins,launchBall,advanceRail,inStart,STRIP,REELS,ROLE_TABLE,ROLE_RANGE,MAX_SLIP,drawRole,judge,chooseSlip,payout,resolvePachinko,advanceBall,randomInt,collideDisplay,MAX_HOLDS,addHold,planSpin} from '../engine.js';
+test('配当と外れ、左チェリー',()=>{assert.equal(payout(['seven','seven','seven']),150);assert.equal(payout(['bell','bell','bell']),8);assert.equal(payout(['watermelon','watermelon','watermelon']),10);assert.equal(payout(['cherry','cherry','cherry']),2);assert.equal(payout(['cherry','bell','bar']),2);assert.equal(payout(['replay','replay','replay']),0);assert.equal(judge(['replay','replay','replay']),'replay');assert.equal(payout(['bar','bar','bar']),0);assert.equal(payout(['bell','bar','seven']),0);});
 test('パチンコの99通りに当たりは1つ',()=>{assert.equal(Array.from({length:99},(_,i)=>resolvePachinko(i)).filter(Boolean).length,1);assert.equal(resolvePachinko(0),300);});
 test('釘との衝突で玉が反射する',()=>{const b={x:360,y:195,vx:0,vy:100};advanceBall(b,1/120,[{x:360,y:200}]);assert.ok(b.vy<0);assert.ok(Number.isFinite(b.x));});
 test('盤面の外周から逸脱しない',()=>{const b={x:BOARD.cx-250,y:BOARD.cy+30,vx:60,vy:-800};for(let i=0;i<3000;i++){advanceBall(b,1/120,[]);assert.ok(Math.hypot(b.x-BOARD.cx,b.y-BOARD.cy)<=BOARD.r+.01);} });
-test('リール配列と乱数の範囲',()=>{assert.equal(STRIP.length,21);for(let i=0;i<1000;i++){const n=randomInt(99);assert.ok(n>=0&&n<99&&Number.isInteger(n));}});
+test('リール配列と乱数の範囲',()=>{assert.equal(STRIP.length,21);for(const r of REELS)assert.equal(r.length,21);for(let i=0;i<1000;i++){const n=randomInt(99);assert.ok(n>=0&&n<99&&Number.isInteger(n));}});
 
 test('中央液晶を玉が貫通しない',()=>{const {x1,y1}=BOARD.display;const b={x:x1+90,y:y1+1,vx:10,vy:100};collideDisplay(b);assert.equal(b.y,y1);assert.ok(b.vy<0);});
+
+test('役抽選の出現数が抽選表どおり',()=>{const count={};for(let n=0;n<ROLE_RANGE;n++){const r=drawRole(n);count[r]=(count[r]||0)+1;}let used=0;for(const [role,weight] of ROLE_TABLE){assert.equal(count[role],weight);used+=weight;}assert.equal(count.none,ROLE_RANGE-used);assert.equal(drawRole(0),'big');assert.equal(drawRole(ROLE_RANGE-1),'none');});
+const ORDERS=[[0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]];
+function play(role,presses,order){const stopped=[null,null,null],slips=[];for(const reel of order){const slip=chooseSlip(reel,presses[reel],role,stopped);slips.push(slip);stopped[reel]=REELS[reel][(presses[reel]+slip)%21];}return {line:stopped,slips};}
+test('すべり制御：最大4コマ、成立していない役は揃わない',()=>{const roles=[...ROLE_TABLE.map(r=>r[0]),'none'];for(const role of roles)for(const order of ORDERS)for(let a=0;a<21;a++)for(let b=0;b<21;b++)for(let c=0;c<21;c+=2){const {line,slips}=play(role,[a,b,c],order);assert.ok(slips.every(s=>Number.isInteger(s)&&s>=0&&s<=MAX_SLIP));const result=judge(line);assert.ok(result===role||result==='none',`${role}なのに${result}：${line}`);if(result==='none')assert.ok(!line.every(s=>s===line[0]),`外れで3つ揃い：${line}`);}});
+test('すべり制御：リプレイとベルはどこで押しても揃う',()=>{for(const role of ['replay','bell'])for(const order of ORDERS)for(let a=0;a<21;a++)for(let b=0;b<21;b++)for(let c=0;c<21;c++)assert.equal(judge(play(role,[a,b,c],order).line),role);});
+test('すべり制御：チェリーは左リール、レア役は押す位置しだいで取りこぼす',()=>{let cherry=0,big=0,total=0;for(let a=0;a<21;a++)for(let b=0;b<21;b++)for(let c=0;c<21;c++){total++;if(judge(play('cherry',[a,b,c],[0,1,2]).line)==='cherry')cherry++;if(judge(play('big',[a,b,c],[0,1,2]).line)==='big')big++;}assert.equal(cherry,15*21*21);assert.ok(big>0&&big<total);});
+test('釘に当たると衝突の強さを返す',()=>{const b={x:360,y:195,vx:0,vy:100};assert.ok(advanceBall(b,1/120,[{x:360,y:200}])>0);assert.equal(advanceBall({x:360,y:100,vx:0,vy:0},1/120,[]),0);});
+test('保留は4つまで',()=>{let h=0;for(let i=0;i<6;i++)h=addHold(h);assert.equal(h,MAX_HOLDS);assert.equal(MAX_HOLDS,4);});
+test('当たりは必ずリーチを経て3つ揃う',()=>{for(let i=0;i<200;i++){const p=planSpin(true,0);assert.ok(p.reach);assert.ok(p.numbers.every(n=>n===p.numbers[0]));assert.ok(p.stops[1]>p.stops[2]);}});
+test('外れは揃わず、リーチ外れは1つ違いで止まらない',()=>{let reaches=0;for(let i=0;i<3000;i++){const p=planSpin(false,i%5);const [l,m,r]=p.numbers;assert.ok(!(l===m&&m===r));p.numbers.forEach(n=>assert.ok(n>=1&&n<=9));if(p.reach){reaches++;assert.equal(l,r);const d=Math.abs(m-l);assert.ok(d>1&&d<8);}else assert.notEqual(l,r);}assert.ok(reaches>50&&reaches<400);});
+test('保留が多いほど外れの変動は短い',()=>{const noReach={rand:n=>n===15?1:0};assert.ok(planSpin(false,3,noReach).duration<planSpin(false,1,noReach).duration);assert.ok(planSpin(false,1,noReach).duration<planSpin(false,0,noReach).duration);const r=planSpin(false,0,{rand:()=>0});assert.ok(r.reach);assert.ok(planSpin(true,0,{gentle:true}).duration<planSpin(true,0,{gentle:false}).duration);});
+
 test('中央液晶は盤面の内側にある',()=>{const {x1,x2,y1,y2}=BOARD.display;for(const [x,y] of [[x1,y1],[x2,y1],[x1,y2],[x2,y2]])assert.ok(Math.hypot(x-BOARD.cx,y-BOARD.cy)<BOARD.r);});
 test('釘は盤面の内側にあり、液晶とガイドに重ならない',()=>{const {x1,x2,y1,y2}=BOARD.display;for(const p of makePins()){assert.ok(Math.hypot(p.x-BOARD.cx,p.y-BOARD.cy)<BOARD.r);assert.ok(!(p.x>x1&&p.x<x2&&p.y>y1&&p.y<y2));}});
 test('発射した玉はレールを上り、強いほど右で盤面に出る',()=>{const exit=power=>{const b=launchBall(power);let n=0;while(b.rail&&n++<1000)advanceRail(b,1/120);assert.ok(!b.rail);assert.ok(Math.hypot(b.x-BOARD.cx,b.y-BOARD.cy)<BOARD.r);return b.x;};assert.ok(exit(1)>exit(.45));assert.ok(exit(.45)<BOARD.cx);});
