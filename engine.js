@@ -20,6 +20,11 @@ function rateLine(line,role){const open=line.filter(s=>s===null).length;if(open=
 export function randomInt(n){const a=new Uint32Array(1);const max=Math.floor(4294967296/n)*n;do{crypto.getRandomValues(a);}while(a[0]>=max);return a[0]%n;}
 export function payout(symbols){return PAY[judge(symbols)];}
 export function resolvePachinko(draw){return draw===0?300:0;}
+// 大当たりは実機のようなラウンド制：右下の大入賞口（アタッカー）が開き、右打ちで入れた玉1つにつき BONUS.prize 玉を払い出す。
+// 1ラウンドは BONUS.count 個入るか BONUS.open 秒で閉じ、BONUS.gap 秒あけて次のラウンド。最大 rounds×count×prize 玉。
+export const BONUS={rounds:4,count:10,prize:8,open:30,gap:2};
+export const ATTACKER={x1:548,x2:578,y1:640,y2:660};
+export function inAttacker(b){return b.vy>0&&b.y>ATTACKER.y1&&b.y<ATTACKER.y2&&b.x>ATTACKER.x1&&b.x<ATTACKER.x2;}
 // 釘の配置：格子状の釘と、入賞口の左右の命釘。液晶の左下には玉を START 入賞口へ寄せる透明なガイド（BOARD.guides）がある。
 export function makePins(){const {cx,cy,r,display:d}=BOARD,pins=[];for(let row=0;row<16;row++){for(let col=0;col<19;col++){const x=72+col*32+(row%2)*16,y=160+row*34;if(Math.hypot(x-cx,y-cy)>r-26||y>690)continue;if(x>d.x1-14&&x<d.x2+14&&y>d.y1-14&&y<d.y2+14)continue;if(y>560&&Math.abs(x-cx)<44)continue;if(BOARD.guides.some(([x1,y1,x2,y2])=>x>Math.min(x1,x2)-16&&x<Math.max(x1,x2)+16&&y>y1+(x-x1)*(y2-y1)/(x2-x1)-22&&y<y1+(x-x1)*(y2-y1)/(x2-x1)+40))continue;pins.push({x,y});}}return pins.concat([{x:336,y:598},{x:384,y:598}]);}
 // 発射された玉は外周レールを上って、強度に応じた角度で盤面へ出る（強いほど右寄り）。
