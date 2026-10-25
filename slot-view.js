@@ -1,30 +1,27 @@
-// ASTRAL pachislot cabinet, drawn entirely on canvas (720×960) after the layout of a real pachislot front:
-// top panel with a small LCD, a chrome-framed glass window with three tall reels, bet lamps 1/2/3 on the left,
-// 7-segment CREDIT / GAME / PAYOUT counters, and a deck with the lever, MAX BET button and three stop buttons.
-// All artwork is original; no real machine's logo, character or reel art is reproduced.
+// ASTRAL pachislot reel panel, drawn over the original cabinet art (assets/astral.webp, 720×960).
+// The cabinet keeps its look; only the panel around the reel window is made to read like a real pachislot:
+// three reels showing three symbols each, bet lamps 1/2/3 in the left medallions, START / REPLAY / PAY lamps in the right ones,
+// and 7-segment CREDIT / PAYOUT counters on the plates under the window. The lever, MAX BET dome and stop buttons
+// painted on the cabinet are tappable, and get a lit / pressed look here. All drawings are original.
 import {REELS} from './engine.js';
 
-const W=720;
-// Hit areas share these coordinates, so the drawn parts and the tappable parts never drift apart.
+// Coordinates follow the parts painted in astral.webp, so hit areas and highlights sit on the art.
 export const LAYOUT={
-  lcd:[150,104,420,150],
-  frame:[60,272,600,432],
-  window:[150,292,446,300],
-  reels:[[158,140],[306,140],[454,140]],reelY:298,reelH:288,pitch:96,
-  lamps:{x:104,y:[352,442,532]},
-  side:{x:624,y:[340,410,480,550]},
-  counters:{y:612},
-  lever:{x:84,y:812,r:24},
-  bet:[124,734,100,30],
-  stops:{x:[228,376,524],y:808,r:30},
+  window:[177,348,370,151],
+  reels:[[183,114],[305,114],[427,114]],reelY:350,reelH:147,pitch:49,
+  lamps:{left:[[133,373],[133,457],[133,517]],right:[[593,373],[593,460],[593,516]],r:21},
+  plates:{credit:[182,510,118,32],payout:[444,510,104,32]},
+  lever:{x:160,y:600,r:23},
+  bet:{x:587,y:549,r:24},
+  stops:{x:[283,360,437],y:600,r:18},
 };
 
 // Returns 'lever' | 'bet' | 'stop0' | 'stop1' | 'stop2' | null for a point in canvas coordinates.
 export function hitSlot(x,y){
   const {lever,bet,stops}=LAYOUT;
-  if(Math.hypot(x-lever.x,y-(lever.y-6))<54&&y<lever.y+60)return 'lever';
-  if(x>bet[0]-10&&x<bet[0]+bet[2]+10&&y>bet[1]-10&&y<bet[1]+bet[3]+10)return 'bet';
-  for(let i=0;i<3;i++)if(Math.hypot(x-stops.x[i],y-stops.y)<stops.r+14)return `stop${i}`;
+  if(Math.hypot(x-lever.x,y-lever.y)<lever.r+16)return 'lever';
+  if(Math.hypot(x-bet.x,y-bet.y)<bet.r+14)return 'bet';
+  for(let i=0;i<3;i++)if(Math.hypot(x-stops.x[i],y-stops.y)<stops.r+16)return `stop${i}`;
   return null;
 }
 
@@ -45,14 +42,14 @@ function digit(ch,x,y,w,h,on,off){
   const parts={a:[x+t*.6,y,w-t*1.2,t],g:[x+t*.6,y+half-t/2,w-t*1.2,t],d:[x+t*.6,y+h-t,w-t*1.2,t],f:[x,y+t*.6,t,half-t*.9],b:[x+w-t,y+t*.6,t,half-t*.9],e:[x,y+half+t*.3,t,half-t*.9],c:[x+w-t,y+half+t*.3,t,half-t*.9]};
   for(const [k,[sx,sy,sw,sh]] of Object.entries(parts)){rr(sx,sy,sw,sh,t/2,segs.includes(k)?on:off);}
 }
-function counter(label,value,x,y,count,{color='#ff5a3c',gentle}){
-  const dw=22,dh=38,gap=8,w=count*(dw+gap)+14,s=String(Math.max(0,Math.min(10**count-1,Math.floor(value)))).padStart(count,' ');
-  rr(x-w/2-3,y-3,w+6,dh+20,7,chrome(0,y-3,0,y+dh+17));
-  rr(x-w/2,y,w,dh+14,5,'#0a0605');
-  ctx.save();ctx.transform(1,0,-.08,1,(y+dh/2)*.08,0);
-  glow(color,gentle?3:9,()=>{for(let i=0;i<count;i++)digit(s[i],x-w/2+9+i*(dw+gap),y+7,dw,dh,color,'#2a0c0a');});
+// A 7-segment counter on one of the cabinet's plates: a small label on the left, digits right-aligned.
+function counter(label,value,[x,y,w,h],count,gentle){
+  const dh=h-10,dw=dh*.55,gap=4,s=String(Math.max(0,Math.min(10**count-1,Math.floor(value)))).padStart(count,' ');
+  rr(x,y,w,h,4,'#080404','#c9a24e',1.5);
+  ctx.save();ctx.translate(x+7,y+h/2);ctx.rotate(-Math.PI/2);text(label,0,3,7,'#d8c38a','bold Arial');ctx.restore();
+  ctx.save();ctx.transform(1,0,-.08,1,(y+h/2)*.08,0);
+  glow('#ff5a3c',gentle?3:8,()=>{for(let i=0;i<count;i++)digit(s[i],x+w-6-(count-i)*(dw+gap)+gap,y+5,dw,dh,'#ff5a3c','#2a0c0a');});
   ctx.restore();
-  text(label,x,y+dh+29,10,'#c8d4ee','bold Arial');
 }
 
 // --- reel symbols (original drawings) ------------------------------------------------------------------
@@ -68,133 +65,62 @@ export function symbol(c,name,x,y,size=1){
   ctx.restore();
 }
 
-// --- cabinet parts ------------------------------------------------------------------------------------
-function body(gentle,clock){
-  // Cabinet shell: dark midnight-blue body with chrome side pillars and soft blue LED strips.
-  rr(14,8,692,944,34,grad(0,0,W,0,[[0,'#0d1730'],[.5,'#18264a'],[1,'#0d1730']]));
-  rr(14,8,692,944,34,null,'#9eb3d6',2);
-  for(const x of [22,662]){rr(x,30,36,900,16,chrome(x,0,x+36,0));const pulse=gentle?.55:.55+.25*Math.sin(clock*1.4+x);glow('#4fb3ff',gentle?6:16,()=>rr(x+13,54,10,852,5,`rgba(120,200,255,${pulse})`));}
-  // Top crown with the ASTRAL logo (original lettering).
-  ctx.fillStyle=grad(0,14,0,98,[[0,'#24396e'],[1,'#0b1430']]);ctx.beginPath();ctx.moveTo(70,98);ctx.lineTo(110,22);ctx.quadraticCurveTo(360,-6,610,22);ctx.lineTo(650,98);ctx.closePath();ctx.fill();ctx.strokeStyle='#c7d6f0';ctx.lineWidth=2;ctx.stroke();
-  for(let i=0;i<9;i++){const x=150+i*52.5,lit=gentle?.5:.5+.5*Math.max(0,Math.sin(clock*2-i*.7));glow('#9fd8ff',8,()=>circle(x,36+Math.abs(i-4)*-1.5,3.2,`rgba(220,240,255,${.35+lit*.6})`));}
-  ctx.save();ctx.font='italic 900 56px Georgia';ctx.textAlign='center';ctx.lineJoin='round';ctx.lineWidth=9;ctx.strokeStyle='#0a1126';ctx.strokeText('ASTRAL',360,86);ctx.lineWidth=3;ctx.strokeStyle='#e7f1ff';ctx.strokeText('ASTRAL',360,86);ctx.fillStyle=grad(0,44,0,86,[[0,'#ffffff'],[.45,'#9fd0ff'],[.55,'#2f6fd8'],[1,'#b5e0ff']]);glow('#6fbaff',gentle?4:14,()=>ctx.fillText('ASTRAL',360,86));ctx.restore();
-  star(198,66,9,'#ffe9a8');star(522,66,9,'#ffe9a8');
-}
-function star(x,y,r,color){ctx.beginPath();for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rad=i%2?r*.42:r;ctx.lineTo(x+Math.cos(a)*rad,y+Math.sin(a)*rad);}ctx.closePath();ctx.fillStyle=color;ctx.fill();}
-
-function lcdPanel(v){
-  const [x,y,w,h]=LAYOUT.lcd;
-  rr(x-12,y-10,w+24,h+20,14,chrome(0,y-10,0,y+h+10));rr(x-4,y-3,w+8,h+6,8,'#050812');
-  ctx.save();ctx.beginPath();ctx.roundRect(x,y,w,h,6);ctx.clip();ctx.fillStyle='#0b1022';ctx.fillRect(x,y,w,h);
-  const img=v.lcdImage;if(img){const still=v.gentle,zoom=1.08+(still?0:.05*Math.sin(v.clock*.11)),s=Math.max(w/img.width,h/img.height)*zoom,dw=img.width*s,dh=img.height*s,pan=still?0:Math.sin(v.clock*.07)*.08;ctx.drawImage(img,x+(w-dw)*Math.min(1,Math.max(0,.5+pan)),y+(h-dh)*.3,dw,dh);}
-  ctx.fillStyle=grad(0,y,0,y+h,[[0,'#0000'],[.6,'#0000'],[1,'#050a18aa']]);ctx.fillRect(x,y,w,h);
-  if(v.win>0&&v.showResult){ctx.fillStyle='#050a18aa';ctx.fillRect(x,y+h/2-34,w,62);glow('#5fb6ff',v.gentle?4:16,()=>{ctx.lineWidth=5;ctx.strokeStyle='#0d1d45';ctx.font='bold 40px Georgia';ctx.textAlign='center';ctx.strokeText(`${v.win} MEDALS`,x+w/2,y+h/2+12);text(`${v.win} MEDALS`,x+w/2,y+h/2+12,40,'#eef6ff','bold Georgia');});}
-  else if(v.replay){text('REPLAY',x+w/2,y+h-16,18,'#d8ecff','bold Georgia');}
-  ctx.restore();
-  // Speaker grilles beside the LCD.
-  for(const sx of [100,620]){circle(sx,y+h/2,30,chrome(sx-30,0,sx+30,0));circle(sx,y+h/2,25,'#0a0f1d');for(let i=-3;i<=3;i++)for(let j=-3;j<=3;j++)if(i*i+j*j<=10)circle(sx+i*6.5,y+h/2+j*6.5,1.7,'#2c3a5a');}
-}
-
-function reelWindow(v){
-  const [fx,fy,fw,fh]=LAYOUT.frame,[wx,wy,ww,wh]=LAYOUT.window,mid=LAYOUT.reelY+LAYOUT.reelH/2;
-  // Decorative panel and the thick chrome bezel around the glass, as on real machines.
-  rr(fx,fy,fw,fh,22,grad(fx,fy,fx+fw,fy+fh,[[0,'#1a3570'],[.5,'#0e1d44'],[1,'#1a3570']]));
-  rr(fx,fy,fw,fh,22,null,chrome(fx,fy,fx+fw,fy+fh),5);
-  for(let i=0;i<14;i++){const sx=fx+30+((i*97)%(fw-60)),sy=fy+16+((i*53)%(fh-32));if(sx>wx-8&&sx<wx+ww+8&&sy>wy-8&&sy<wy+wh+8)continue;star(sx,sy,3+(i%3),'#bcd6ff88');}
-  rr(wx-12,wy-12,ww+24,wh+24,14,chrome(wx,wy-12,wx+ww,wy+wh+12));
-  rr(wx-5,wy-5,ww+10,wh+10,9,'#060a14');
+// --- panel parts -------------------------------------------------------------------------------------
+function reels(v){
+  const [wx,wy,ww,wh]=LAYOUT.window,mid=LAYOUT.reelY+LAYOUT.reelH/2;
+  rr(wx,wy,ww,wh,3,'#05070c');
   LAYOUT.reels.forEach(([x,w],i)=>{
     ctx.save();ctx.beginPath();ctx.rect(x,LAYOUT.reelY,w,LAYOUT.reelH);ctx.clip();
     ctx.fillStyle=grad(x,0,x+w,0,[[0,'#d9d4c4'],[.5,'#fbf8ee'],[1,'#d9d4c4']]);ctx.fillRect(x,LAYOUT.reelY,w,LAYOUT.reelH);
-    const strip=REELS[i],pos=v.positions[i],base=Math.floor(pos),fraction=pos-base,fast=Math.abs(v.velocities[i])>15;
-    if(fast&&!v.gentle)ctx.filter='blur(1.5px)';
-    for(let j=-2;j<=2;j++){const idx=((base+j)%strip.length+strip.length)%strip.length,y=mid-(j-fraction)*LAYOUT.pitch;symbol(ctx,strip[idx],x+w/2,y,.92);ctx.fillStyle='#00000014';ctx.fillRect(x,y+LAYOUT.pitch/2-1,w,2);}
+    const strip=REELS[i],pos=v.positions[i],base=Math.floor(pos),fraction=pos-base;
+    if(Math.abs(v.velocities[i])>15&&!v.gentle)ctx.filter='blur(1px)';
+    for(let j=-2;j<=2;j++){const idx=((base+j)%strip.length+strip.length)%strip.length,y=mid-(j-fraction)*LAYOUT.pitch;symbol(ctx,strip[idx],x+w/2,y,.56);ctx.fillStyle='#00000012';ctx.fillRect(x,y+LAYOUT.pitch/2-1,w,1.5);}
     ctx.filter='none';
-    // Cylinder shading: dark at top and bottom, a soft highlight just above the center line.
-    ctx.fillStyle=grad(0,LAYOUT.reelY,0,LAYOUT.reelY+LAYOUT.reelH,[[0,'#000000d8'],[.14,'#0000005a'],[.3,'#00000010'],[.42,'#ffffff1a'],[.5,'#ffffff00'],[.7,'#00000010'],[.86,'#0000005a'],[1,'#000000d8']]);ctx.fillRect(x,LAYOUT.reelY,w,LAYOUT.reelH);
+    // Cylinder shading: dark at the top and bottom, a soft highlight just above the center row.
+    ctx.fillStyle=grad(0,LAYOUT.reelY,0,LAYOUT.reelY+LAYOUT.reelH,[[0,'#000000d0'],[.15,'#00000050'],[.3,'#00000010'],[.42,'#ffffff18'],[.5,'#ffffff00'],[.7,'#00000010'],[.85,'#00000050'],[1,'#000000d0']]);ctx.fillRect(x,LAYOUT.reelY,w,LAYOUT.reelH);
     ctx.fillStyle=grad(x,0,x+w,0,[[0,'#0006'],[.12,'#0000'],[.88,'#0000'],[1,'#0006']]);ctx.fillRect(x,LAYOUT.reelY,w,LAYOUT.reelH);
     ctx.restore();
   });
-  // Separators between reels and the pay line (center line only, shown by red marks on the frame).
-  for(const [x,w] of LAYOUT.reels.slice(1))rr(x-8,wy-5,8,wh+10,0,grad(x-8,0,x,0,[[0,'#1a1f2b'],[.5,'#4b556a'],[1,'#1a1f2b']]));
-  ctx.strokeStyle='#ff304088';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(wx,mid);ctx.lineTo(wx+ww,mid);ctx.stroke();
-  for(const x of [wx-12,wx+ww+12]){ctx.fillStyle='#ff3040';ctx.beginPath();ctx.moveTo(x,mid-9);ctx.lineTo(x+(x<wx?10:-10),mid);ctx.lineTo(x,mid+9);ctx.fill();}
-  // Glass reflection over the reels.
-  ctx.save();ctx.beginPath();ctx.rect(wx-5,wy-5,ww+10,wh+10);ctx.clip();ctx.fillStyle=grad(wx,wy,wx+ww*.8,wy+wh,[[0,'#ffffff26'],[.28,'#ffffff08'],[.29,'#ffffff1c'],[.4,'#ffffff00'],[1,'#ffffff00']]);ctx.fillRect(wx-5,wy-5,ww+10,wh+10);ctx.restore();
-  if(v.showResult&&v.win>0){const a=v.gentle?.25:.5;glow('#6fc0ff',v.gentle?6:18,()=>rr(wx-8,wy-8,ww+16,wh+16,11,null,`rgba(140,210,255,${a})`,3));}
+  // Pay line: the center row only, marked by red arrows at both edges of the window.
+  ctx.strokeStyle='#ff304070';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(wx+2,mid);ctx.lineTo(wx+ww-2,mid);ctx.stroke();
+  for(const x of [wx+1,wx+ww-1]){ctx.fillStyle='#ff3040';ctx.beginPath();ctx.moveTo(x,mid-6);ctx.lineTo(x+(x<wx+9?7:-7),mid);ctx.lineTo(x,mid+6);ctx.fill();}
+  // Glass: a diagonal reflection and a thin inner shadow along the frame.
+  ctx.save();ctx.beginPath();ctx.rect(wx,wy,ww,wh);ctx.clip();ctx.fillStyle=grad(wx,wy,wx+ww*.8,wy+wh,[[0,'#ffffff22'],[.3,'#ffffff06'],[.31,'#ffffff16'],[.42,'#ffffff00'],[1,'#ffffff00']]);ctx.fillRect(wx,wy,ww,wh);ctx.strokeStyle='#0009';ctx.lineWidth=6;ctx.strokeRect(wx,wy,ww,wh);ctx.restore();
 }
 
-function betLamps(v){
-  const {x,y}=LAYOUT.lamps;
-  y.forEach((ly,k)=>{const n=3-k,lit=v.bet>=n;
-    ctx.save();ctx.translate(x,ly);ctx.beginPath();for(let i=0;i<6;i++){const a=Math.PI/6+i*Math.PI/3;ctx.lineTo(Math.cos(a)*30,Math.sin(a)*30);}ctx.closePath();ctx.fillStyle=chrome(-30,-30,30,30);ctx.fill();
-    ctx.beginPath();for(let i=0;i<6;i++){const a=Math.PI/6+i*Math.PI/3;ctx.lineTo(Math.cos(a)*24,Math.sin(a)*24);}ctx.closePath();
-    ctx.fillStyle=lit?radial(0,-4,2,26,[[0,'#fff6c8'],[.45,'#ffb300'],[1,'#a34800']]):radial(0,-4,2,26,[[0,'#4a3a2a'],[1,'#1a120c']]);
-    if(lit){ctx.shadowColor='#ffb300';ctx.shadowBlur=v.gentle?6:18;}ctx.fill();ctx.shadowBlur=0;
-    text(String(n),0,11,30,lit?'#5a1d00':'#6b5844','italic 900 Georgia');ctx.restore();});
-  text('BET',x,y[2]+52,11,'#c8d4ee','bold Arial');
+// Lamps sit in the round medallions of the cabinet art: lit amber (bet) or colored (status), otherwise left as painted.
+function lamp(x,y,label,on,color,gentle,size=15){
+  const r=LAYOUT.lamps.r;
+  circle(x,y,r,on?radial(x,y-4,2,r+2,[[0,'#fffbe6'],[.4,color],[1,color+'55']]):'#0a143070');
+  if(on)glow(color,gentle?6:18,()=>circle(x,y,r,null,'#fff8',2));
+  ctx.save();if(!on)ctx.globalAlpha=.75;text(label,x,y+size*.36,size,on?'#3a1600':'#9fb4dc',label.length>1?'900 Arial':'italic 900 Georgia');ctx.restore();
+}
+function lamps(v){
+  const {left,right}=LAYOUT.lamps;
+  left.forEach(([x,y],k)=>lamp(x,y,String(3-k),v.bet>=3-k,'#ffb300',v.gentle,24));
+  [['START',v.canLever,'#3ee07a'],['REPLAY',v.replay,'#47b4ff'],['PAY',v.showResult&&v.win>0,'#ffb300']].forEach(([label,on,color],i)=>lamp(right[i][0],right[i][1],label,on,color,v.gentle,label.length>5?8:10));
 }
 
-function sideLamps(v){
-  const {x,y}=LAYOUT.side,items=[['START',v.canLever,'#3ee07a'],['REPLAY',v.replay,'#47b4ff'],['PAY',v.showResult&&v.win>0,'#ff6a3c'],['FREE',true,'#ffd34a']];
-  items.forEach(([label,on,color],i)=>{rr(x-22,y[i]-22,44,44,8,chrome(x-22,0,x+22,0));rr(x-18,y[i]-18,36,36,6,on?color:'#1a2030');if(on)glow(color,v.gentle?4:12,()=>rr(x-18,y[i]-18,36,36,6,color+'99'));ctx.save();ctx.translate(x,y[i]);ctx.rotate(-Math.PI/2);text(label,0,4,label.length>4?8:10,on?'#0b1220':'#59627a','900 Arial');ctx.restore();});
+// Lit / pressed looks on the controls painted on the cabinet.
+function controls(v){
+  const img=v.cabinet,{lever,bet,stops}=LAYOUT;
+  // Lever knob: pulling it sinks the knob and pushes it down, by redrawing that patch of the art lower.
+  if(img&&v.leverPull>0){const d=v.leverPull*9,s=lever.r+6;circle(lever.x,lever.y,lever.r+2,'#05070c');ctx.save();ctx.beginPath();ctx.arc(lever.x,lever.y+d,lever.r+1,0,7);ctx.clip();ctx.drawImage(img,lever.x-s,lever.y-s,s*2,s*2,lever.x-s,lever.y-s+d,s*2,s*2);ctx.restore();}
+  if(v.canLever&&!v.leverPull)glow('#7fc0ff',v.gentle?4:12,()=>circle(lever.x,lever.y,lever.r+3,null,'#9fd2ff99',2));
+  // MAX BET dome on the right of the deck.
+  const pb=v.pressed('bet');
+  if(v.canBet)glow('#ffb43a',v.gentle?6:16,()=>circle(bet.x,bet.y,bet.r,null,'#ffd27acc',2.5));
+  if(pb)circle(bet.x,bet.y+2,bet.r-2,'#0008');
+  ctx.save();ctx.font='900 9px Arial';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#0b1430';ctx.strokeText('MAX BET',bet.x,bet.y+bet.r+11);ctx.fillStyle=v.canBet?'#ffe2a0':'#b7c4de';ctx.fillText('MAX BET',bet.x,bet.y+bet.r+11);ctx.restore();
+  // Stop buttons: glow while that reel can be stopped; darken and sink while pressed.
+  stops.x.forEach((x,i)=>{const ready=v.stopReady[i],p=v.pressed(`stop${i}`),y=stops.y;
+    ctx.save();if(ready){ctx.globalCompositeOperation='lighter';const g=ctx.createRadialGradient(x,y,4,x,y,30);g.addColorStop(0,v.gentle?'#5fa8ff55':'#7fc0ffaa');g.addColorStop(1,'#0000');ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,30,0,7);ctx.fill();}else circle(x,y,stops.r,'#05081499');ctx.restore();
+    if(p){circle(x,y,stops.r+1,'#000a');circle(x,y+2,stops.r-4,'#1d4f9a88');}});
 }
 
-function counters(v){
-  const y=LAYOUT.counters.y;
-  rr(76,y-12,568,86,12,grad(0,y-14,0,y+68,[[0,'#121c38'],[1,'#070c1c']]),'#3d5a92',1.5);
-  counter('CREDIT',v.credit,200,y,4,{gentle:v.gentle});
-  counter('GAME',v.rounds,376,y,4,{color:'#49d1ff',gentle:v.gentle});
-  counter('PAYOUT',v.win,546,y,3,{gentle:v.gentle});
-}
-
-function deck(v){
-  const y0=742;
-  // Front deck: a sloped metal shelf that carries the controls.
-  ctx.fillStyle=grad(0,y0-14,0,y0+106,[[0,'#d9e1ec'],[.08,'#7e8a9c'],[.2,'#2a3550'],[1,'#121a30']]);ctx.beginPath();ctx.moveTo(40,y0-14);ctx.lineTo(680,y0-14);ctx.lineTo(700,y0+106);ctx.lineTo(20,y0+106);ctx.closePath();ctx.fill();
-  ctx.strokeStyle='#c7d4ea';ctx.lineWidth=1.5;ctx.stroke();
-  // MAX BET button (upper deck, left).
-  const [bx,by,bw,bh]=LAYOUT.bet,pb=v.pressed('bet'),betOn=v.canBet;
-  rr(bx-4,by-4,bw+8,bh+8,12,chrome(bx,by-4,bx,by+bh+4));
-  rr(bx,by+(pb?3:0),bw,bh-(pb?3:0),9,betOn?grad(0,by,0,by+bh,[[0,'#ffe17a'],[.5,'#ff9b1a'],[1,'#c25a00']]):grad(0,by,0,by+bh,[[0,'#6c6252'],[1,'#3a3328']]));
-  if(betOn&&!pb)glow('#ffb43a',v.gentle?4:12,()=>rr(bx,by,bw,bh,9,null,'#fff2c0',2));
-  if(!pb)rr(bx+3,by+3,bw-6,bh*.38,7,'#ffffff40');
-  text('MAX BET',bx+bw/2,by+bh/2+5+(pb?2:0),14,betOn?'#4a1c00':'#9a8f7a','900 Arial');
-  // Lever: chrome housing with a stick and a knob. Pulling it swings the knob down toward the player.
-  const {x:lx,y:ly,r:lr}=LAYOUT.lever,pull=v.leverPull;
-  const px=lx+16,py=ly-44,tipX=lx-8-pull*6,tipY=ly-10+pull*34;
-  circle(px,py,24,chrome(px-24,py-24,px+24,py+24));circle(px,py,14,'#0b1020');
-  ctx.lineCap='round';ctx.strokeStyle='#0008';ctx.lineWidth=12;ctx.beginPath();ctx.moveTo(px+2,py+4);ctx.lineTo(tipX+2,tipY+6);ctx.stroke();
-  ctx.strokeStyle=grad(px,py,tipX+10,tipY,[[0,'#6b7584'],[.5,'#f4f7fb'],[1,'#5b6573']]);ctx.lineWidth=10;ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(tipX,tipY);ctx.stroke();
-  circle(tipX+2,tipY+5,lr,'#0007');
-  circle(tipX,tipY,lr,radial(tipX-8,tipY-9,2,lr*1.2,v.canLever?[[0,'#ffd0d0'],[.3,'#e8202a'],[1,'#5a0008']]:[[0,'#d8b0b0'],[.3,'#8a3a3e'],[1,'#3a1014']]),'#2a0004',2);
-  if(v.canLever&&!v.gentle)glow('#ff5060',10,()=>circle(tipX,tipY,lr,null,'#ff8a9455',2));
-  // Stop buttons under each reel. Lit blue while that reel can be stopped; after stopping they go dark red.
-  const {x:sxs,y:sy,r}=LAYOUT.stops;
-  sxs.forEach((sx,i)=>{const ready=v.stopReady[i],p=v.pressed(`stop${i}`),d=p?4:0;
-    rr(sx-r-12,sy-r-12,(r+12)*2,(r+12)*2,16,chrome(sx-r,sy-r-12,sx+r,sy+r+12));
-    rr(sx-r-7,sy-r-7,(r+7)*2,(r+7)*2,12,'#0b1020');
-    circle(sx,sy+5,r,'#000a');
-    circle(sx,sy+d,r,ready?radial(sx-9,sy-10+d,2,r*1.3,[[0,'#e8f7ff'],[.35,'#38a8ff'],[1,'#063a8a']]):v.spinning?radial(sx-9,sy-10+d,2,r*1.3,[[0,'#ff9a8a'],[.4,'#b81a26'],[1,'#3a0408']]):radial(sx-9,sy-10+d,2,r*1.3,[[0,'#8a96aa'],[.4,'#3a4458'],[1,'#121826']]),'#9fb0cc',2);
-    if(ready&&!p)glow('#38a8ff',v.gentle?6:16,()=>circle(sx,sy,r,null,'#bfe6ff',2));
-    if(!p)ctx.fillStyle='#ffffff33',ctx.beginPath(),ctx.ellipse(sx-6,sy-14,15,7,-.3,0,7),ctx.fill();
-    text(String(i+1),sx,sy+d+7,20,ready?'#fff':'#c7cede','900 Arial');});
-}
-
-function lowerPanel(v){
-  const y=860;
-  rr(48,y,624,84,14,grad(0,y,0,y+84,[[0,'#1d2f62'],[1,'#0a1430']]),chrome(48,y,672,y+84),3);
-  ctx.save();ctx.beginPath();ctx.roundRect(52,y+4,616,76,11);ctx.clip();
-  if(v.lcdImage){ctx.globalAlpha=.45;const img=v.lcdImage,s=616/img.width;ctx.drawImage(img,52,y+4-img.height*s*.55,616,img.height*s);ctx.globalAlpha=1;}
-  ctx.fillStyle=grad(0,y,0,y+84,[[0,'#0a143066'],[1,'#0a1430dd']]);ctx.fillRect(52,y+4,616,76);ctx.restore();
-  for(const sx of [100,620])for(let i=0;i<4;i++)rr(sx-28,y+20+i*13,56,5,2,'#05080f');
-  text('ASTRAL',360,y+40,26,'#dbeaff','italic 900 Georgia');
-  text('FREE PLAY · NO CASH VALUE',360,y+64,11,'#b6c6e6','bold Arial');
-}
-
-// v: state snapshot from app.js. Everything the drawing needs comes in through it.
+// v: state snapshot from app.js. Draws over the cabinet art, which app.js has already drawn.
 export function drawSlot(c,v){
-  ctx=c;
-  body(v.gentle,v.clock);lcdPanel(v);reelWindow(v);betLamps(v);sideLamps(v);counters(v);deck(v);lowerPanel(v);
-  if(v.showResult&&v.win>0){const a=(v.gentle?.1:.25)*Math.min(1,v.resultLeft);ctx.save();ctx.globalCompositeOperation='lighter';const g=ctx.createRadialGradient(360,460,140,360,460,480);g.addColorStop(0,'#0000');g.addColorStop(1,`rgba(79,157,255,${a})`);ctx.fillStyle=g;ctx.fillRect(0,0,720,960);ctx.restore();}
+  ctx=c;reels(v);lamps(v);
+  counter('CREDIT',v.credit,LAYOUT.plates.credit,4,v.gentle);counter('PAYOUT',v.win,LAYOUT.plates.payout,3,v.gentle);
+  controls(v);
 }
