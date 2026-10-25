@@ -27,6 +27,9 @@ const sounds={
   stop(t,i=0){hiss(t,{freq:600-i*80,kind:'lowpass',peak:.2,decay:.05});osc(190-i*20,t,{peak:.16,decay:.07,drop:.5});ping(t+.005,1900,.025);},
   // LCD character's voice: short pitched blips while a line is typed out (no recorded speech).
   voice(t,pitch=1){const p=performance.now();if(p-lastVoice<75)return;lastVoice=p;const f=(560+Math.random()*180)*pitch;osc(f,t,{type:'triangle',peak:.045,attack:.006,decay:.045,drop:1.1});osc(f*2.01,t,{peak:.012,attack:.006,decay:.03});},
+  // Chance button: a rising call when it asks to be pressed, and a solid click with a short sparkle when pressed (same for wins and misses).
+  push(t){bell(988,t,.06,.22);bell(1480,t+.1,.06,.3);},
+  press(t){hiss(t,{freq:500,kind:'lowpass',peak:.25,decay:.06});osc(160,t,{peak:.2,decay:.12,drop:.5});bell(1760,t+.04,.05,.3);},
   medal(t,count=1){bell(784,t,.06,.3);bell(1046.5,t+.1,.05,.35);const n=Math.min(8,Math.max(2,Math.ceil(count/10)));for(let i=0;i<n;i++)ping(t+.25+i*.09+Math.random()*.02,1700+Math.random()*700,.035);},
 };
 // Plays a named sound at the given volume (0–1). Unknown names are ignored.

@@ -3,8 +3,8 @@ export const REELS=[
 ['bell','seven','replay','watermelon','bell','bar','replay','cherry','bell','seven','replay','watermelon','bell','bar','replay','seven','bell','cherry','replay','watermelon','bar'],
 ['bell','watermelon','replay','bar','bell','seven','replay','cherry','bell','watermelon','replay','seven','bell','bar','replay','cherry','bell','watermelon','replay','seven','bar']];
 export const STRIP=REELS[0];
-// AURORA筐体画像（720×960）の盤面ガラスと中央液晶の位置に合わせた座標。
-export const BOARD={cx:360,cy:430,r:300,gravity:860,hit:9,display:{x1:188,x2:532,y1:256,y2:504},guides:[[92,528,258,575],[182,258,360,226],[360,226,538,258]]};
+// AURORA筐体画像（720×960）の盤面ガラスと中央液晶の位置に合わせた座標。button は中央手前のチャンスボタン（ガラスより手前のドーム）の上側を覆う楕円。
+export const BOARD={cx:360,cy:430,r:300,gravity:860,hit:9,display:{x1:188,x2:532,y1:256,y2:504},button:{x:360,y:702,rx:98,ry:54},guides:[[92,528,258,575],[182,258,360,226],[360,226,538,258]]};
 // 独自の役抽選テーブル（16384分の）。BIGは7揃い150枚の一回払い、リプレイは次ゲームのメダル不要。
 export const ROLE_TABLE=[['big',40],['watermelon',200],['cherry',400],['bell',1800],['replay',2240]];
 export const ROLE_RANGE=16384;
@@ -28,7 +28,9 @@ export const BONUS={rounds:4,count:10,prize:8,open:30,gap:2};
 export const ATTACKER={x1:548,x2:578,y1:640,y2:660};
 export function inAttacker(b){return b.vy>0&&b.y>ATTACKER.y1&&b.y<ATTACKER.y2&&b.x>ATTACKER.x1&&b.x<ATTACKER.x2;}
 // 釘の配置：格子状の釘と、入賞口の左右の命釘。液晶の左下には玉を START 入賞口へ寄せる透明なガイド（BOARD.guides）がある。
-export function makePins(){const {cx,cy,r,display:d}=BOARD,pins=[];for(let row=0;row<16;row++){for(let col=0;col<19;col++){const x=72+col*32+(row%2)*16,y=160+row*34;if(Math.hypot(x-cx,y-cy)>r-26||y>690)continue;if(x>d.x1-14&&x<d.x2+14&&y>d.y1-14&&y<d.y2+14)continue;if(y>560&&Math.abs(x-cx)<44)continue;if(BOARD.guides.some(([x1,y1,x2,y2])=>x>Math.min(x1,x2)-16&&x<Math.max(x1,x2)+16&&y>y1+(x-x1)*(y2-y1)/(x2-x1)-22&&y<y1+(x-x1)*(y2-y1)/(x2-x1)+40))continue;pins.push({x,y});}}return pins.concat([{x:336,y:598},{x:384,y:598}]);}
+export function makePins(){const {cx,cy,r,display:d}=BOARD,pins=[];for(let row=0;row<16;row++){for(let col=0;col<19;col++){const x=72+col*32+(row%2)*16,y=160+row*34;if(Math.hypot(x-cx,y-cy)>r-26||y>690)continue;if(x>d.x1-14&&x<d.x2+14&&y>d.y1-14&&y<d.y2+14)continue;if(y>560&&Math.abs(x-cx)<44)continue;if(inButton(x,y,8))continue;if(BOARD.guides.some(([x1,y1,x2,y2])=>x>Math.min(x1,x2)-16&&x<Math.max(x1,x2)+16&&y>y1+(x-x1)*(y2-y1)/(x2-x1)-22&&y<y1+(x-x1)*(y2-y1)/(x2-x1)+40))continue;pins.push({x,y});}}return pins.concat([{x:336,y:598},{x:384,y:598}]);}
+// 点がチャンスボタンの楕円（padだけ広げる）の内側か。
+export function inButton(x,y,pad=0){const {x:bx,y:by,rx,ry}=BOARD.button;return ((x-bx)/(rx+pad))**2+((y-by)/(ry+pad))**2<1;}
 // 発射された玉は外周レールを上って、強度に応じた角度で盤面へ出る（強いほど右寄り）。
 export function launchBall(power,jitter=0){const a=Math.PI*(165/180);return {x:BOARD.cx+Math.cos(a)*(BOARD.r-7),y:BOARD.cy+Math.sin(a)*(BOARD.r-7),vx:0,vy:0,age:0,rail:{angle:a,end:Math.PI*((222+Math.max(0,(power-.25)/.75)**2*95+jitter*4)/180),speed:340+power*190+jitter*15}};}
 export function advanceRail(b,dt){const R=BOARD.r-7,rail=b.rail;rail.angle=Math.min(rail.end,rail.angle+rail.speed/R*dt);b.x=BOARD.cx+Math.cos(rail.angle)*R;b.y=BOARD.cy+Math.sin(rail.angle)*R;if(rail.angle>=rail.end){b.vx=-Math.sin(rail.angle)*rail.speed;b.vy=Math.cos(rail.angle)*rail.speed;delete b.rail;}}
@@ -39,8 +41,10 @@ export function collideDisplay(b){const {x1,x2,y1,y2}=BOARD.display;if(b.x<=x1||
 
 // Pachinko hold (保留) and LCD spin plan. Holds never hint at the result; misses avoid one-step-off "near-miss" stops.
 export const MAX_HOLDS=4;
+// リーチの途中（push 秒）で液晶が「ボタンを押せ」と出し、押すか PUSH_WAIT 秒たつと中央の数字が止まる。リーチならどれでも同じように出るので、当たりの予告にはならない。
+export const PUSH_WAIT=3.5;
 export function addHold(holds){return holds<MAX_HOLDS?holds+1:holds;}
 const wrap=n=>((n-1)%9+9)%9+1;
 export function planSpin(win,holdsLeft,{gentle=true,rand=randomInt}={}){const reach=win||rand(15)===0;let left=rand(9)+1,right=left,middle=left;if(!win){if(reach){const far=[1,2,3,4,5,6,7,8,9].filter(n=>n!==left&&n!==wrap(left-1)&&n!==wrap(left+1));middle=far[rand(far.length)];}else{right=wrap(left+1+rand(8));middle=rand(9)+1;}}
-if(reach){const tension=gentle?2.5:4;return {numbers:[left,middle,right],reach,stops:[2,2.8+tension,2.8],duration:2.8+tension};}
+if(reach){const tension=gentle?2.5:4;return {numbers:[left,middle,right],reach,stops:[2,2.8+tension,2.8],duration:2.8+tension,push:2.8+tension/2};}
 const duration=holdsLeft>=3?2.5:holdsLeft>=1?4:5;return {numbers:[left,middle,right],reach,stops:[duration-1.2,duration,duration-.6],duration};}
