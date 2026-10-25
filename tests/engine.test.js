@@ -8,3 +8,4 @@ test('盤面の外周から逸脱しない',()=>{const b={x:110,y:400,vx:60,vy:-
 test('リール配列と乱数の範囲',()=>{assert.equal(STRIP.length,21);for(let i=0;i<1000;i++){const n=randomInt(99);assert.ok(n>=0&&n<99&&Number.isInteger(n));}});
 
 test('中央液晶を玉が貫通しない',()=>{const b={x:300,y:231,vx:10,vy:100};collideDisplay(b);assert.equal(b.y,230);assert.ok(b.vy<0);});
+test('釘に当たると衝突の強さを返す',()=>{const b={x:360,y:195,vx:0,vy:100};assert.ok(advanceBall(b,1/120,[{x:360,y:200}])>0);assert.equal(advanceBall({x:360,y:100,vx:0,vy:0},1/120,[]),0);});
