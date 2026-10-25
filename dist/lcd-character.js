@@ -35,7 +35,8 @@ export const EVENTS={
   bell:{pose:'clap',expr:'happy',dur:1.8,chance:.6,prio:1,lines:['ベル、{n}枚！','ベルがそろったよ']},
   cherry:{pose:'clap',expr:'happy',dur:1.8,chance:.8,prio:1,lines:['チェリー、{n}枚だよ','さくらんぼ〜']},
   watermelon:{pose:'cheer',expr:'happy',dur:2.4,chance:1,prio:2,lines:['スイカ！ {n}枚','スイカがそろった！']},
-  big:{pose:'cheer',expr:'happy',dur:5,chance:1,prio:3,lines:['7がそろった！ {n}枚！','BIG！ おめでとう'],next:'afterWin'},
+  big:{pose:'cheer',expr:'happy',dur:5,chance:1,prio:3,lines:['7がそろった！ BIGボーナスだよ','BIG！ しばらくベルがそろうよ']},
+  bigEnd:{pose:'cheer',expr:'happy',dur:4.5,chance:1,prio:3,lines:['BIG終了！ {n}枚だよ','おつかれさま、{n}枚！'],next:'afterWin'},
   slotMiss:{pose:'idle',expr:'normal',dur:1,chance:.12,prio:1,lines:['はずれ〜','なにもなし']},
 };
 export const CPS=16;
