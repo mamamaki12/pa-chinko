@@ -3,7 +3,8 @@ import {drawPortrait} from './navigator-art.js';
 // mini characters of a real machine. ハナ lives on AURORA (pink, flower), ソラ on ASTRAL (silver-blue, star).
 // Rules: reactions come at or after a known result (spin start, reach, stop, payout); the lever / spin reactions are the
 // same for every game, so they never hint at the outcome. No near-miss teasing and no lines that push for more play;
-// gentle lines about breaks are fine. Gentle mode keeps the motion but dims sparkles; prefers-reduced-motion keeps poses still.
+// gentle lines about breaks are fine. Gentle mode keeps the motion but dims sparkles; prefers-reduced-motion keeps poses still
+// (no blinking, lip flaps, hops or idle fidgets).
 
 // Palettes. hair: highlight, base, shadow, deep shadow; eye: bottom glow, iris, top of iris, pupil, upper white shade;
 // dress: white, white shade, colour, colour shadow; shade: shadow tint for white cloth; skin: base, shade, deep shade.
@@ -317,7 +318,7 @@ function light(bw,bh,u){
 // from the busy background like the cut-out mini characters of a real machine.
 let buf=null;
 export function drawNavi(c,n,t,{x,y,scale=1,gentle=true,reduced=false,flip=false}){
-  if(drawPortrait(c,n,t,{x,y,scale,gentle,reduced,flip}))return;
+  const art=drawPortrait(c,n,t,{x,y,scale,gentle,reduced,flip});if(art){ctx=c;emotes(n,t,art,{scale,gentle,still:reduced});return;}
   const k=KINDS[n.kind],still=reduced,a=t-n.poseAt,m=motion(n.pose,a,still),talking=!!n.line&&t<n.lineUntil&&n.shown<n.line.length;
   // A payout cheer steps forward a little, like a cut-in.
   if(n.pose==='cheer'&&n.prio>=3)scale*=1+.22*(still?1:Math.min(1,a/.35))*Math.min(1,(n.poseUntil-t)/.4);
@@ -355,6 +356,42 @@ export function drawNavi(c,n,t,{x,y,scale=1,gentle=true,reduced=false,flip=false
       ctx.globalAlpha=alpha*Math.sin(p*Math.PI);star(x+Math.cos(ang)*r,y-50*scale+Math.sin(ang)*r*.8,(3+2*(i%3))*scale*(1-p*.4),i%2?'#fff6c8':k.wing);}
     ctx.restore();
   }
+}
+
+// Little marks around the illustrated character, like the effects that pop around a real machine's mini characters:
+// sparkles for a cheer or clap, a "!" for a reach or a bonus, notes while waving and z's
+// while resting. head: where the head is drawn this frame, so the marks follow the jumps.
+function emotes(n,t,{head:[hx,hy],height},{scale,gentle,still}){
+  const a=t-n.poseAt,active=t<n.poseUntil,pose=n.pose,k=KINDS[n.kind],alpha=gentle?.6:.95;
+  ctx.save();
+  if((pose==='cheer'||pose==='clap')&&active){
+    const count=still?3:pose==='cheer'?9:4;ctx.globalCompositeOperation='lighter';
+    for(let i=0;i<count;i++){const p=still?.5:(a*.9+i/count)%1,ang=i*2.4+(still?0:a*.6),r=height*(.3+p*.28);
+      ctx.globalAlpha=alpha*Math.sin(p*Math.PI);star(hx+Math.cos(ang)*r,hy+height*.12+Math.sin(ang)*r*.8,(3+2*(i%3))*scale*(1-p*.4),i%2?'#fff6c8':k.wing);}
+  }
+  else if(pose==='point'&&active&&a<2.2){
+    // "!" pops in with a little overshoot, then fades.
+    const pop=still?1:Math.min(1,a/.15)*(1+.25*Math.max(0,Math.sin(Math.min(1,a/.3)*Math.PI))),fade=Math.min(1,(2.2-a)/.4);
+    ctx.globalAlpha=fade;ctx.translate(hx+height*.24,hy-height*.24);ctx.scale(pop,pop);ctx.rotate(.12);
+    ctx.font=`900 ${Math.round(26*scale)}px Arial`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineJoin='round';
+    ctx.lineWidth=4*scale;ctx.strokeStyle='#7a2a10';ctx.strokeText('!',0,0);ctx.fillStyle='#ffe25a';ctx.fillText('!',0,0);
+  }
+  else if(pose==='wave'&&active&&!still){
+    for(let i=0;i<2;i++){const p=(a*.7+i/2)%1;ctx.globalAlpha=alpha*Math.sin(p*Math.PI);note(hx+height*(.22+p*.14)+i*4*scale,hy-height*(.1+p*.3),scale,k.ribbon);}
+  }
+  else if(pose==='sleepy'&&!still){
+    ctx.font=`bold ${Math.round(14*scale)}px Arial`;ctx.fillStyle='#e8f0ff';
+    for(let i=0;i<3;i++){const p=(t*.6+i/3)%1;ctx.globalAlpha=Math.sin(p*Math.PI);ctx.fillText('z',hx+height*(.2+p*.2)+i*3*scale,hy-height*(.15+p*.25));}
+  }
+  ctx.restore();
+}
+
+// An eighth note: a tilted head, a stem and a flag, outlined in white so it reads on the busy LCD.
+function note(x,y,s,color){
+  ctx.save();ctx.translate(x,y);ctx.scale(s,s);ctx.lineJoin='round';
+  const path=()=>{ctx.beginPath();ctx.ellipse(-2.6,5,3.4,2.5,-.4,0,Math.PI*2);ctx.moveTo(.4,4.5);ctx.lineTo(.4,-7);ctx.quadraticCurveTo(4.5,-5,5.5,-1);ctx.quadraticCurveTo(3.5,-3.5,.4,-3.8);};
+  path();ctx.lineWidth=3.2;ctx.strokeStyle='#ffffffd0';ctx.stroke();path();ctx.lineWidth=1.4;ctx.strokeStyle=color;ctx.stroke();
+  ctx.beginPath();ctx.ellipse(-2.6,5,3.4,2.5,-.4,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();ctx.restore();
 }
 
 // Wraps a line into rows that fit maxW (Japanese has no spaces, so it breaks between characters).
