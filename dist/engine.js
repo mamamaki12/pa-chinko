@@ -15,10 +15,29 @@ const LINE_SYMBOL={big:'seven',watermelon:'watermelon',bell:'bell',replay:'repla
 export function drawRole(n){let edge=0;for(const [role,weight] of ROLE_TABLE){edge+=weight;if(n<edge)return role;}return 'none';}
 export function judge(symbols){if(symbols.every(s=>s===symbols[0])){const role=Object.keys(LINE_SYMBOL).find(r=>LINE_SYMBOL[r]===symbols[0]);if(role)return role;}return symbols[0]==='cherry'?'cherry':'none';}
 const PAY={big:150,watermelon:10,bell:8,cherry:2,replay:0,none:0};
-// 停止ボタンを押した位置baseから0〜4コマすべらせ、成立役は引き込み、それ以外は中央ラインから外す。
-// stopped：各リールの止まる図柄（未停止はnull）。
-export function chooseSlip(reel,base,role,stopped){let best=0,bestScore=-1;for(let slip=0;slip<=MAX_SLIP;slip++){const line=stopped.slice();line[reel]=REELS[reel][(base+slip)%REELS[reel].length];const score=rateLine(line,role);if(score>bestScore){best=slip;bestScore=score;}}return best;}
-function rateLine(line,role){const open=line.filter(s=>s===null).length;if(open===0){const result=judge(line);if(result===role&&role!=='none')return 2;if(result!=='none')return 0;return line.every(s=>s===line[0])?0:1;}if(line[0]==='cherry'&&role!=='cherry')return 0;if(role==='cherry')return line[0]==='cherry'?2:1;const target=LINE_SYMBOL[role];if(target&&line.every(s=>s===null||s===target))return 2;return 1;}
+// 有効ライン：MAX BET（3枚）で横3本・斜め2本の5ラインがすべて有効。数は各リールの段（0上・1中・2下）。
+export const LINES=[[1,1,1],[0,0,0],[2,2,2],[0,1,2],[2,1,0]];
+// stop（中段に止まったコマ）から見た上・中・下の図柄。リールは番号の大きいコマほど上に並ぶ。
+export function column(reel,stop){const N=REELS[reel].length;return [1,0,-1].map(d=>REELS[reel][((stop+d)%N+N)%N]);}
+export function lineSymbols(stops,line){return line.map((row,i)=>column(i,stops[i])[row]);}
+// 止まった位置で5ラインを判定。wins：揃ったライン（line は LINES の番号）、hit：いちばん大きい役、pay：ラインごとの配当の合計（角チェリーは2ライン）。
+const RANK=['big','watermelon','bell','cherry','replay'];
+export function settle(stops){const wins=[];LINES.forEach((l,line)=>{const role=judge(lineSymbols(stops,l));if(role!=='none')wins.push({line,role,pay:PAY[role]});});
+  return {wins,hit:RANK.find(r=>wins.some(w=>w.role===r))??'none',pay:wins.reduce((a,w)=>a+w.pay,0)};}
+// 停止ボタンを押した位置baseから0〜4コマすべらせ、成立役はどれかのラインに引き込み、それ以外はどのラインにも揃えない。
+// stops：各リールの止まるコマ（未停止はnull）。まだ止めていないリールはどこで押されるか分からないので、
+// いちばん悪い押し方でも成立していない役が揃わない（worst）ことを先に、平均して成立役が揃いやすい（mean）ことを次に比べる。
+// 成立役は1ラインだけに揃うほうを選ぶ（配当を増やさない）。外れでBARが3つ並ぶラインもなるべく避ける。
+function rate(stops,role){const {wins}=settle(stops),mine=wins.filter(w=>w.role===role).length;if(wins.length>mine)return 0;
+  const bars=LINES.filter(l=>lineSymbols(stops,l).every((s,_,a)=>s===a[0])).length-mine;return (mine?3-(mine-1)*.1:2)-bars*.05;}
+const memo=new Map();
+function value(role,stops){const key=role+':'+stops.join();let v=memo.get(key);if(v)return v;const open=[0,1,2].filter(i=>stops[i]===null);
+  if(!open.length){const r=rate(stops,role);v=[r,r];}else{let worst=Infinity,sum=0,n=0;for(const reel of open)for(let p=0;p<REELS[reel].length;p++){const [w,m]=best(reel,p,role,stops).v;worst=Math.min(worst,w);sum+=m;n++;}v=[worst,sum/n];}
+  memo.set(key,v);return v;}
+function best(reel,base,role,stops){let slip=0,v=null;for(let s=0;s<=MAX_SLIP;s++){const next=stops.slice();next[reel]=(base+s)%REELS[reel].length;const x=value(role,next);if(!v||x[0]>v[0]||x[0]===v[0]&&x[1]>v[1]+1e-9){v=x;slip=s;}}return {slip,v};}
+export function chooseSlip(reel,base,role,stops){return best(reel,base,role,stops.map(s=>s??null)).slip;}
+// 役ごとの読み（数十ミリ秒）を前もって済ませ、最初の停止でもたつかないようにする。
+export function warmSlips(role){value(role,[null,null,null]);}
 export function randomInt(n){const a=new Uint32Array(1);const max=Math.floor(4294967296/n)*n;do{crypto.getRandomValues(a);}while(a[0]>=max);return a[0]%n;}
 export function payout(symbols){return PAY[judge(symbols)];}
 export function resolvePachinko(draw){return draw===0?300:0;}
