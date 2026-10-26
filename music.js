@@ -41,6 +41,19 @@ export const stepLength=name=>60/TRACKS[name].bpm/4;
 // Which track fits what the machine is showing now.
 export function trackFor({mode,reach=false,bonus=false}){return mode==='slot'?(bonus?'astral-bonus':'astral'):bonus?'aurora-bonus':reach?'aurora-reach':'aurora';}
 
+// Fanfare for the start of a bonus (7-7-7 on ASTRAL, a jackpot on AURORA), about 3.4 s: brass in triplets, "ta-ta-ta TAA,
+// ta-ta-ta-ta TAAA", over a held chord, with timpani hits and a roll, crash cymbals and bells rising at the end. It is written
+// once in C (times and lengths in beats) and played in each machine's key and tempo.
+export const FANFARE={
+  brass:[[0,.3,'G4'],[1/3,.3,'G4'],[2/3,.3,'G4'],[1,1.4,'C5'],[2.5,.4,'A4'],[3,.4,'B4'],[3.5,.4,'C5'],[4,.4,'D5'],[4.5,2.6,'E5']],
+  chords:[[1,1.4,['E4','G4']],[4.5,2.6,['C4','G4','C5','G5']]],
+  bass:[[1,1.4,'C2'],[4.5,2.6,'C2']],
+  timpani:[0,1,4.5],roll:[3.5,4.5],crash:[1,4.5],
+  bells:[[4.75,'C6'],[5,'E6'],[5.25,'G6'],[5.5,'C7'],[5.75,'E7']],
+};
+export const FANFARES={astral:{bpm:132,key:0},aurora:{bpm:138,key:2}};
+export const fanfareLength=name=>8*60/FANFARES[name].bpm;
+
 // Creates the synthesizer on an AudioContext (or OfflineAudioContext) feeding `out`. schedule(name,step,t) plays one 16th step at time t;
 // cut(t) fades out notes still sounding (used when the track changes).
 export function createMusic(ctx,out){
@@ -100,5 +113,15 @@ export function createMusic(ctx,out){
     for(const ev of s.notes)if(ev.step===step%STEPS){const f=freq(ev.note+(s.shift||0));if(s.lead_==='bell')bell(t,f,.1,0);else note(t,ev.len*L*.92,f,SOUND[s.lead_]);}
   }
   function cut(t){for(const {g,end} of live){if(end<=t)continue;const v=g.gain;if(v.cancelAndHoldAtTime)v.cancelAndHoldAtTime(t);else{v.cancelScheduledValues(t);v.setValueAtTime(v.value,t);}v.linearRampToValueAtTime(0,t+.08);}live.clear();}
-  return {schedule,cut};
+  // Plays the fanfare starting at time t (see FANFARE).
+  function fanfare(name,t){const {bpm,key}=FANFARES[name],B=60/bpm,f=n=>freq(noteNumber(n)+key),F=FANFARE;
+    const horn={wave:'sawtooth',det:[-8,0,8],cut:2600,sweep:.4,q:1,gain:.075,a:.025,r:.25,vib:12,wet:.12,room:.45};
+    for(const [b,l,n] of F.brass)note(t+b*B,l*B*.92,f(n),{...horn,p:-.15});
+    for(const [b,l,ns] of F.chords)ns.forEach((n,k)=>note(t+b*B,l*B,f(n),{...horn,gain:.04,det:[-12,12],a:.04,p:k%2?.4:-.4}));
+    for(const [b,l,n] of F.bass)note(t+b*B,l*B,f(n),{wave:'sawtooth',det:[0,-7],cut:600,sweep:2,q:1.5,gain:.12,r:.2,room:.2});
+    for(const b of F.timpani)thump(t+b*B,110*2**(key/12),70,.5,.7);
+    for(let b=F.roll[0];b<F.roll[1];b+=1/8)thump(t+b*B,95*2**(key/12),75,.12+.25*(b-F.roll[0])/(F.roll[1]-F.roll[0]),.12);
+    for(const b of F.crash)hit(t+b*B,{f:5200,gain:.16,decay:2,room:.6});
+    for(const [b,n] of F.bells)bell(t+b*B,f(n),.07,0);}
+  return {schedule,cut,fanfare};
 }
