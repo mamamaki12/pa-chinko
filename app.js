@@ -138,7 +138,7 @@ function winGlow(color){if(clock>=resultUntil)return;const t=resultUntil-clock,a
 function renderPachinko(){const {x1,x2,y1,y2}=BOARD.display;lcdArt(x1-8,y1-8,x2-x1+16,y2-y1+16);
 ctx.fillStyle=grad(0,y1+90,0,y2,[[0,'#06081200'],[.5,'#060812aa'],[1,'#060812dd']]);ctx.fillRect(x1,y1+90,x2-x1,y2-y1-90);
 const drawing=drawResult!==null,reach=reachOn(),navi=navis.pachinko;naviTick(navi,drawing);
-drawNavi(ctx,navi,clock,{x:238,y:352,scale:.82,gentle,reduced});
+drawNavi(ctx,navi,clock,{x:236,y:354,scale:1,gentle,reduced});
 if(reach&&!gentle&&!reduced){ctx.save();ctx.shadowColor='#ff8fd0';ctx.shadowBlur=10+Math.sin(clock*2)*4;rr(x1+4,y1+4,x2-x1-8,y2-y1-8,14,null,'#ffc2e688');ctx.restore();}
 [0,1,2].forEach(i=>{const cx=262+i*98,cy=410;if(!drawing){drawColumn(cx,cy,screen[i]-1,0,spinPlan?clock-(resultUntil-3)+spinPlan.duration-spinPlan.stops[i]:9);return;}const m=columnMotion(i,drawTime);drawColumn(cx,cy,m.p,m.v,m.since);});
 if(bonus){ctx.save();ctx.shadowColor='#ff5fae';ctx.shadowBlur=gentle||reduced?3:10;text(`ROUND ${bonus.round} / ${BONUS.rounds}`,360,470,16,'#fff3fb','bold Georgia');ctx.restore();text(bonus.open?`COUNT ${bonus.count} / ${BONUS.count}`:'NEXT ROUND',360,490,11,'#f6e7f2');rr(x2-108,y2-48,98,30,8,'#2a0d24d0','#ffb6dc');text('右打ち ▶',x2-59,y2-27,17,'#ffffff','bold sans-serif');}
@@ -160,13 +160,13 @@ winGlow('#ff4fae');text('FREE PLAY · NO CASH VALUE',360,944,9,'#b9b2c8');}
 function renderSlot(){const s=states.slot,now=performance.now(),stopReady=[0,1,2].map(i=>spinning&&velocities[i]!==0&&targets[i]===null);
 const leverAge=(now-(pressedAt.lever??-1e9))/1000,leverPull=held==='lever'?1:leverAge<.32?Math.sin(Math.min(1,leverAge/.32)*Math.PI):0;
 lcdArt(156,102,394,196);const navi=navis.slot;naviTick(navi,spinning);
-drawNavi(ctx,navi,clock,{x:222,y:286,scale:1.5,gentle,reduced});
+drawNavi(ctx,navi,clock,{x:226,y:288,scale:1.72,gentle,reduced});
 if(s.win>0&&clock<resultUntil&&!big){ctx.save();ctx.shadowColor='#5fb6ff';ctx.shadowBlur=gentle?4:16;ctx.lineWidth=5;ctx.strokeStyle='#0d1d45';ctx.font='bold 34px Georgia';ctx.textAlign='center';ctx.strokeText(`${s.win} MEDALS`,420,262);text(`${s.win} MEDALS`,420,262,34,'#eef6ff','bold Georgia');ctx.restore();}
 else if(replay)text('REPLAY',420,282,16,'#d8ecff','bold Georgia');
 if(big){ctx.save();ctx.shadowColor='#5fb6ff';ctx.shadowBlur=gentle||reduced?3:12;rr(362,236,170,50,8,'#0d1d45d0','#a9d4ff');text('BIG BONUS',447,259,17,'#fff3c4','bold Georgia');ctx.restore();text(`${big.paid} / ${BIG.total} 枚`,447,278,12,'#d8ecff','bold sans-serif');}
 drawBubble(ctx,navi,clock,{box:[300,142,236],tail:[262,180],size:15,reduced});
 cabinetArt('astral');
-drawSlot(ctx,{gentle:gentle||reduced,cabinet:art.astral,positions,velocities,stopReady,credit:s.credit,win:s.win,bet:spinning||betPlaced||replay?3:0,replay,canBet:canBet(),canLever:!paused&&!spinning&&!paying&&(betPlaced||replay||s.credit>=3),showResult:clock<resultUntil,resultLeft:resultUntil-clock,leverPull,pressed:name=>held===name||now-(pressedAt[name]??-1e9)<140});
+drawSlot(ctx,{gentle:gentle||reduced,cabinet:art.astral,wait:spinning&&waitUntil>clock,positions,velocities,stopReady,credit:s.credit,win:s.win,bet:spinning||betPlaced||replay?3:0,replay,canBet:canBet(),canLever:!paused&&!spinning&&!paying&&(betPlaced||replay||s.credit>=3),showResult:clock<resultUntil,resultLeft:resultUntil-clock,leverPull,pressed:name=>held===name||now-(pressedAt[name]??-1e9)<140});
 winGlow('#4f9dff');text('FREE PLAY · NO CASH VALUE',360,944,9,'#b6c2dc');}
 // Advances the character's timers and plays its voice blips while a line is being typed out.
 function naviTick(n,busy){if(tick(n,clock,{busy,reduced})>0)tone('voice',KINDS[n.kind].pitch);}
