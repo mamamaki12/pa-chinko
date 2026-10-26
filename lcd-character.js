@@ -22,6 +22,7 @@ export const EVENTS={
   launchStop:{pose:'idle',expr:'normal',dur:1,chance:.4,prio:0,lines:['ひと息つく？','おつかれさま。休憩もいいね']},
   enter:{pose:'nod',expr:'happy',dur:.6,chance:0,prio:0,lines:[]},
   spin:{pose:'watch',expr:'normal',dur:2,chance:.3,prio:1,lines:['くるくる〜','まわってるね','どれどれ…']},
+  notice:{pose:'point',expr:'surprise',dur:1.2,chance:0,prio:1,lines:[]},
   reach:{pose:'point',expr:'surprise',dur:3,chance:1,prio:2,lines:['リーチ！','リーチだね','左右がそろったよ']},
   sp:{pose:'point',expr:'surprise',dur:2.5,chance:1,prio:2,lines:['流れ星がきた！','流星リーチ！','星がいっぱい！']},
   spsp:{pose:'cheer',expr:'surprise',dur:3,chance:1,prio:2,lines:['お城が光ってる！','天空城リーチ！','わあ、お城だ！']},
