@@ -42,7 +42,7 @@ npm run check
 
 ## 配信
 
-GitHub Pagesで公開（https://mamamaki12.github.io/pa-chinko/）。main に push すると `.github/workflows/pages.yml` がテストを実行し、`dist/` を公開します。Sitesの本人限定公開も併用し、`.openai/hosting.json` がSite IDと静的配信ディレクトリを保持します。公開用の14ファイル（index.html、style.css、app.js、engine.js、sound.js、music.js、journal.js、slot-view.js、lcd-character.js、navigator-art.js、navigator-rig.js、cabinet-parts.js、cabinet-leds.js、updater.js）と `assets/` は `dist/` に同期してからコミットします。公開のときは `scripts/stamp-version.mjs` が `dist/version.json`（版・公開日時・ファイル一覧）を作り、index.html に版を書き込み、スクリプトとCSSの読み込みに `?v=版` を付けます（古いファイルと新しいファイルが混ざらないように）。
+GitHub Pagesで公開（https://mamamaki12.github.io/pa-chinko/）。main に push すると `.github/workflows/pages.yml` がテストを実行し、`dist/` を公開します。Sitesの本人限定公開も併用し、`.openai/hosting.json` がSite IDと静的配信ディレクトリを保持します。公開用の14ファイル（index.html、style.css、app.js、engine.js、sound.js、music.js、journal.js、slot-view.js、lcd-character.js、navigator-art.js、navigator-rig.js、cabinet-parts.js、cabinet-leds.js、updater.js）と `manifest.webmanifest`、`assets/` は `dist/` に同期してからコミットします。アプリのアイコン（iPhoneのホーム画面用・ブラウザのタブ用・Android用）は `assets/icons/` にあり、デザインを変えたら `node scripts/make-icons.mjs` で作り直します（`assets/icons/` と `dist/assets/icons/` の両方に書き出します）。公開のときは `scripts/stamp-version.mjs` が `dist/version.json`（版・公開日時・ファイル一覧）を作り、index.html に版を書き込み、スクリプトとCSSの読み込みに `?v=版` を付けます（古いファイルと新しいファイルが混ざらないように）。
 
 アプリの更新：設定の下にある「アプリのバージョン」に今の版と公開日時が出ます。起動したとき・アプリに戻ったとき（10分に1回まで）・設定を開いたときに公開中の版を確かめ、新しい版があれば設定ボタンに金色の点が付き、「今すぐ更新」で全ファイルをブラウザのキャッシュを使わずに読み直してページを開き直します。記録していない遊技時間が1分以上あるときは、1回目の押下で先に「記録して終了」を案内します。
 
