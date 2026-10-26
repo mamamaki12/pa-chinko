@@ -15,7 +15,7 @@ function pachinkoParts(){const {cx,cy,r,display:d,button:b}=BOARD;return [
   ...LED_PARTS.aurora.map(ledPart),
   // Nails are the gold nails painted on the board (engine.js NAILS); the ball bounces off the visible ones.
   ...makePins().map((p,i)=>({id:p.id??`nail-${String(i+1).padStart(3,'0')}`,kind:'nail',label:`釘 ${i+1}`,group:'nails',painted:true,shape:{circle:[p.x,p.y,p.r]}})),
-  ...BOARD.guides.map((g,i)=>({id:`guide${i+1}`,kind:'rail',label:['液晶左下のガイド','液晶上のガイド左','液晶上のガイド右'][i]??`ガイド ${i+1}`,shape:{line:g}})),
+  ...BOARD.guides.map((g,i)=>({id:`guide${i+1}`,kind:'rail',label:['液晶上のガイド左','液晶上のガイド右','ヘソの左の壁','ヘソの右の壁'][i]??`ガイド ${i+1}`,shape:{line:g}})),
   {id:'start',kind:'pocket',label:'START入賞口',shape:{rect:[338,606,44,16]}},
   {id:'attacker',kind:'attacker',label:'大入賞口',shape:{rect:[ATTACKER.x1,ATTACKER.y1,ATTACKER.x2-ATTACKER.x1,ATTACKER.y2-ATTACKER.y1]},open:false},
   {id:'button',kind:'button',label:'チャンスボタン',painted:true,shape:{ellipse:[b.x,b.y,b.rx,b.ry]}},
