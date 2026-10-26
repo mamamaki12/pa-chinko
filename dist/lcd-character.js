@@ -102,7 +102,7 @@ function line(pts,color,lw,alpha=1){ctx.save();ctx.globalAlpha*=alpha;ctx.stroke
 const mirrored=new Map();function M(d){let m=mirrored.get(d);if(!m){let i=0;m=d.replace(/-?\d*\.?\d+/g,n=>' '+(i++%2===0?-n:+n));mirrored.set(d,m);}return m;}
 
 // --- head (head-local coordinates: face centre at 0,0; the neck pivot is at 0,36) ---
-const FACE='M-36 -10C-37 12-27 27-11 34Q0 39 11 34C27 27 37 12 36-10C34-42-34-42-36-10Z';
+const FACE='M-37-8C-38 16-27 32-10 36Q0 38 10 36C27 32 38 16 37-8C35-42-35-42-37-8Z';
 const BACK_HAIR={
   sora:'M-40-30C-60 0-62 50-55 88C-53 100-57 110-64 120C-52 119-44 113-40 105C-38 113-32 119-23 122C-27 110-23 98-19 90L19 90C23 98 27 110 23 122C32 119 38 113 40 105C44 113 52 119 64 120C57 110 53 100 55 88C62 50 60 0 40-30Z',
   hana:'M-42-28C-56 -2-56 26-50 46C-46 56-48 62-52 68C-42 68-36 62-34 56C-30 62-24 66-16 66L16 66C24 66 30 62 34 56C36 62 42 68 52 68C48 62 46 56 50 46C56 26 56-2 42-28Z',
@@ -116,53 +116,49 @@ const FRONT_HAIR=(()=>{let d='M-46 16C-56-34-31-62 0-62C31-62 56-34 46 16';
 const SIDE_LOCK='M-38-14C-49 6-47 27-49 47C-50 59-55 67-48 78C-44 66-40 55-38 41C-36 26-34 10-30-6Z';
 const SIDE_LOCK2='M-33 2C-40 19-38 36-42 56Q-37 50-35 40C-33 27-31 15-28 4Z';
 const TAIL='M-42-30C-58-34-68-18-66 4C-64 26-56 44-62 70C-52 62-48 52-48 42C-46 56-40 64-30 68C-38 52-40 38-42 24C-44 8-43-8-38-20Z';
-const EYE_SHAPE=side=>{const s=side,ex=s*16,ey=11,ox=ex+s*11,ix=ex-s*9.5;
-  return `M${ox} ${ey-5}C${ox-s*3} ${ey-13} ${ix+s*4} ${ey-14} ${ix} ${ey-7}C${ix-s} ${ey+2} ${ix+s*2} ${ey+13} ${ex} ${ey+13}C${ex+s*7} ${ey+13} ${ox} ${ey+6} ${ox} ${ey-5}Z`;};
+// Cute, gentle eyes: round, with a big iris that fills almost the whole eye, a soft pupil and big highlights.
+// The upper lash is a soft arch (no slant), so the face never looks stern.
+const EYE_X=17,EYE_Y=13;
+const EYE_SHAPE=side=>{const ex=side*EYE_X,ey=EYE_Y;
+  return `M${ex-10} ${ey}C${ex-10} ${ey-9} ${ex-6} ${ey-13} ${ex} ${ey-13}C${ex+6} ${ey-13} ${ex+10} ${ey-9} ${ex+10} ${ey}C${ex+10} ${ey+8} ${ex+6} ${ey+12} ${ex} ${ey+12}C${ex-6} ${ey+12} ${ex-10} ${ey+8} ${ex-10} ${ey}Z`;};
 
-function eye(k,side,expr,look,blink){const ex=side*16,ey=11;ctx.save();ctx.translate(ex,ey);ctx.scale(1.1,1.1);ctx.translate(-ex,-ey);eyeParts(k,side,expr,look,blink);ctx.restore();}
-function eyeParts(k,side,expr,look,blink){
-  const s=side,ex=s*16,ey=11,ox=ex+s*11,ix=ex-s*9.5,L=k.line;
-  if(expr==='happy'||expr==='closed'||(blink&&expr!=='surprise')){
-    // Closed eyes: ^ for a smile, a soft downward curve for calm or blinking; a flick of lashes at the outer corner.
-    if(expr==='happy'){line([ex-s*9,ey+4,ex-s*6,ey-4,ex+s*5,ey-5,ex+s*10,ey+3],L,3);line([ex+s*9.5,ey+2,ex+s*11,ey+3,ex+s*12.5,ey+4,ex+s*14,ey+5],L,2);}
-    else{line([ex-s*9,ey+1,ex-s*5,ey+7,ex+s*5,ey+7,ex+s*10,ey],L,2.8);line([ex+s*9.5,ey+.5,ex+s*11,ey-.5,ex+s*12.5,ey-1.5,ex+s*14,ey-2.5],L,2);
-      line([ex-s*2,ey+7,ex-s*2,ey+8,ex-s*2.5,ey+9,ex-s*3,ey+10],L,1,.7);line([ex+s*3,ey+6.5,ex+s*3,ey+7.5,ex+s*3.5,ey+8.5,ex+s*4,ey+9.5],L,1,.7);}
+function eye(k,side,expr,look,blink){
+  const s=side,ex=s*EYE_X,ey=EYE_Y,L=k.line;
+  if(expr==='happy'||expr==='closed'||expr==='sleepy'||(blink&&expr!=='surprise')){
+    // Closed eyes: a round ^ for a smile, a soft smiling curve for calm, sleepy or blinking, with a tiny lash.
+    if(expr==='happy'){line([ex-8.5,ey+3,ex-6,ey-5,ex+6,ey-5,ex+8.5,ey+3],L,2.8);}
+    else{line([ex-9,ey+1,ex-5,ey+6.5,ex+5,ey+6.5,ex+9,ey+1],L,2.6);line([ex+s*8.6,ey+1.5,ex+s*10,ey+1,ex+s*11,ey,ex+s*12,ey-1.2],L,1.6);}
     return;
   }
   const surprise=expr==='surprise',d=EYE_SHAPE(s);
-  ctx.save();if(surprise){ctx.translate(ex,ey);ctx.scale(1.04,1.1);ctx.translate(-ex,-ey);}
-  shape(d,grad(0,ey-13,0,ey+13,[[0,k.eye[4]],[.35,'#ffffff'],[1,'#ffffff']]));
+  shape(d,'#ffffff');
   within(d,()=>{
-    const cx=ex+look-s*.5,cy=ey+(surprise?2:.5),rx=surprise?6.4:9.2,ry=surprise?8.6:12.5;
-    ellipse(cx,cy,rx,ry,grad(0,cy-ry,0,cy+ry,[[0,k.eye[2]],[.45,k.eye[1]],[.85,k.eye[0]],[1,'#ffffff']]));
-    // Iris detail: a ring, radial streaks, the pupil, the shadow of the upper lid and a glow at the bottom.
-    ctx.save();ctx.globalAlpha=.35;ctx.strokeStyle=k.eye[2];ctx.lineWidth=.7;for(let i=0;i<10;i++){const a=i/10*Math.PI*2;ctx.beginPath();ctx.moveTo(cx+Math.cos(a)*rx*.38,cy+Math.sin(a)*ry*.38);ctx.lineTo(cx+Math.cos(a)*rx*.85,cy+Math.sin(a)*ry*.85);ctx.stroke();}ctx.restore();
-    ellipse(cx,cy+.5,surprise?2.2:3.4,surprise?3.2:5.2,k.eye[3]);
-    ellipse(cx,cy,rx,ry,null,k.eye[3],1.1);
-    ellipse(ex,ey-14,14,6.5,k.eye[3]+'cc');ellipse(ex,ey-8,12,3,k.eye[2]+'55');
-    ellipse(cx,cy+ry*.62,rx*.62,ry*.25,k.eye[0]+'b0');
-    ellipse(cx-3.4,cy-4.4,surprise?2.4:3.3,surprise?3:4.2,'#ffffff',null,1,-.3);
-    ellipse(cx+3.6,cy+5.4,1.5,1.5,'#ffffffee');ellipse(cx+3.2,cy-5.6,.9,.9,'#ffffffcc');
+    const cx=ex+look*.6,cy=ey+1,rx=surprise?7.4:8.8,ry=surprise?9.6:11.6;
+    ellipse(cx,cy,rx,ry,grad(0,cy-ry,0,cy+ry,[[0,k.eye[2]],[.5,k.eye[1]],[.9,k.eye[0]],[1,'#ffffff']]));
+    ellipse(cx,cy+1,surprise?3.2:4.4,surprise?4.2:5.8,k.eye[3]+'d8');
+    ellipse(ex,ey-12,11,4,k.eye[2]+'66');
+    ellipse(cx,cy+ry*.6,rx*.7,ry*.28,k.eye[0]+'c0');
+    // Big round highlight, a second smaller one, and a little sparkle.
+    ellipse(cx-3,cy-4.4,surprise?3:3.8,surprise?3.6:4.6,'#ffffff');
+    ellipse(cx+3.6,cy+4.4,2,2,'#ffffffee');
+    ctx.save();ctx.translate(cx+3.8,cy-5.4);ctx.fillStyle='#ffffff';ctx.beginPath();for(let i=0;i<8;i++){const r=i%2?.5:1.8,a=i*Math.PI/4;ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r);}ctx.fill();ctx.restore();
   });
-  // Line art: thick upper lid, darker at the outer end, with lashes; a crease above; a thin lower lash line.
-  line([ox+s,ey-4,ox-s*3,ey-13.5,ix+s*4,ey-14.5,ix-s*.6,ey-7],L,2.6);
-  line([ox+s*1.5,ey-3.5,ox,ey-8,ox-s*3,ey-12,ox-s*7,ey-13.2],L,4.2);
-  line([ox+s*.5,ey-5,ox+s*2,ey-6.5,ox+s*3.5,ey-7.5,ox+s*5,ey-8],L,1.6);
-  line([ox-s*2.5,ey-14,ox-s*5,ey-17,ex-s*1,ey-18,ix+s*2,ey-15.5],L,.9,.4);
-  line([ox-s*.5,ey+5,ox-s*1.5,ey+10,ex+s*5,ey+12.8,ex+s*1,ey+13],L,1.1,.6);
-  ctx.restore();
-  if(expr==='sleepy'){within(d,()=>{ctx.fillStyle=k.skin[0];ctx.fillRect(ex-14,ey-16,28,15);});line([ox+s,ey-1,ox-s*4,ey+1.5,ix+s*4,ey+1.5,ix-s*.6,ey-1],L,2.6);}
+  // Soft arched upper lash with a tiny curl at the outer corner; a faint lower line.
+  line([ex-10.6,ey+.5,ex-10,ey-10,ex+10,ey-10,ex+10.6,ey+.5],L,2.6);
+  line([ex+s*9.8,ey-5,ex+s*11.2,ey-6.5,ex+s*12.4,ey-7.4,ex+s*13.4,ey-8.6],L,1.6);
+  line([ex+s*10.4,ey-1.5,ex+s*11.8,ey-2.4,ex+s*12.8,ey-3,ex+s*13.8,ey-3.8],L,1.3);
+  line([ex-5,ey+11.6,ex-2,ey+12.6,ex+2,ey+12.6,ex+5,ey+11.6],L,1,.45);
 }
 
 function mouth(k,expr,talking,open){
-  const L=k.line,y=29;
-  if(talking&&open>.15||expr==='happy'&&!talking){const h=talking?2+4.4*open:3.6,w=talking?4.2:5.6;
-    ctx.beginPath();ctx.moveTo(-w,y-1);ctx.quadraticCurveTo(0,y+.5,w,y-1);ctx.quadraticCurveTo(w*.8,y+h,0,y+h);ctx.quadraticCurveTo(-w*.8,y+h,-w,y-1);ctx.closePath();
-    ctx.fillStyle='#a82c4c';ctx.fill();ctx.save();ctx.clip();ellipse(0,y+h+1,w*.8,h*.55,'#ff8da6');ctx.fillStyle='#fff';ctx.fillRect(-w,y-1.5,w*2,1.6);ctx.restore();
-    ctx.strokeStyle=L;ctx.lineWidth=1.3;ctx.stroke();return;}
-  if(expr==='surprise'){ellipse(0,y+1.5,2.6,3.2,'#a82c4c',L,1.2);ellipse(0,y+3,1.6,1.2,'#ff8da6');return;}
-  if(expr==='sleepy'){line([-2.5,y,-1,y+1,1,y+1,2.5,y],L,1.3);return;}
-  line([-4,y-.5,-2,y+2,2,y+2,4,y-.5],L,1.5);
+  const L=k.line,y=30;
+  if(talking&&open>.15||expr==='happy'&&!talking){const h=talking?1.8+3.6*open:3.4,w=talking?3.6:4.6;
+    ctx.beginPath();ctx.moveTo(-w,y-1);ctx.quadraticCurveTo(0,y,w,y-1);ctx.quadraticCurveTo(w*.85,y+h,0,y+h);ctx.quadraticCurveTo(-w*.85,y+h,-w,y-1);ctx.closePath();
+    ctx.fillStyle='#c4475f';ctx.fill();ctx.save();ctx.clip();ellipse(0,y+h+.8,w*.8,h*.6,'#ff9fb3');ctx.restore();
+    ctx.strokeStyle=L;ctx.lineWidth=1.2;ctx.stroke();return;}
+  if(expr==='surprise'){ellipse(0,y+1.5,2.4,2.8,'#c4475f',L,1.1);ellipse(0,y+2.8,1.4,1,'#ff9fb3');return;}
+  // A small cat-like ω smile.
+  line([-4.4,y-.6,-3.6,y+2,-1,y+2,0,y],L,1.4);line([0,y,1,y+2,3.6,y+2,4.4,y-.6],L,1.4);
 }
 
 function face(k,n,t,still,talking){
@@ -172,12 +168,12 @@ function face(k,n,t,still,talking){
   within(FACE,()=>{ctx.fillStyle=grad(0,-16,0,8,[[0,k.skin[2]],[1,k.skin[1]+'00']]);ctx.fillRect(-40,-20,80,26);
     ellipse(-38,8,9,26,k.skin[1]+'aa');ellipse(38,8,9,26,k.skin[1]+'aa');});
   // Blush with a few hatch lines.
-  ellipse(-24,22,9,5,radial(-24,22,0,9,[[0,'#ff8aa8aa'],[1,'#ff8aa800']]));ellipse(24,22,9,5,radial(24,22,0,9,[[0,'#ff8aa8aa'],[1,'#ff8aa800']]));
-  for(const s of [-1,1])for(let i=0;i<3;i++)line([s*(20+i*3.4),24,s*(20.6+i*3.4),22.5,s*(21.4+i*3.4),21,s*(22+i*3.4),19.5],'#e0607e',.9,.6);
+  for(const s of [-1,1])ellipse(s*25,26,9,5.4,radial(s*25,26,0,9,[[0,'#ff7fa2cc'],[1,'#ff7fa200']]));
+  for(const s of [-1,1])for(let i=0;i<3;i++)line([s*(21+i*3.4),28,s*(21.6+i*3.4),26.5,s*(22.4+i*3.4),25,s*(23+i*3.4),23.5],'#e8708c',.9,.55);
   eye(k,-1,n.expr,look,blink);eye(k,1,n.expr,look,blink);
   // Brows show through the bangs.
-  const by=n.expr==='surprise'?-14:-11;ctx.save();ctx.globalAlpha=.45;for(const s of [-1,1])line([s*25,by+2,s*21,by-1.5,s*14,by-2,s*9,by],k.hairLine,1.2);ctx.restore();
-  line([1.6,21.5,1.8,22.2,1.6,22.8,1,23.2],k.line,1.1,.7);
+  const by=n.expr==='surprise'?-10:-7;ctx.save();ctx.globalAlpha=.32;for(const s of [-1,1])line([s*23,by+1,s*20,by-1.6,s*14,by-1.6,s*11,by+.4],k.hairLine,1.3);ctx.restore();
+  ellipse(0,24,.9,.6,k.skin[2]);
   const open=talking&&!still?.5+.5*Math.sin(t*22):talking?.6:0;mouth(k,n.expr,talking,open);
 }
 

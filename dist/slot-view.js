@@ -75,47 +75,84 @@ function counter(label,value,[x,y,w,h],count,gentle){
 
 // --- reel symbols (original drawings) ------------------------------------------------------------------
 // Printed like the symbols on a real reel strip: bold shapes with a dark outline and a white keyline around them,
-// big enough to fill most of the cell (a cell is reel width × LAYOUT.pitch). sy squashes the symbol vertically.
+// dressed in the ASTRAL motifs (gold bevels, navy, four-point twinkles), big enough to fill most of the cell (a cell is reel width × LAYOUT.pitch). sy squashes the symbol vertically.
 function keyed(draw,outline,lw){ctx.lineJoin='round';ctx.lineCap='round';ctx.strokeStyle='#ffffff';ctx.lineWidth=lw+5;draw('stroke');ctx.strokeStyle=outline;ctx.lineWidth=lw;draw('stroke');draw('fill');}
+// Four-point twinkle, the star motif of the ASTRAL art.
+function twinkle(x,y,r,color='#f2b730'){ctx.save();ctx.translate(x,y);ctx.fillStyle=radial(0,0,0,r*1.3,[[0,color+'88'],[1,color+'00']]);ctx.fillRect(-r*1.3,-r*1.3,r*2.6,r*2.6);
+  const ray=k=>{ctx.beginPath();for(let i=0;i<8;i++){const a=i*Math.PI/4-Math.PI/2,rr=i%2?r*.22*k:r*k;ctx.lineTo(Math.cos(a)*rr,Math.sin(a)*rr);}ctx.closePath();ctx.fill();};
+  ctx.fillStyle=color;ray(1);ctx.fillStyle='#ffffff';ray(.55);ctx.restore();}
+const GOLD=(y0,y1)=>grad(0,y0,0,y1,[[0,'#fff6c8'],[.3,'#f2c552'],[.55,'#a8701a'],[.8,'#f6d36c'],[1,'#fff0b0']]);
+const P7=typeof Path2D==='undefined'?null:new Path2D('M-19-22L21-22L21-14C13-4 7 8 5 22L-9 22C-7 8 0-4 7-12L-11-12L-13-6L-19-6Z');
 export function symbol(c,name,x,y,size=1,sy=1){
   ctx=c;ctx.save();ctx.translate(x,y);ctx.scale(size,size*sy);
   if(name==='seven'){
-    // A bold, slanted 7 drawn as a shape (not a font), so it looks the same on every device.
-    ctx.transform(1,0,-.2,1,0,0);const seven=new Path2D('M-19-22L21-22L21-14C13-4 7 8 5 22L-9 22C-7 8 0-4 7-12L-11-12L-13-6L-19-6Z');
-    ctx.lineJoin='round';for(const [col,lw] of [['#ffffff',11],['#3a0508',7],['#ffd25e',3.4]]){ctx.strokeStyle=col;ctx.lineWidth=lw;ctx.stroke(seven);}
-    ctx.fillStyle=grad(0,-22,0,22,[[0,'#ff9a7c'],[.3,'#f0222e'],[.65,'#b10a19'],[1,'#e8402c']]);ctx.fill(seven);
-    ctx.save();ctx.clip(seven);ctx.fillStyle='#ffffff4a';ctx.fillRect(-20,-22,42,6);ctx.restore();
+    // BIG symbol: a slanted red 7 with a gold bevel, a navy and white border, a glossy facet and twinkles on a blue halo.
+    ctx.save();ctx.scale(1,.55);ctx.fillStyle=radial(0,0,4,42,[[0,'#7fb4ff70'],[.6,'#9fc6ff26'],[1,'#9fc6ff00']]);ctx.fillRect(-46,-44,92,88);ctx.restore();
+    ctx.save();ctx.transform(1,0,-.2,1,0,0);const seven=P7;
+    ctx.lineJoin='round';for(const [col,lw] of [['#ffffff',13],['#14123a',9],[GOLD(-26,26),5.4],['#5a0610',1.4]]){ctx.strokeStyle=col;ctx.lineWidth=lw;ctx.stroke(seven);}
+    ctx.fillStyle=grad(0,-22,0,22,[[0,'#ff9a7c'],[.25,'#f52a34'],[.6,'#b80a1c'],[1,'#ff4a36']]);ctx.fill(seven);
+    ctx.save();ctx.clip(seven);
+    ctx.fillStyle='#6a00104d';ctx.beginPath();ctx.moveTo(21,-14);ctx.lineTo(21,-22);ctx.lineTo(30,-22);ctx.lineTo(14,22);ctx.lineTo(5,22);ctx.bezierCurveTo(7,8,13,-4,21,-14);ctx.fill();
+    ctx.fillStyle=grad(0,-22,0,-13,[[0,'#ffffffaa'],[1,'#ffffff10']]);ctx.fillRect(-20,-22,42,9);
+    ctx.fillStyle='#ffffff40';ctx.beginPath();ctx.moveTo(-4,22);ctx.lineTo(4,-12);ctx.lineTo(8,-12);ctx.lineTo(0,22);ctx.fill();
+    ctx.restore();ctx.restore();
+    twinkle(25,-19,7);twinkle(-24,13,4.5,'#5fa0ff');
   }else if(name==='bar'){
-    keyed(m=>{ctx.beginPath();ctx.roundRect(-36,-15,72,30,5);ctx[m]();},'#0a0a0c',3);
-    ctx.fillStyle=grad(0,-15,0,15,[[0,'#2a2c33'],[.5,'#0b0c10'],[1,'#22242a']]);ctx.beginPath();ctx.roundRect(-36,-15,72,30,5);ctx.fill();
-    ctx.strokeStyle='#f2f2f2';ctx.lineWidth=1.6;ctx.beginPath();ctx.roundRect(-32,-11.5,64,23,3);ctx.stroke();
-    ctx.font='900 21px "Arial Black", Arial, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';if('letterSpacing' in ctx)ctx.letterSpacing='2px';
-    ctx.fillStyle=grad(0,-9,0,9,[[0,'#ffffff'],[.5,'#e4e6ea'],[1,'#b9bec6']]);ctx.fillText('BAR',1,1.5);
+    // A navy plate in a gold frame with chrome lettering and gold stars at both ends.
+    const plate=m=>{ctx.beginPath();ctx.roundRect(-41,-16,82,32,7);ctx[m]();};
+    keyed(plate,'#0a0a18',3);ctx.fillStyle=grad(0,-16,0,16,[[0,'#2b3a7a'],[.5,'#0b1030'],[1,'#1c2760']]);plate('fill');
+    ctx.strokeStyle=GOLD(-13,13);ctx.lineWidth=2.4;ctx.beginPath();ctx.roundRect(-37,-12.5,74,25,4.5);ctx.stroke();
+    ctx.fillStyle='#ffffff22';ctx.beginPath();ctx.roundRect(-37,-12.5,74,10,[4.5,4.5,0,0]);ctx.fill();
+    for(const sx of [-30,30]){twinkle(sx,0,5.6,'#ffd76a');}
+    ctx.font='900 19px "Arial Black", "Arial Bold", Arial, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';if('letterSpacing' in ctx)ctx.letterSpacing='1.5px';
+    ctx.lineJoin='round';ctx.strokeStyle='#05060f';ctx.lineWidth=4;ctx.strokeText('BAR',1,1.5);
+    ctx.fillStyle=grad(0,-9,0,10,[[0,'#ffffff'],[.45,'#dfe4ee'],[.55,'#8a94a8'],[.8,'#e8ecf4'],[1,'#ffffff']]);ctx.fillText('BAR',1,1.5);
   }else if(name==='cherry'){
-    ctx.lineCap='round';ctx.strokeStyle='#ffffff';ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(-13,0);ctx.quadraticCurveTo(-4,-14,8,-19);ctx.moveTo(12,2);ctx.quadraticCurveTo(10,-10,8,-19);ctx.stroke();
-    ctx.strokeStyle='#1f3d14';ctx.lineWidth=4.4;ctx.stroke();ctx.strokeStyle='#5aa83a';ctx.lineWidth=2.2;ctx.stroke();
-    keyed(m=>{ctx.beginPath();ctx.ellipse(18,-18,11,5,-.45,0,7);ctx[m]();},'#1f3d14',2);ctx.fillStyle=grad(8,-22,28,-14,[[0,'#8fd85a'],[1,'#2f7d24']]);ctx.beginPath();ctx.ellipse(18,-18,11,5,-.45,0,7);ctx.fill();
-    for(const [cx,cy] of [[-14,8],[13,10]]){keyed(m=>{ctx.beginPath();ctx.arc(cx,cy,12,0,7);ctx[m]();},'#4a0410',2.4);
-      ctx.fillStyle=radial(cx-4,cy-5,1,15,[[0,'#ff9a86'],[.35,'#ee1c30'],[1,'#7a0616']]);ctx.beginPath();ctx.arc(cx,cy,12,0,7);ctx.fill();ellipse(cx-4.5,cy-4.5,3.6,2.4,'#ffffffcc',null,1,-.6);}
+    // Two glossy cherries on curved stems, with a veined leaf and a small twinkle.
+    ctx.lineCap='round';for(const [col,lw] of [['#ffffff',8.5],['#1f3d14',5],['#6bb243',2.4]]){ctx.strokeStyle=col;ctx.lineWidth=lw;ctx.beginPath();ctx.moveTo(-14,0);ctx.bezierCurveTo(-10,-10,-2,-17,8,-20);ctx.moveTo(12,2);ctx.bezierCurveTo(13,-8,11,-14,8,-20);ctx.stroke();}
+    const leaf=m=>{ctx.beginPath();ctx.moveTo(8,-20);ctx.bezierCurveTo(14,-30,28,-28,32,-20);ctx.bezierCurveTo(24,-14,14,-14,8,-20);ctx[m]();};
+    keyed(leaf,'#1f3d14',2);ctx.fillStyle=grad(8,-28,32,-14,[[0,'#a6e86a'],[.5,'#4fa232'],[1,'#22661c']]);leaf('fill');
+    ctx.strokeStyle='#1f5a18aa';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(10,-20);ctx.quadraticCurveTo(20,-23,30,-20);for(const lx of [15,20,25]){ctx.moveTo(lx,-21.4);ctx.lineTo(lx+3,-25);}ctx.stroke();
+    for(const [cx,cy] of [[-15,8],[13,10]]){keyed(m=>{ctx.beginPath();ctx.arc(cx,cy,12.5,0,7);ctx[m]();},'#4a0410',2.4);
+      ctx.fillStyle=radial(cx-4,cy-5,1,16,[[0,'#ffb0a0'],[.25,'#ff3040'],[.7,'#b00a20'],[1,'#5a0412']]);ctx.beginPath();ctx.arc(cx,cy,12.5,0,7);ctx.fill();
+      ctx.strokeStyle='#ff9a8a88';ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(cx,cy,10,Math.PI*.1,Math.PI*.55);ctx.stroke();
+      ellipse(cx-4.5,cy-5,4,2.6,'#ffffffdd',null,1,-.6);ellipse(cx-1,cy-8.5,1.2,1,'#ffffffcc');}
+    twinkle(-25,-10,5);
   }else if(name==='bell'){
-    const bell=m=>{ctx.beginPath();ctx.moveTo(-25,15);ctx.quadraticCurveTo(-15,10,-15,-4);ctx.quadraticCurveTo(-14,-21,0,-21);ctx.quadraticCurveTo(14,-21,15,-4);ctx.quadraticCurveTo(15,10,25,15);ctx.quadraticCurveTo(0,21,-25,15);ctx.closePath();ctx[m]();};
-    keyed(m=>{bell(m);ctx.beginPath();ctx.arc(0,-22,4,0,7);ctx[m]();},'#5a3300',2.6);
-    ctx.fillStyle=grad(-24,0,24,0,[[0,'#a86400'],[.28,'#fff3a6'],[.5,'#f8c81e'],[.8,'#c98a00'],[1,'#7a4500']]);bell('fill');
-    ctx.fillStyle='#f0b818';ctx.beginPath();ctx.arc(0,-22,4,0,7);ctx.fill();
-    ctx.fillStyle=grad(0,12,0,20,[[0,'#ffe27a'],[1,'#a86a00']]);ctx.beginPath();ctx.ellipse(0,16,24,3.6,0,0,7);ctx.fill();
-    ellipse(0,20,5,3.4,'#8a5200','#5a3300',1.4);ellipse(-7,-8,3,9,'#ffffffaa',null,1,.25);
+    // A golden bell with an engraved band of dots, an embossed star, a ring on top and a clapper.
+    const bell=m=>{ctx.beginPath();ctx.moveTo(-26,15);ctx.quadraticCurveTo(-16,10,-16,-4);ctx.quadraticCurveTo(-15,-21,0,-21);ctx.quadraticCurveTo(15,-21,16,-4);ctx.quadraticCurveTo(16,10,26,15);ctx.quadraticCurveTo(0,21,-26,15);ctx.closePath();ctx[m]();};
+    keyed(m=>{bell(m);ctx.beginPath();ctx.arc(0,-23,4.4,0,7);ctx[m]();},'#5a3300',2.6);
+    ctx.strokeStyle='#8a5a10';ctx.lineWidth=2.4;ctx.beginPath();ctx.arc(0,-23,3.6,0,7);ctx.stroke();ctx.fillStyle='#fff3c0';ctx.beginPath();ctx.arc(0,-23,2,0,7);ctx.fill();
+    ctx.fillStyle=grad(-25,0,25,0,[[0,'#9a5a00'],[.22,'#ffe680'],[.36,'#fffbe0'],[.5,'#f6c41c'],[.78,'#c08000'],[1,'#6a3c00']]);bell('fill');
+    ctx.save();bell('clip');
+    ctx.fillStyle=grad(0,4,0,10,[[0,'#8a5200'],[.5,'#ffd84a'],[1,'#8a5200']]);ctx.fillRect(-30,4,60,6);
+    for(let i=-4;i<=4;i++)ellipse(i*4.2,7,1,1,'#fff6c8');
+    ctx.globalAlpha=.55;star(0,-7,7.5,'#fff6c8');ctx.globalAlpha=.6;star(.6,-6.4,6,'#b87800');ctx.globalAlpha=1;star(0,-7,5.6,grad(0,-13,0,-1,[[0,'#fffbe0'],[1,'#f2c030']]));
+    ellipse(-8,-9,2.6,9,'#ffffffaa',null,1,.25);ctx.restore();
+    ctx.fillStyle=grad(0,12,0,20,[[0,'#fff0a0'],[.5,'#e0a020'],[1,'#8a5200']]);ctx.beginPath();ctx.ellipse(0,16,25,3.8,0,0,7);ctx.fill();ctx.strokeStyle='#5a3300';ctx.lineWidth=1.2;ctx.stroke();
+    ellipse(0,20.5,5,3.4,radial(-1.5,19.5,.5,5,[[0,'#ffe27a'],[1,'#8a5200']]),'#5a3300',1.4);
+    twinkle(20,-14,4.5);
   }else if(name==='watermelon'){
-    const ball=m=>{ctx.beginPath();ctx.ellipse(0,0,30,19,0,0,7);ctx[m]();};
-    keyed(ball,'#0b3510',2.6);ctx.fillStyle=radial(-10,-8,2,34,[[0,'#9be06a'],[.5,'#3c9a2e'],[1,'#145a18']]);ball('fill');
-    ctx.save();ball('clip');ctx.strokeStyle='#0d3f12';ctx.lineWidth=4.2;for(const dx of [-20,-7,7,20]){ctx.beginPath();ctx.moveTo(dx*.75,-20);ctx.bezierCurveTo(dx+5,-7,dx-5,7,dx*.75,20);ctx.stroke();}ctx.restore();
-    ctx.strokeStyle='#5a8a1c';ctx.lineWidth=2.6;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(0,-19);ctx.quadraticCurveTo(3,-24,7,-24);ctx.stroke();ellipse(-11,-9,8,3.2,'#ffffff66',null,1,-.35);
+    // A watermelon slice: striped green rind, a pale band, red flesh with seeds, and a glossy cut edge.
+    const cy=-13,R=[40,30],half=(rx,ry)=>m=>{ctx.beginPath();ctx.ellipse(0,cy,rx,ry,0,0,Math.PI);ctx.closePath();ctx[m]();};
+    keyed(half(...R),'#0b3510',2.6);ctx.fillStyle=grad(0,cy,0,cy+30,[[0,'#3c9a2e'],[1,'#145a18']]);half(...R)('fill');
+    ctx.save();half(...R)('clip');ctx.strokeStyle='#0d3f12';ctx.lineWidth=4;for(let a=.25;a<3;a+=.42){ctx.beginPath();ctx.moveTo(Math.cos(a)*30,cy+Math.sin(a)*20);ctx.lineTo(Math.cos(a)*44,cy+Math.sin(a)*34);ctx.stroke();}ctx.restore();
+    ctx.fillStyle=grad(0,cy,0,cy+25,[[0,'#f6ffe6'],[1,'#c9f0a8']]);half(35,25)('fill');
+    ctx.fillStyle=radial(0,cy,2,34,[[0,'#ff6a80'],[.6,'#f0283e'],[1,'#c0102a']]);half(31,21)('fill');
+    for(const [sx,syy,r] of [[-18,6,.5],[-8,10,.2],[2,12,0],[12,9,-.2],[21,5,-.5],[-12,3,.3],[7,4,-.1]]){ctx.save();ctx.translate(sx,cy+syy);ctx.rotate(r);ctx.fillStyle='#1a0a0a';ctx.beginPath();ctx.ellipse(0,0,1.7,2.8,0,0,7);ctx.fill();ellipse(-.5,-1,.6,.9,'#ffffff88');ctx.restore();}
+    ctx.strokeStyle='#ffffffaa';ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(-30,cy+1.2);ctx.lineTo(30,cy+1.2);ctx.stroke();
+    twinkle(-28,cy-3,4.5);
   }else{
-    // Replay: blue lettering with a looping arrow, like the replay symbol of most real machines.
-    ctx.font='italic 900 14px "Arial Black", Arial, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.lineJoin='round';ctx.strokeStyle='#ffffff';ctx.lineWidth=6.5;ctx.strokeText('REPLAY',8,2);ctx.strokeStyle='#0b2368';ctx.lineWidth=3.2;ctx.strokeText('REPLAY',8,2);
-    ctx.fillStyle=grad(0,-7,0,9,[[0,'#8fd2ff'],[.45,'#2a7df0'],[1,'#123fae']]);ctx.fillText('REPLAY',8,2);
-    ctx.lineCap='round';for(const [col,lw] of [['#ffffff',7.5],['#0b2368',4.6],['#3a8df5',2.2]]){ctx.strokeStyle=col;ctx.lineWidth=lw;ctx.beginPath();ctx.arc(-36,1,7,Math.PI*.15,Math.PI*1.65);ctx.stroke();}
-    ctx.fillStyle='#0b2368';ctx.beginPath();ctx.moveTo(-31.5,-10);ctx.lineTo(-25,-4.5);ctx.lineTo(-33.5,-1.5);ctx.closePath();ctx.fill();
+    // Replay: a glossy blue banner with white lettering and a gold medallion holding a looping arrow.
+    const band=m=>{ctx.beginPath();ctx.roundRect(-30,-11,72,22,11);ctx[m]();};
+    keyed(band,'#0b2368',2.6);ctx.fillStyle=grad(0,-11,0,11,[[0,'#7cc8ff'],[.45,'#2a7df0'],[1,'#0f3aa8']]);band('fill');
+    ctx.fillStyle='#ffffff3a';ctx.beginPath();ctx.roundRect(-28,-9.5,68,8,[8,8,2,2]);ctx.fill();
+    ctx.font='italic 900 12.5px "Arial Black", "Arial Bold", Arial, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.lineJoin='round';ctx.strokeStyle='#0b2368';ctx.lineWidth=3;ctx.strokeText('REPLAY',9,1.2);ctx.fillStyle='#ffffff';ctx.fillText('REPLAY',9,1.2);
+    keyed(m=>{ctx.beginPath();ctx.arc(-32,0,13,0,7);ctx[m]();},'#5a3300',2.2);ctx.fillStyle=radial(-36,-4,1,15,[[0,'#fff6c8'],[.5,'#f2c552'],[1,'#a8701a']]);ctx.beginPath();ctx.arc(-32,0,13,0,7);ctx.fill();
+    ctx.fillStyle=radial(-32,0,1,10,[[0,'#5fb0ff'],[1,'#123fae']]);ctx.beginPath();ctx.arc(-32,0,9.6,0,7);ctx.fill();
+    ctx.lineCap='round';ctx.strokeStyle='#ffffff';ctx.lineWidth=2.6;ctx.beginPath();ctx.arc(-32,.6,5.2,Math.PI*.2,Math.PI*1.7);ctx.stroke();
+    ctx.fillStyle='#ffffff';ctx.beginPath();ctx.moveTo(-28.6,-7.4);ctx.lineTo(-24.2,-3.4);ctx.lineTo(-30,-2.2);ctx.closePath();ctx.fill();
   }
   ctx.restore();
 }
