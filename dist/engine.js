@@ -93,3 +93,20 @@ if(reach){const o=win?'win':'miss',kind=variety?pick(REACH_PICK[o],rand):'normal
 const duration=holdsLeft>=3?2.5:holdsLeft>=1?4:5;return {numbers:[left,middle,right],reach,stops:[duration-1.2,duration,duration-.6],duration};}
 // The reach stage showing at time t of a draw (null before the reach; the last stage lasts until the button stops the middle number).
 export function reachStage(plan,t){return plan?.reach?plan.stages.findLast(s=>t>=s.at)??null:null;}
+
+// 予告（notice）: like a real machine, a short show at the start of a draw (群れが横切る・セリフ・カットイン・ステージチェンジ, each in
+// blue / green / red / gold) hints at the outcome. It is picked after the draw from the tables below, so the odds never change; only
+// how often each notice shows differs by outcome, which gives each one its 信頼度 (noticeTrust). outcome: 'win' (pachinko jackpot /
+// slot BIG), 'chance' (pachinko reach that misses / slot watermelon or cherry) or 'miss'. Weights are per 1000.
+export const NOTICE_KINDS={butterflies:'蝶の群れ',birds:'鳥の群れ',petals:'花吹雪',stars:'星の群れ',words:'セリフ予告',cutin:'カットイン',stage:'ステージチェンジ'};
+export const NOTICE_COLORS=['blue','green','red','gold'];
+export const NOTICE_PICK={win:{none:350,butterflies:80,birds:80,petals:100,stars:100,words:90,cutin:120,stage:80},chance:{none:700,butterflies:60,birds:60,petals:50,stars:40,words:40,cutin:30,stage:20},miss:{none:900,butterflies:25,birds:25,petals:20,stars:15,words:10,cutin:5,stage:0}};
+export const NOTICE_COLOR={win:{blue:200,green:300,red:350,gold:150},chance:{blue:500,green:350,red:140,gold:10},miss:{blue:700,green:250,red:50,gold:0}};
+// Share of draws with each outcome: pachinko (1/99, reaches on 1/15 of misses) and slot (BIG, watermelon + cherry, the rest).
+export const NOTICE_ODDS={pachinko:{win:WIN_ODDS,chance:(1-WIN_ODDS)*MISS_REACH,miss:(1-WIN_ODDS)*(1-MISS_REACH)},slot:{win:40/ROLE_RANGE,chance:600/ROLE_RANGE,miss:1-640/ROLE_RANGE}};
+const weighted=(table,rand)=>{const total=Object.values(table).reduce((a,b)=>a+b,0);let r=rand(total);for(const [k,w] of Object.entries(table)){if(r<w)return k;r-=w;}return Object.keys(table)[0];};
+// The notice of one draw, or null. variety:false (the 「いつも同じ」 setting) never shows one.
+export function pickNotice(outcome,{rand=randomInt,variety=true}={}){if(!variety)return null;const kind=weighted(NOTICE_PICK[outcome],rand);return kind==='none'?null:{kind,color:weighted(NOTICE_COLOR[outcome],rand)};}
+// Share of draws showing this notice (kind and/or colour) that win.
+export function noticeTrust(machine,kind,color){const odds=NOTICE_ODDS[machine],share=o=>(kind?NOTICE_PICK[o][kind]/1000:1-NOTICE_PICK[o].none/1000)*(color?NOTICE_COLOR[o][color]/1000:1)*odds[o];
+  return share('win')/(share('win')+share('chance')+share('miss'));}

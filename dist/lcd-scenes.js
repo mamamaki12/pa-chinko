@@ -90,11 +90,13 @@ export function createBackdrop(machine,rand=n=>Math.floor(Math.random()*n)){cons
 function take(b,pool){const deck=b.decks[pool];let s=deck[b.next[pool]++%deck.length];if(s===b.scene&&deck.length>1)s=deck[b.next[pool]++%deck.length];return s;}
 // phase: 'idle' | 'draw' | 'reach' | 'bonus'. draw: anything that changes at the start of each draw (a new draw shows a new scene).
 // timed:false (prefers-reduced-motion) changes scenes only on those events, with a cut instead of a cross-fade. pin: a scene number to keep.
-export function stepBackdrop(b,t,{phase='idle',draw=null,timed=true,pin=null}={}){const pool=phase==='bonus'||phase==='reach'?phase:'normal';let fade=null;
+export function stepBackdrop(b,t,{phase='idle',draw=null,timed=true,pin=null}={}){if(b.stage&&(phase!=='draw'&&phase!=='reach'||draw!==b.draw))b.stage=null;const pool=b.stage??(phase==='bonus'||phase==='reach'?phase:'normal');let fade=null;
   if(pin){if(b.scene?.no!==pin){b.scene=SCENES[pin-1]??SCENES[0];b.at=t;b.fade=0;b.prev=null;}return b;}
   if(!b.scene)fade=0;else if(pool!==b.pool)fade=pool==='normal'?FADE:.5;else if(draw!==b.draw&&draw!=null&&t-b.at>=MIN_SHOW)fade=.6;else if(timed&&t-b.at>=b.len)fade=FADE;
   b.draw=draw;if(fade===null)return b;
   b.prev=b.scene;b.prevAt=b.at;b.prevLen=b.len;b.pool=pool;b.scene=take(b,pool);b.at=t;b.len=pool==='normal'?SHOT_LEN:SHOT_LEN*1.6;b.fade=timed?fade:0;return b;}
+// ステージチェンジ予告: cuts to a scene of the pool (reach or bonus) and keeps that pool until the draw ends.
+export function stageChange(b,t,pool){b.stage=pool;b.prev=b.scene;b.prevAt=b.at;b.prevLen=b.len;b.pool=pool;b.scene=take(b,pool);b.at=t;b.len=SHOT_LEN*1.6;b.fade=.3;return b;}
 // What to draw at time t: the scene and how far its camera move is (u), and the previous scene while the new one fades in (mix < 1).
 export function backdropView(b,t){const mix=b.fade>0?ease(clamp((t-b.at)/b.fade)):1;
   return {scene:b.scene,u:clamp((t-b.at)/b.len,0,1.3),prev:mix<1?b.prev:null,prevU:clamp((t-b.prevAt)/b.prevLen,0,1.3),mix};}
