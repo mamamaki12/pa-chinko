@@ -1,8 +1,10 @@
-import {STRIP,REELS,BOARD,makePins,launchBall,advanceRail,inStart,ROLE_RANGE,BIG,drawRole,judge,chooseSlip,randomInt,payout,resolvePachinko,advanceBall,collideDisplay,MAX_HOLDS,addHold,planSpin,BONUS,ATTACKER,inAttacker,inButton,PUSH_WAIT} from './engine.js';
+import {STRIP,REELS,BOARD,makePins,launchBall,advanceRail,inStart,ROLE_RANGE,BIG,drawRole,judge,chooseSlip,randomInt,payout,resolvePachinko,advanceBall,collideDisplay,MAX_HOLDS,addHold,planSpin,BONUS,inAttacker,inButton,PUSH_WAIT} from './engine.js';
 import {play} from './sound.js';
 import {readReflection,appendReflection,renderWeek,renderWeekSummary} from './journal.js';
 import {drawSlot,hitSlot,loadSlotFonts} from './slot-view.js';
 import {KINDS,createNavi,react,tick,drawNavi,drawBubble} from './lcd-character.js';
+import {LED_PARTS,buildLeds,drawLeds,applyScene} from './cabinet-leds.js';
+import {createParts,drawPartMap} from './cabinet-parts.js';
 loadSlotFonts();
 
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -39,7 +41,7 @@ function finishSession(){if(active&&!saved){history.unshift({date:startedAt,mode
 $('#finish').onclick=finishSession;
 function showHistory(){launching=false;paused=true;update();$('#history-list').replaceChildren();renderWeekSummary(history);if(!history.length){const p=document.createElement('p');p.className='empty';p.textContent='まだ記録はありません。遊技後に「記録して終了」で残せます。';$('#history-list').append(p);}for(const r of history){const div=document.createElement('div');div.className='history-row';const strong=document.createElement('strong');strong.textContent=new Date(r.date).toLocaleString('ja-JP');div.append(strong,document.createTextNode(`${r.mode} · ${Math.floor(r.seconds/60)}分${r.seconds%60}秒`));appendReflection(div,r);$('#history-list').append(div);}$('#history-dialog').showModal();}
 $('#history-button').onclick=showHistory;$('#close-history').onclick=()=>$('#history-dialog').close();$('#history-dialog').addEventListener('close',()=>{paused=false;last=performance.now();update();});$('#export').onclick=()=>{const blob=new Blob([JSON.stringify(history,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='reel-room-journal.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};$('#clear-history').onclick=()=>{if(confirm('このブラウザのプレイ記録をすべて削除しますか？')){history=[];persist();$('#history-dialog').close();showHistory();}};
-$('#settings').onclick=()=>{launching=false;paused=true;update();$('#settings-dialog').showModal();};$('#settings-dialog').addEventListener('close',()=>{if(!$('#pause').open)paused=false;last=performance.now();update();});$('#limit').onchange=e=>{limit=+e.target.value;breakAt=elapsed+limit;breakNoticed=false;timerUI();};$('#volume').oninput=e=>volume=+e.target.value/100;$('#gentle').onchange=e=>gentle=e.target.checked;
+$('#settings').onclick=()=>{launching=false;paused=true;update();$('#settings-dialog').showModal();};$('#settings-dialog').addEventListener('close',()=>{if(!$('#pause').open)paused=false;last=performance.now();update();});$('#limit').onchange=e=>{limit=+e.target.value;breakAt=elapsed+limit;breakNoticed=false;timerUI();};$('#volume').oninput=e=>volume=+e.target.value/100;$('#gentle').onchange=e=>gentle=e.target.checked;$('#leds').onchange=e=>ledSetting=e.target.value;
 $('#sound').onclick=()=>{sound=!sound;$('#sound').setAttribute('aria-pressed',String(sound));$('#sound span').textContent=`サウンド ${sound?'ON':'OFF'}`;tone('on');};$('#power').oninput=e=>$('#power-value').value=`${e.target.value}%`;
 $('#launch').onclick=()=>{if(paused)return;begin();launching=!launching;cue(launching?'launch':'launchStop');update();say(launching?'発射中。もう一度押すと停止します。':'発射を停止しました。');};
 function canBet(){return !paused&&!spinning&&!paying&&!betPlaced&&!replay&&states.slot.credit>=3;}
@@ -62,7 +64,13 @@ function rr(x,y,w,h,r,fill,stroke){ctx.beginPath();ctx.roundRect(x,y,w,h,r);if(f
 function grad(x,y,x2,y2,stops){const g=ctx.createLinearGradient(x,y,x2,y2);stops.forEach(([p,c])=>g.addColorStop(p,c));return g;}
 function text(t,x,y,size,color,font='Arial',align='center'){ctx.textAlign=align;ctx.font=`${size}px ${font}`;ctx.fillStyle=color;ctx.fillText(t,x,y);}
 function circle(x,y,r,fill,stroke){ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.stroke();}}
-const art={};for(const [key,src] of [['aurora','assets/aurora.webp'],['astral','assets/astral.webp'],['lcd','assets/lcd-illustration.jpg']]){const img=new Image();img.onload=()=>{art[key]=img;if(key==='aurora'){buildLamps(img);buildArtBlur(img);}};img.src=src;}
+const art={},ledLayers={};for(const [key,src] of [['aurora','assets/aurora.webp'],['astral','assets/astral.webp'],['lcd','assets/lcd-illustration.jpg']]){const img=new Image();img.onload=()=>{art[key]=img;if(LED_PARTS[key])ledLayers[key]=buildLeds(img,LED_PARTS[key]);if(key==='aurora')buildArtBlur(img);};img.src=src;}
+// Machine parts (cabinet-parts.js): every element of each machine with its state. The cabinet LEDs follow the scene of the moment
+// (idle / draw / reach / push / bonus / win …, see cabinet-leds.js) unless the room setting keeps them all on or all off.
+// Page options: ?parts draws the part map, ?leds=<scene> keeps the LEDs on one scene (e.g. ?leds=reach) to check a lamp program.
+const query=new URLSearchParams(location.search),parts={aurora:createParts('aurora'),astral:createParts('astral')},ledScene={},showParts=query.has('parts'),ledForce=query.get('leds');let ledSetting='auto';
+function cabinetLeds(key,scene){const leds=parts[key].leds,name=ledSetting==='on'?'lit':ledSetting==='off'?'dark':ledForce||scene,id=`${name}/${gentle}`;if(ledScene[key]!==id){applyScene(leds,name,{gentle,reduced});ledScene[key]=id;}drawLeds(ctx,ledLayers[key],leds.frame(clock),{gain:gentle?.3:.5});}
+function partMap(){if(showParts)drawPartMap(ctx,parts[mode==='slot'?'astral':'aurora']);}
 function cabinetArt(key){const img=art[key];if(img){ctx.drawImage(img,0,0,720,960);return;}rr(20,10,680,940,40,'#1b1d2a','#555');text('LOADING',360,480,14,'#99a');}
 // Pre-rendered sprites (offscreen canvases at device resolution) keep per-frame drawing cheap.
 function sprite(w,h,paint){const c=document.createElement('canvas');c.width=Math.ceil(w*dpr);c.height=Math.ceil(h*dpr);const g=c.getContext('2d');g.scale(dpr,dpr);paint(g);return c;}
@@ -135,18 +143,8 @@ ctx.globalCompositeOperation='lighter';const sk=t%3.4;if(sk<.9){const q=sk/.9,sx
 for(let i=0;i<26;i++){const r=1.2+(i*7%5)*.5,px=x+((i*83.7+Math.sin(t*.4+i)*14)%w+w)%w,py=y+h-(((t*(10+i%6*4)+i*41)%(h+20))),a=.3+.3*Math.sin(t*1.3+i*2.1);
 ctx.fillStyle=stops(ctx.createRadialGradient(px,py,0,px,py,r*3),[[0,`rgba(255,236,250,${Math.max(0,a)})`],[1,'#fff0']]);ctx.fillRect(px-r*3,py-r*3,r*6,r*6);}
 ctx.restore();}
-// Frame lamps: the bright LED strips of the cabinet artwork outside the glass, extracted once into a mask (plus a blurred bloom copy) and added
-// on top during a reach and after a win. Gentle mode keeps them dim and steady; prefers-reduced-motion keeps them lit without chasing.
-let lamps=null;function buildLamps(img){try{const c=document.createElement('canvas');c.width=720;c.height=960;const g=c.getContext('2d');g.drawImage(img,0,0,720,960);const d=g.getImageData(0,0,720,960),p=d.data;
-for(let i=0;i<p.length;i+=4){const x=i/4%720,y=i/4/720|0,mx=Math.max(p[i],p[i+1],p[i+2]),mn=Math.min(p[i],p[i+1],p[i+2]),sat=mx?(mx-mn)/mx:0,out=Math.hypot(x-BOARD.cx,y-BOARD.cy)>BOARD.r+4;p[i+3]=out&&p[i+3]>230&&mx>150&&sat>.42?Math.min(255,(mx-150)*4*sat):0;}
-g.putImageData(d,0,0);const b=document.createElement('canvas');b.width=360;b.height=480;const bg=b.getContext('2d');bg.filter='blur(4px)';bg.drawImage(c,0,0,360,480);bg.filter='none';bg.globalCompositeOperation='destination-in';bg.drawImage(img,0,0,360,480);lamps={sharp:c,bloom:b};}catch{lamps=null;}}
-function lampGlow(reach){const win=states.pachinko.win>0&&clock<resultUntil;if(!lamps||!(reach||win))return;const level=(win?Math.min(1,resultUntil-clock):1)*(gentle?.45:.9);
-ctx.save();ctx.globalCompositeOperation='lighter';const breathe=reduced?1:gentle?.85+.15*Math.sin(clock*2):.7+.3*Math.sin(clock*6);ctx.globalAlpha=level*breathe;ctx.drawImage(lamps.bloom,0,0,720,960);ctx.drawImage(lamps.sharp,0,0,720,960);
-if(!reduced&&!gentle){const a=clock*(win?3:2.2)%(Math.PI*2);ctx.beginPath();ctx.moveTo(BOARD.cx,BOARD.cy);ctx.arc(BOARD.cx,BOARD.cy,900,a,a+.9);ctx.closePath();ctx.moveTo(BOARD.cx,BOARD.cy);ctx.arc(BOARD.cx,BOARD.cy,900,a+Math.PI,a+Math.PI+.9);ctx.closePath();ctx.clip();ctx.globalAlpha=level;ctx.drawImage(lamps.bloom,0,0,720,960);ctx.drawImage(lamps.sharp,0,0,720,960);}
-ctx.restore();}
 function digits(label,value,x,y){text(label,x,y,9,'#c9d6f2');ctx.save();ctx.shadowColor='#ff9c55';ctx.shadowBlur=gentle?2:8;text(String(value).padStart(4,'0'),x,y+22,21,'#ffc27d','monospace');ctx.restore();}
 function sheen(x,y,w,h){ctx.fillStyle=grad(x,y,x+w,y+h,[[0,'#ffffff1c'],[.32,'#ffffff05'],[.33,'#ffffff14'],[.45,'#ffffff00'],[1,'#ffffff00']]);ctx.fillRect(x,y,w,h);}
-function winGlow(color){if(clock>=resultUntil)return;const t=resultUntil-clock,a=(gentle?.12:.3)*Math.min(1,t);ctx.save();ctx.globalCompositeOperation='lighter';const g=ctx.createRadialGradient(360,430,120,360,430,460);g.addColorStop(0,'#0000');g.addColorStop(1,color+Math.round(a*255).toString(16).padStart(2,'0'));ctx.fillStyle=g;ctx.fillRect(0,0,720,960);ctx.restore();}
 function renderPachinko(){const {x1,x2,y1,y2}=BOARD.display;lcdArt(x1-8,y1-8,x2-x1+16,y2-y1+16);
 ctx.fillStyle=grad(0,y1+90,0,y2,[[0,'#06081200'],[.5,'#060812aa'],[1,'#060812dd']]);ctx.fillRect(x1,y1+90,x2-x1,y2-y1-90);
 const drawing=drawResult!==null,reach=reachOn(),navi=navis.pachinko;naviTick(navi,drawing);
@@ -157,18 +155,18 @@ if(bonus){ctx.save();ctx.shadowColor='#ff5fae';ctx.shadowBlur=gentle||reduced?3:
 else if(launching&&+$('#power').value>=70){rr(x2-108,y2-48,98,30,8,'#2a0d24d0','#ffb6dc');text('◀ 左打ち',x2-59,y2-27,17,'#ffffff','bold sans-serif');}
 const asking=pushReady();if(asking)pushPrompt();else if(!bonus) text(reach?'リ ー チ':drawing?'抽 選 中':clock<resultUntil?resultText:'A U R O R A',360,482,reach?14:12,reach?'#ffe3f3':'#f6e7f2');
 const flash=clock-(pressedAt.push??-9);if(flash<.35&&!reduced){ctx.fillStyle=`rgba(255,240,250,${(gentle?.25:.6)*(1-flash/.35)})`;ctx.fillRect(x1,y1,x2-x1,y2-y1);}
-for(let i=0;i<MAX_HOLDS;i++)circle(x1+24+i*16,y2-20,5,i<drawQueue?'#fff2fa':'#2a1630','#d78fbf');
+const P=parts.aurora;P.find('hold').forEach((h,i)=>{h.lit=i<drawQueue;if(h.visible)circle(...h.shape.circle,h.lit?'#fff2fa':'#2a1630','#d78fbf');});
 drawBubble(ctx,navi,clock,{box:[284,272,236],size:14,reduced});
-cabinetArt('aurora');lampGlow(reach||!!bonus);buttonGlow(asking,flash);
+cabinetArt('aurora');cabinetLeds('aurora',asking?'push':bonus?'bonus':states.pachinko.win>0&&clock<resultUntil?'win':reach?'reach':drawing?'draw':'idle');buttonGlow(asking,flash);
 ctx.save();buttonCut();ctx.beginPath();ctx.arc(BOARD.cx,BOARD.cy,BOARD.r,0,7);ctx.rect(x2+8,y1-8,-(x2-x1+16),y2-y1+16);ctx.fillStyle='#0a061033';ctx.fill('evenodd');ctx.restore();
-ctx.save();ctx.lineCap='round';for(const [gx1,gy1,gx2,gy2] of BOARD.guides){ctx.shadowColor='#b9e2ff';ctx.shadowBlur=gentle?3:8;ctx.lineWidth=8;ctx.strokeStyle='#d8ecffa0';ctx.beginPath();ctx.moveTo(gx1,gy1);ctx.lineTo(gx2,gy2);ctx.stroke();ctx.shadowBlur=0;ctx.lineWidth=2;ctx.strokeStyle='#ffffff';ctx.beginPath();ctx.moveTo(gx1,gy1-2);ctx.lineTo(gx2,gy2-2);ctx.stroke();}ctx.restore();
-ctx.save();ctx.shadowColor='#ff74c4';ctx.shadowBlur=gentle?2:10;rr(338,606,44,16,5,grad(338,606,382,622,[[0,'#f7eccb'],[.5,'#b88d3c'],[1,'#f2d891']]),'#5b3b17');ctx.restore();rr(345,609,30,8,3,'#1a0b17');text('START',360,638,9,'#fff0f6');
+ctx.save();ctx.lineCap='round';for(const {shape:{line:[gx1,gy1,gx2,gy2]}} of P.find('rail').filter(g=>g.visible)){ctx.shadowColor='#b9e2ff';ctx.shadowBlur=gentle?3:8;ctx.lineWidth=8;ctx.strokeStyle='#d8ecffa0';ctx.beginPath();ctx.moveTo(gx1,gy1);ctx.lineTo(gx2,gy2);ctx.stroke();ctx.shadowBlur=0;ctx.lineWidth=2;ctx.strokeStyle='#ffffff';ctx.beginPath();ctx.moveTo(gx1,gy1-2);ctx.lineTo(gx2,gy2-2);ctx.stroke();}ctx.restore();
+if(P.shown('start')){const [sx,sy,sw,sh]=P.get('start').shape.rect;ctx.save();ctx.shadowColor='#ff74c4';ctx.shadowBlur=gentle?2:10;rr(sx,sy,sw,sh,5,grad(sx,sy,sx+sw,sy+sh,[[0,'#f7eccb'],[.5,'#b88d3c'],[1,'#f2d891']]),'#5b3b17');ctx.restore();rr(sx+7,sy+3,sw-14,sh-8,3,'#1a0b17');text('START',sx+sw/2,sy+32,9,'#fff0f6');}
 // Attacker (大入賞口) on the right of the board: a gold door that tilts open during the jackpot rounds.
-{const {x1:ax1,x2:ax2,y1:ay1}=ATTACKER,open=bonus?.open,ay=ay1+4;ctx.save();if(open){ctx.shadowColor='#ff5fae';ctx.shadowBlur=gentle||reduced?3:12;}rr(ax1-6,ay-2,ax2-ax1+10,14,4,open?'#1a0b17':grad(ax1,ay,ax1,ay+12,[[0,'#f7eccb'],[.5,'#b88d3c'],[1,'#f2d891']]),open?'#ff9fd2':'#5b3b17');ctx.restore();if(open){rr(ax1-6,ay-9,ax2-ax1+10,6,3,grad(ax1,ay-9,ax1,ay-3,[[0,'#f7eccb'],[1,'#b88d3c']]),'#5b3b17');}text('ATTACKER',(ax1+ax2)/2-1,ay+24,7,'#fff0f6');}
+{const at=P.get('attacker');at.open=!!bonus?.open;const [ax1,ay1,aw]=at.shape.rect,ax2=ax1+aw,open=at.open,ay=ay1+4;if(at.visible){ctx.save();if(open){ctx.shadowColor='#ff5fae';ctx.shadowBlur=gentle||reduced?3:12;}rr(ax1-6,ay-2,ax2-ax1+10,14,4,open?'#1a0b17':grad(ax1,ay,ax1,ay+12,[[0,'#f7eccb'],[.5,'#b88d3c'],[1,'#f2d891']]),open?'#ff9fd2':'#5b3b17');ctx.restore();if(open){rr(ax1-6,ay-9,ax2-ax1+10,6,3,grad(ax1,ay-9,ax1,ay-3,[[0,'#f7eccb'],[1,'#b88d3c']]),'#5b3b17');}text('ATTACKER',(ax1+ax2)/2-1,ay+24,7,'#fff0f6');}}
 ctx.save();glassClip();for(const b of balls)drawBall(b);ctx.restore();
 ctx.save();ctx.beginPath();ctx.arc(BOARD.cx,BOARD.cy,BOARD.r,0,7);ctx.clip();buttonCut();sheen(60,130,600,600);ctx.restore();
 const power=(+$('#power').value-25)/75;ctx.save();ctx.lineCap='round';ctx.lineWidth=5;ctx.strokeStyle='#0008';ctx.beginPath();ctx.arc(628,826,44,Math.PI*.75,Math.PI*2.25);ctx.stroke();ctx.strokeStyle='#ffd27a';ctx.shadowColor='#ffb347';ctx.shadowBlur=gentle?0:8;ctx.beginPath();ctx.arc(628,826,44,Math.PI*.75,Math.PI*(.75+1.5*power));ctx.stroke();ctx.restore();
-winGlow('#ff4fae');text('FREE PLAY · NO CASH VALUE',360,944,9,'#b9b2c8');}
+partMap();text('FREE PLAY · NO CASH VALUE',360,944,9,'#b9b2c8');}
 function renderSlot(){const s=states.slot,now=performance.now(),stopReady=[0,1,2].map(i=>spinning&&velocities[i]!==0&&targets[i]===null);
 const leverAge=(now-(pressedAt.lever??-1e9))/1000,leverPull=held==='lever'?1:leverAge<.32?Math.sin(Math.min(1,leverAge/.32)*Math.PI):0;
 lcdArt(156,102,394,196);const navi=navis.slot;naviTick(navi,spinning);
@@ -177,9 +175,10 @@ if(s.win>0&&clock<resultUntil&&!big){ctx.save();ctx.shadowColor='#5fb6ff';ctx.sh
 else if(replay)text('REPLAY',420,282,16,'#d8ecff','bold Georgia');
 if(big){ctx.save();ctx.shadowColor='#5fb6ff';ctx.shadowBlur=gentle||reduced?3:12;rr(362,236,170,50,8,'#0d1d45d0','#a9d4ff');text('BIG BONUS',447,259,17,'#fff3c4','bold Georgia');ctx.restore();text(`${big.paid} / ${BIG.total} 枚`,447,278,12,'#d8ecff','bold sans-serif');}
 drawBubble(ctx,navi,clock,{box:[296,142,262],size:15,reduced});
-cabinetArt('astral');
-drawSlot(ctx,{gentle:gentle||reduced,cabinet:art.astral,wait:spinning&&waitUntil>clock,positions,velocities,stopReady,credit:s.credit,win:s.win,bet:spinning||betPlaced||replay?3:0,replay,canBet:canBet(),canLever:!paused&&!spinning&&!paying&&(betPlaced||replay||s.credit>=3),showResult:clock<resultUntil,resultLeft:resultUntil-clock,leverPull,pressed:name=>held===name||now-(pressedAt[name]??-1e9)<140});
-winGlow('#4f9dff');text('FREE PLAY · NO CASH VALUE',360,944,9,'#b6c2dc');}
+cabinetArt('astral');cabinetLeds('astral',big?'big':s.win>0&&clock<resultUntil?'win':replay?'replay':spinning?'spin':'idle');
+const P=parts.astral,bet=spinning||betPlaced||replay?3:0,canLever=!paused&&!spinning&&!paying&&(betPlaced||replay||s.credit>=3);[1,2,3].forEach(n=>P.set(`bet${n}`,{lit:bet>=n}));P.set('start',{lit:canLever});P.set('replay',{lit:replay});P.set('wait',{lit:spinning&&waitUntil>clock});
+drawSlot(ctx,{gentle:gentle||reduced,cabinet:art.astral,lit:P.lit,wait:spinning&&waitUntil>clock,positions,velocities,stopReady,credit:s.credit,win:s.win,bet,replay,canBet:canBet(),canLever,showResult:clock<resultUntil,resultLeft:resultUntil-clock,leverPull,pressed:name=>held===name||now-(pressedAt[name]??-1e9)<140});
+partMap();text('FREE PLAY · NO CASH VALUE',360,944,9,'#b6c2dc');}
 // Advances the character's timers and plays its voice blips while a line is being typed out.
 function naviTick(n,busy){if(tick(n,clock,{busy,reduced})>0)tone('voice',KINDS[n.kind].pitch);}
 function render(){ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,720,960);ctx.save();mode==='pachinko'?renderPachinko():renderSlot();ctx.restore();}

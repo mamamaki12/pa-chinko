@@ -240,8 +240,10 @@ function lamp([x,y,r],label,size,on,color,gentle){
 const shade=c=>'#'+[1,3,5].map(i=>Math.round(parseInt(c.slice(i,i+2),16)*.45).toString(16).padStart(2,'0')).join('');
 function lamps(v){
   const {left,right}=LAYOUT.lamps;
-  left.forEach((m,k)=>lamp(m,String(3-k),m[2]*1.05,v.bet>=3-k,'#ffa000',v.gentle));
-  [['START',v.canLever,'#3ee07a'],['REPLAY',v.replay,'#47b4ff'],['WAIT',v.wait,'#ff5a4a']].forEach(([label,on,color],i)=>lamp(right[i],label,label.length>5?6:7,on,color,v.gentle));
+  // v.lit(id): lamp states kept by the machine parts (cabinet-parts.js); without it they follow the game state passed in.
+  const lit=(id,fallback)=>v.lit?v.lit(id):fallback;
+  left.forEach((m,k)=>lamp(m,String(3-k),m[2]*1.05,lit(`bet${3-k}`,v.bet>=3-k),'#ffa000',v.gentle));
+  [['START',v.canLever,'#3ee07a'],['REPLAY',v.replay,'#47b4ff'],['WAIT',v.wait,'#ff5a4a']].forEach(([label,on,color],i)=>lamp(right[i],label,label.length>5?6:7,lit(label.toLowerCase(),on),color,v.gentle));
 }
 
 // Lit / pressed looks on the controls painted on the cabinet.
