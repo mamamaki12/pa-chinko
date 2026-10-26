@@ -62,19 +62,29 @@ function rr(x,y,w,h,r,fill,stroke){ctx.beginPath();ctx.roundRect(x,y,w,h,r);if(f
 function grad(x,y,x2,y2,stops){const g=ctx.createLinearGradient(x,y,x2,y2);stops.forEach(([p,c])=>g.addColorStop(p,c));return g;}
 function text(t,x,y,size,color,font='Arial',align='center'){ctx.textAlign=align;ctx.font=`${size}px ${font}`;ctx.fillStyle=color;ctx.fillText(t,x,y);}
 function circle(x,y,r,fill,stroke){ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.stroke();}}
-const art={};for(const [key,src] of [['aurora','assets/aurora.webp'],['astral','assets/astral.webp'],['lcd','assets/lcd-illustration.jpg']]){const img=new Image();img.onload=()=>{art[key]=img;if(key==='aurora')buildLamps(img);};img.src=src;}
+const art={};for(const [key,src] of [['aurora','assets/aurora.webp'],['astral','assets/astral.webp'],['lcd','assets/lcd-illustration.jpg']]){const img=new Image();img.onload=()=>{art[key]=img;if(key==='aurora'){buildLamps(img);buildArtBlur(img);}};img.src=src;}
 function cabinetArt(key){const img=art[key];if(img){ctx.drawImage(img,0,0,720,960);return;}rr(20,10,680,940,40,'#1b1d2a','#555');text('LOADING',360,480,14,'#99a');}
 // Pre-rendered sprites (offscreen canvases at device resolution) keep per-frame drawing cheap.
 function sprite(w,h,paint){const c=document.createElement('canvas');c.width=Math.ceil(w*dpr);c.height=Math.ceil(h*dpr);const g=c.getContext('2d');g.scale(dpr,dpr);paint(g);return c;}
 function stops(g,list){list.forEach(([p,c])=>g.addColorStop(p,c));return g;}
-// Pachinko ball: a polished steel sphere lit from the upper left. Dark equator band and a warm reflection of the board below, sharp specular, soft contact shadow.
-const BALL=sprite(20,20,g=>{const x=9,y=9,r=6;g.fillStyle=stops(g.createRadialGradient(x+1.8,y+2.8,0,x+1.8,y+2.8,7.5),[[0,'#0007'],[.6,'#0003'],[1,'#0000']]);g.fillRect(0,0,20,20);
-g.save();g.beginPath();g.arc(x,y,r,0,7);g.clip();g.fillStyle=stops(g.createRadialGradient(x-2,y-2.5,.4,x,y,r),[[0,'#ffffff'],[.3,'#e9eef2'],[.7,'#a3adb7'],[.92,'#59636e'],[1,'#3a424b']]);g.fillRect(0,0,20,20);
-g.fillStyle=stops(g.createLinearGradient(0,y-r,0,y+r),[[0,'#ffffff00'],[.42,'#ffffff00'],[.6,'#28303a3a'],[.74,'#28303a14'],[.86,'#e07ab028'],[1,'#ffd0e866']]);g.fillRect(0,0,20,20);
-g.fillStyle=stops(g.createRadialGradient(x+2.6,y+3.4,0,x+2.6,y+3.4,3.2),[[0,'#ffffffaa'],[1,'#ffffff00']]);g.fillRect(0,0,20,20);
-g.strokeStyle='#ffffff55';g.lineWidth=.8;g.beginPath();g.arc(x,y,r-.5,Math.PI*.15,Math.PI*.6);g.stroke();g.restore();
-g.fillStyle=stops(g.createRadialGradient(x-2.2,y-2.6,0,x-2.2,y-2.6,2.4),[[0,'#ffffff'],[.45,'#ffffffcc'],[1,'#ffffff00']]);g.beginPath();g.arc(x-2.2,y-2.6,2.4,0,7);g.fill();
-g.strokeStyle='#0d111680';g.lineWidth=.5;g.beginPath();g.arc(x,y,r,0,7);g.stroke();});
+// Pachinko ball: a small chrome mirror sphere (radius BOARD.ball). Like a real steel ball it shows almost no colour of its own: the top half
+// reflects the bright hall lights, a dark band marks the horizon, the centre mirrors the dim room in front of the glass and the rim picks up
+// the colours of the board around it (drawn per ball from a blurred copy of the cabinet art, see drawBall). Sharp specular point, soft contact shadow.
+const BR=BOARD.ball,BS=16,BC=8;
+const BALL_BACK=sprite(BS,BS,g=>{const x=BC,y=BC,r=BR;g.fillStyle=stops(g.createRadialGradient(x+1.1,y+1.9,0,x+1.1,y+1.9,r+1.6),[[0,'#000a'],[.55,'#0005'],[1,'#0000']]);g.fillRect(0,0,BS,BS);
+g.fillStyle=stops(g.createRadialGradient(x-.8,y-.8,0,x,y,r),[[0,'#a9b1ba'],[.7,'#6b737d'],[1,'#30363d']]);g.beginPath();g.arc(x,y,r,0,7);g.fill();});
+const BALL_FRONT=sprite(BS,BS,g=>{const x=BC,y=BC,r=BR;g.save();g.beginPath();g.arc(x,y,r,0,7);g.clip();
+g.fillStyle=stops(g.createRadialGradient(x-.5,y-.3,0,x,y,r),[[0,'#b9c1c8f0'],[.45,'#8d96a0b0'],[.75,'#4d555f30'],[1,'#0000']]);g.fillRect(0,0,BS,BS);
+g.fillStyle=stops(g.createLinearGradient(0,y-r,0,y+r),[[0,'#ffffffee'],[.3,'#f1f5f8a0'],[.46,'#dfe6ec30'],[.5,'#1a2027a0'],[.6,'#1a202740'],[.7,'#1a202700'],[1,'#0000']]);g.fillRect(0,0,BS,BS);
+g.fillStyle=stops(g.createRadialGradient(x+.6,y+r*.85,0,x+.6,y+r*.85,r*.8),[[0,'#ffe9d0a0'],[1,'#ffe9d000']]);g.fillRect(0,0,BS,BS);
+g.strokeStyle='#ffffff70';g.lineWidth=.45;g.beginPath();g.arc(x,y,r-.45,Math.PI*.1,Math.PI*.75);g.stroke();g.restore();
+g.fillStyle=stops(g.createRadialGradient(x-1.5,y-1.8,0,x-1.5,y-1.8,2.3),[[0,'#ffffff'],[.35,'#ffffffd0'],[1,'#ffffff00']]);g.beginPath();g.arc(x-1.5,y-1.8,2.3,0,7);g.fill();
+g.fillStyle='#ffffff';g.beginPath();g.ellipse(x-1.5,y-1.9,.85,.6,-.5,0,7);g.fill();
+g.fillStyle='#ffffffb0';g.beginPath();g.arc(x+1.7,y+1.6,.5,0,7);g.fill();
+g.strokeStyle='#0a0e13b0';g.lineWidth=.5;g.beginPath();g.arc(x,y,r,0,7);g.stroke();});
+// Blurred quarter-size copy of the cabinet art: the board colours that each ball mirrors around its rim.
+let artBlur=null;function buildArtBlur(img){try{const c=document.createElement('canvas');c.width=180;c.height=240;const g=c.getContext('2d');g.filter='blur(1.5px) saturate(1.4)';g.drawImage(img,0,0,180,240);artBlur=c;}catch{artBlur=null;}}
+function drawBall(b){ctx.drawImage(BALL_BACK,b.x-BC,b.y-BC,BS,BS);if(artBlur){ctx.save();ctx.beginPath();ctx.arc(b.x,b.y,BR,0,7);ctx.clip();ctx.globalAlpha=.85;ctx.drawImage(artBlur,(b.x-26)/4,(b.y-26)/4,13,13,b.x-BR,b.y-BR,BR*2,BR*2);ctx.restore();}ctx.drawImage(BALL_FRONT,b.x-BC,b.y-BC,BS,BS);}
 // The front panel (ball tray dome and the lower trim) sits physically in front of the glass, so balls are clipped to the glass area and never drawn over it.
 function glassClip(){ctx.beginPath();ctx.arc(BOARD.cx,BOARD.cy,BOARD.r,0,7);ctx.clip();ctx.beginPath();ctx.rect(0,0,720,688);ctx.clip();buttonCut();}
 // Cuts the chance button dome out of the clip: it sits in front of the glass, so pins, balls and reflections go behind it.
@@ -152,11 +162,10 @@ drawBubble(ctx,navi,clock,{box:[284,272,236],size:14,reduced});
 cabinetArt('aurora');lampGlow(reach||!!bonus);buttonGlow(asking,flash);
 ctx.save();buttonCut();ctx.beginPath();ctx.arc(BOARD.cx,BOARD.cy,BOARD.r,0,7);ctx.rect(x2+8,y1-8,-(x2-x1+16),y2-y1+16);ctx.fillStyle='#0a061033';ctx.fill('evenodd');ctx.restore();
 ctx.save();ctx.lineCap='round';for(const [gx1,gy1,gx2,gy2] of BOARD.guides){ctx.shadowColor='#b9e2ff';ctx.shadowBlur=gentle?3:8;ctx.lineWidth=8;ctx.strokeStyle='#d8ecffa0';ctx.beginPath();ctx.moveTo(gx1,gy1);ctx.lineTo(gx2,gy2);ctx.stroke();ctx.shadowBlur=0;ctx.lineWidth=2;ctx.strokeStyle='#ffffff';ctx.beginPath();ctx.moveTo(gx1,gy1-2);ctx.lineTo(gx2,gy2-2);ctx.stroke();}ctx.restore();
-for(const p of pins){circle(p.x+1.2,p.y+2.2,3.6,'#000a');circle(p.x,p.y,3.2,grad(p.x-3,p.y-3,p.x+3,p.y+3,[[0,'#ffffff'],[.45,'#e2e6ea'],[1,'#69727c']]),'#2a2f36');}
 ctx.save();ctx.shadowColor='#ff74c4';ctx.shadowBlur=gentle?2:10;rr(338,606,44,16,5,grad(338,606,382,622,[[0,'#f7eccb'],[.5,'#b88d3c'],[1,'#f2d891']]),'#5b3b17');ctx.restore();rr(345,609,30,8,3,'#1a0b17');text('START',360,638,9,'#fff0f6');
 // Attacker (大入賞口) on the right of the board: a gold door that tilts open during the jackpot rounds.
 {const {x1:ax1,x2:ax2,y1:ay1}=ATTACKER,open=bonus?.open,ay=ay1+4;ctx.save();if(open){ctx.shadowColor='#ff5fae';ctx.shadowBlur=gentle||reduced?3:12;}rr(ax1-6,ay-2,ax2-ax1+10,14,4,open?'#1a0b17':grad(ax1,ay,ax1,ay+12,[[0,'#f7eccb'],[.5,'#b88d3c'],[1,'#f2d891']]),open?'#ff9fd2':'#5b3b17');ctx.restore();if(open){rr(ax1-6,ay-9,ax2-ax1+10,6,3,grad(ax1,ay-9,ax1,ay-3,[[0,'#f7eccb'],[1,'#b88d3c']]),'#5b3b17');}text('ATTACKER',(ax1+ax2)/2-1,ay+24,7,'#fff0f6');}
-ctx.save();glassClip();for(const b of balls)ctx.drawImage(BALL,b.x-9,b.y-9,20,20);ctx.restore();
+ctx.save();glassClip();for(const b of balls)drawBall(b);ctx.restore();
 ctx.save();ctx.beginPath();ctx.arc(BOARD.cx,BOARD.cy,BOARD.r,0,7);ctx.clip();buttonCut();sheen(60,130,600,600);ctx.restore();
 const power=(+$('#power').value-25)/75;ctx.save();ctx.lineCap='round';ctx.lineWidth=5;ctx.strokeStyle='#0008';ctx.beginPath();ctx.arc(628,826,44,Math.PI*.75,Math.PI*2.25);ctx.stroke();ctx.strokeStyle='#ffd27a';ctx.shadowColor='#ffb347';ctx.shadowBlur=gentle?0:8;ctx.beginPath();ctx.arc(628,826,44,Math.PI*.75,Math.PI*(.75+1.5*power));ctx.stroke();ctx.restore();
 winGlow('#ff4fae');text('FREE PLAY · NO CASH VALUE',360,944,9,'#b9b2c8');}
