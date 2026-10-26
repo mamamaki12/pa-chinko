@@ -397,22 +397,19 @@ function note(x,y,s,color){
 // Wraps a line into rows that fit maxW (Japanese has no spaces, so it breaks between characters).
 export function wrap(measure,line,maxW){const rows=[];let row='';for(const ch of line){if(row&&measure(row+ch)>maxW){rows.push(row);row=ch.trim()?ch:'';}else row+=ch;}if(row)rows.push(row);return rows;}
 
-// Speech bubble with the text typed out. box: [x,y,w] of the bubble; tail: [x,y] point it aims at.
-export function drawBubble(c,n,t,{box:[bx,by,bw],tail:[tx,ty],size=14,reduced=false}){
+// The character's line, typed out as text only. box: [x,y,w] of the area the text wraps in.
+export function drawBubble(c,n,t,{box:[bx,by,bw],size=14,reduced=false}){
   ctx=c;if(!n.line||t>=n.lineUntil)return;
   const age=t-n.lineAt,left=n.lineUntil-t,alpha=Math.min(1,age/.15,left/.3),pop=reduced?1:Math.min(1,.85+age/.15*.15);
   const font=`bold ${size}px "Hiragino Maru Gothic ProN","Rounded Mplus 1c","Noto Sans JP","Hiragino Sans",sans-serif`;ctx.font=font;
   const rows=wrap(s=>ctx.measureText(s).width,n.line,bw-24),lh=size*1.3,bh=rows.length*lh+16,shown=reduced?n.line.length:Math.min(n.line.length,Math.floor(age*CPS));
   ctx.save();ctx.globalAlpha=Math.max(0,alpha);ctx.translate(bx+bw/2,by+bh/2);ctx.scale(pop,pop);ctx.translate(-(bx+bw/2),-(by+bh/2));
-  ctx.shadowColor='#0007';ctx.shadowBlur=8;ctx.shadowOffsetY=2;
-  ctx.fillStyle=grad(0,by,0,by+bh,[[0,'#ffffff'],[1,'#f6f3fb']]);ctx.beginPath();ctx.roundRect(bx,by,bw,bh,12);ctx.fill();
-  const cx=Math.max(bx+16,Math.min(bx+bw-16,tx)),edge=ty>by+bh/2?by+bh-1:ty<by?by+1:null;
-  ctx.beginPath();if(edge!==null){ctx.moveTo(cx-7,edge);ctx.lineTo(tx,ty);ctx.lineTo(cx+7,edge);}else{const ex=tx<bx?bx+1:bx+bw-1,cy=Math.max(by+12,Math.min(by+bh-12,ty));ctx.moveTo(ex,cy-6);ctx.lineTo(tx,ty);ctx.lineTo(ex,cy+6);}ctx.fill();
-  ctx.shadowColor='transparent';ctx.strokeStyle=KINDS[n.kind].ribbon;ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(bx,by,bw,bh,12);ctx.stroke();ctx.strokeStyle=KINDS[n.kind].ribbon+'40';ctx.lineWidth=1;ctx.beginPath();ctx.roundRect(bx+3,by+3,bw-6,bh-6,9);ctx.stroke();
-  ctx.fillStyle='#3a1d2e';ctx.textAlign='left';ctx.font=font;let left2=shown;
-  rows.forEach((r,i)=>{const part=[...r].slice(0,Math.max(0,left2)).join('');left2-=[...r].length;ctx.fillText(part,bx+12,by+8+size+i*lh);});
-  // Name tag on the top edge, like the speaker plate of a real machine's dialogue window.
-  const tag=KINDS[n.kind].name,ts=Math.round(size*.7);ctx.font=`bold ${ts}px sans-serif`;const tw=ctx.measureText(tag).width+12;
-  ctx.fillStyle=KINDS[n.kind].ribbon;ctx.beginPath();ctx.roundRect(bx+10,by-ts*.7,tw,ts+4,(ts+4)/2);ctx.fill();ctx.fillStyle='#fff';ctx.textAlign='center';ctx.fillText(tag,bx+10+tw/2,by-ts*.7+ts);
+  // Text only (no window): white letters with a thick outline in the character's ink colour and a soft glow in its
+  // ribbon colour, so the line stays readable over the bright LCD.
+  const k=KINDS[n.kind];ctx.textAlign='left';ctx.font=font;ctx.lineJoin='round';let left2=shown;
+  rows.forEach((r,i)=>{const part=[...r].slice(0,Math.max(0,left2)).join('');left2-=[...r].length;const x=bx+12,y=by+8+size+i*lh;
+    ctx.shadowColor=k.ribbon+'cc';ctx.shadowBlur=size*.6;ctx.lineWidth=size*.32;ctx.strokeStyle=k.line;ctx.strokeText(part,x,y);
+    ctx.shadowColor='transparent';ctx.lineWidth=size*.14;ctx.strokeStyle='#ffffff';ctx.strokeText(part,x,y);
+    ctx.fillStyle='#ffffff';ctx.fillText(part,x,y);});
   ctx.restore();
 }

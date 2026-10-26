@@ -148,7 +148,7 @@ else if(launching&&+$('#power').value>=70){rr(x2-108,y2-48,98,30,8,'#2a0d24d0','
 const asking=pushReady();if(asking)pushPrompt();else if(!bonus) text(reach?'リ ー チ':drawing?'抽 選 中':clock<resultUntil?resultText:'A U R O R A',360,482,reach?14:12,reach?'#ffe3f3':'#f6e7f2');
 const flash=clock-(pressedAt.push??-9);if(flash<.35&&!reduced){ctx.fillStyle=`rgba(255,240,250,${(gentle?.25:.6)*(1-flash/.35)})`;ctx.fillRect(x1,y1,x2-x1,y2-y1);}
 for(let i=0;i<MAX_HOLDS;i++)circle(x1+24+i*16,y2-20,5,i<drawQueue?'#fff2fa':'#2a1630','#d78fbf');
-drawBubble(ctx,navi,clock,{box:[284,272,236],tail:[254,300],size:14,reduced});
+drawBubble(ctx,navi,clock,{box:[284,272,236],size:14,reduced});
 cabinetArt('aurora');lampGlow(reach||!!bonus);buttonGlow(asking,flash);
 ctx.save();buttonCut();ctx.beginPath();ctx.arc(BOARD.cx,BOARD.cy,BOARD.r,0,7);ctx.rect(x2+8,y1-8,-(x2-x1+16),y2-y1+16);ctx.fillStyle='#0a061033';ctx.fill('evenodd');ctx.restore();
 ctx.save();ctx.lineCap='round';for(const [gx1,gy1,gx2,gy2] of BOARD.guides){ctx.shadowColor='#b9e2ff';ctx.shadowBlur=gentle?3:8;ctx.lineWidth=8;ctx.strokeStyle='#d8ecffa0';ctx.beginPath();ctx.moveTo(gx1,gy1);ctx.lineTo(gx2,gy2);ctx.stroke();ctx.shadowBlur=0;ctx.lineWidth=2;ctx.strokeStyle='#ffffff';ctx.beginPath();ctx.moveTo(gx1,gy1-2);ctx.lineTo(gx2,gy2-2);ctx.stroke();}ctx.restore();
@@ -167,7 +167,7 @@ drawNavi(ctx,navi,clock,{x:226,y:290,scale:1.6,gentle,reduced});
 if(s.win>0&&clock<resultUntil&&!big){ctx.save();ctx.shadowColor='#5fb6ff';ctx.shadowBlur=gentle?4:16;ctx.lineWidth=5;ctx.strokeStyle='#0d1d45';ctx.font='bold 34px Georgia';ctx.textAlign='center';ctx.strokeText(`${s.win} MEDALS`,420,262);text(`${s.win} MEDALS`,420,262,34,'#eef6ff','bold Georgia');ctx.restore();}
 else if(replay)text('REPLAY',420,282,16,'#d8ecff','bold Georgia');
 if(big){ctx.save();ctx.shadowColor='#5fb6ff';ctx.shadowBlur=gentle||reduced?3:12;rr(362,236,170,50,8,'#0d1d45d0','#a9d4ff');text('BIG BONUS',447,259,17,'#fff3c4','bold Georgia');ctx.restore();text(`${big.paid} / ${BIG.total} 枚`,447,278,12,'#d8ecff','bold sans-serif');}
-drawBubble(ctx,navi,clock,{box:[300,142,236],tail:[262,180],size:15,reduced});
+drawBubble(ctx,navi,clock,{box:[296,142,262],size:15,reduced});
 cabinetArt('astral');
 drawSlot(ctx,{gentle:gentle||reduced,cabinet:art.astral,wait:spinning&&waitUntil>clock,positions,velocities,stopReady,credit:s.credit,win:s.win,bet:spinning||betPlaced||replay?3:0,replay,canBet:canBet(),canLever:!paused&&!spinning&&!paying&&(betPlaced||replay||s.credit>=3),showResult:clock<resultUntil,resultLeft:resultUntil-clock,leverPull,pressed:name=>held===name||now-(pressedAt[name]??-1e9)<140});
 winGlow('#4f9dff');text('FREE PLAY · NO CASH VALUE',360,944,9,'#b6c2dc');}
