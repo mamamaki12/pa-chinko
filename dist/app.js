@@ -223,6 +223,10 @@ ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(x,y-10,rx+16,72,0,0,Math.PI*2);ctx.f
 // Tapping the drawn lever, MAX BET and stop buttons on the canvas works like the buttons below it.
 function canvasPoint(e){const r=canvas.getBoundingClientRect();return [(e.clientX-r.left)/r.width*720,(e.clientY-r.top)/r.height*960];}
 canvas.style.touchAction='manipulation';
+// iOS Safari can still take quick taps on the drawn lever, MAX BET and stop buttons as a double-tap zoom, so a short tap on the board cancels the browser's default (scrolling and pinch zoom still work).
+let tapStart=null;canvas.addEventListener('touchstart',e=>{const t=e.touches[0];tapStart=e.touches.length===1?{x:t.clientX,y:t.clientY,at:e.timeStamp}:null;},{passive:true});
+canvas.addEventListener('touchend',e=>{const t=e.changedTouches[0];if(tapStart&&!e.touches.length&&e.cancelable&&e.timeStamp-tapStart.at<500&&Math.hypot(t.clientX-tapStart.x,t.clientY-tapStart.y)<12)e.preventDefault();tapStart=null;});
+canvas.addEventListener('dblclick',e=>e.preventDefault());
 canvas.addEventListener('pointerdown',e=>{if(paused)return;if(mode==='pachinko'){if(pushReady()&&inButton(...canvasPoint(e),8)){e.preventDefault();pressPush();}return;}if(mode!=='slot')return;const hit=hitSlot(...canvasPoint(e));if(!hit)return;e.preventDefault();held=hit;if(hit==='lever')lever();else if(hit==='bet')maxBet();else $$('[data-stop]')[+hit.slice(4)].onclick();});
 window.addEventListener('pointerup',()=>held=null);window.addEventListener('pointercancel',()=>held=null);
 canvas.addEventListener('pointermove',e=>{const pt=canvasPoint(e);canvas.style.cursor=(mode==='slot'?hitSlot(...pt):mode==='pachinko'&&pushReady()&&inButton(...pt,8))?'pointer':'';});
