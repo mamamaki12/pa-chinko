@@ -1,8 +1,8 @@
 import {drawPortrait} from './navigator-art.js';
 // LCD navigator characters: original chibi mascots that live on the LCD and react to what just happened, like the
 // mini characters of a real machine. ハナ lives on AURORA (pink, flower), ソラ on ASTRAL (silver-blue, star).
-// Rules: reactions come at or after a known result (spin start, reach, stop, payout); the lever / spin reactions are the
-// same for every game, so they never hint at the outcome. No near-miss teasing and no lines that push for more play;
+// Rules: reactions come at or after a known result (spin start, reach, stop, payout); the lever / spin / reach reactions are the
+// same for every game, so they never hint at the outcome. sp / spsp follow a developed reach, which does (see REACH_PICK in engine.js). No near-miss teasing and no lines that push for more play;
 // gentle lines about breaks are fine. Gentle mode keeps the motion but dims sparkles; prefers-reduced-motion keeps poses still
 // (no blinking, lip flaps, hops or idle fidgets).
 
@@ -23,6 +23,8 @@ export const EVENTS={
   enter:{pose:'nod',expr:'happy',dur:.6,chance:0,prio:0,lines:[]},
   spin:{pose:'watch',expr:'normal',dur:2,chance:.3,prio:1,lines:['くるくる〜','まわってるね','どれどれ…']},
   reach:{pose:'point',expr:'surprise',dur:3,chance:1,prio:2,lines:['リーチ！','リーチだね','左右がそろったよ']},
+  sp:{pose:'point',expr:'surprise',dur:2.5,chance:1,prio:2,lines:['流れ星がきた！','流星リーチ！','星がいっぱい！']},
+  spsp:{pose:'cheer',expr:'surprise',dur:3,chance:1,prio:2,lines:['お城が光ってる！','天空城リーチ！','わあ、お城だ！']},
   bonus:{pose:'point',expr:'surprise',dur:3.5,chance:1,prio:3,lines:['大当たり！ 右打ちで右下をねらってね','そろった！ 強めに打って右下へ']},
   win:{pose:'cheer',expr:'happy',dur:4.5,chance:1,prio:3,lines:['大当たり終了！ {n}玉だよ','おつかれさま、{n}玉！'],next:'afterWin'},
   afterWin:{pose:'idle',expr:'happy',dur:3,chance:1,prio:1,lines:['いい区切り。ここで休むのもアリだよ','うれしい気分のまま、ひと休みしよっか']},

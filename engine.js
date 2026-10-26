@@ -45,10 +45,27 @@ export function collideDisplay(b){const {x1,x2,y1,y2}=BOARD.display;if(b.x<=x1||
 
 // Pachinko hold (保留) and LCD spin plan. Holds never hint at the result; misses avoid one-step-off "near-miss" stops.
 export const MAX_HOLDS=4;
-// リーチの途中（push 秒）で液晶が「ボタンを押せ」と出し、押すか PUSH_WAIT 秒たつと中央の数字が止まる。リーチならどれでも同じように出るので、当たりの予告にはならない。
+// リーチの途中（最後の段階の半ば、push 秒）で液晶が「ボタンを押せ」と出し、押すか PUSH_WAIT 秒たつと中央の数字が止まる。ボタンはどのリーチでも出る（色はリーチの色）。
 export const PUSH_WAIT=3.5;
 export function addHold(holds){return holds<MAX_HOLDS?holds+1:holds;}
 const wrap=n=>((n-1)%9+9)%9+1;
-export function planSpin(win,holdsLeft,{gentle=true,rand=randomInt}={}){const reach=win||rand(15)===0;let left=rand(9)+1,right=left,middle=left;if(!win){if(reach){const far=[1,2,3,4,5,6,7,8,9].filter(n=>n!==left&&n!==wrap(left-1)&&n!==wrap(left+1));middle=far[rand(far.length)];}else{right=wrap(left+1+rand(8));middle=rand(9)+1;}}
-if(reach){const tension=gentle?2.5:4;return {numbers:[left,middle,right],reach,stops:[2,2.8+tension,2.8],duration:2.8+tension,push:2.8+tension/2};}
+// Reach kinds, like the ノーマル → SP → SPSP reaches of a real machine: every reach starts as a normal reach and may develop
+// (発展) into 流星リーチ and then 天空城リーチ. The kind and the title colour are picked after the draw, from the tables below,
+// so the jackpot odds (1/99) never change; only the presentation follows the result. Longer reaches and redder colours are
+// picked more often for a win, which gives each kind its own 信頼度 (see reachTrust). variety:false keeps every reach normal and pink.
+export const REACH_KINDS={normal:'ノーマルリーチ',sp:'流星リーチ',spsp:'天空城リーチ'};
+export const REACH_PICK={win:{normal:10,sp:35,spsp:55},miss:{normal:75,sp:20,spsp:5}};
+export const REACH_COLOR={win:{blue:15,green:30,red:55},miss:{blue:60,green:30,red:10}};
+export const WIN_ODDS=1/99,MISS_REACH=1/15;
+const pick=(table,rand)=>{let r=rand(100);for(const [k,w] of Object.entries(table)){if(r<w)return k;r-=w;}return Object.keys(table)[0];};
+// Share of reaches showing this kind (and colour, if given) that win.
+export function reachTrust(kind,color){const share=(o,c)=>(kind?REACH_PICK[o][kind]/100:1)*(color?REACH_COLOR[o][color]/100:1)*c;
+  const w=share('win',WIN_ODDS),m=share('miss',(1-WIN_ODDS)*MISS_REACH);return w/(w+m);}
+// Seconds of each stage: a plain reach is one stage; a developing one shortens the normal stage and adds the later ones.
+function reachStages(kind,gentle){const g=(a,b)=>gentle?a:b;return kind==='normal'?[['normal',g(2.5,4)]]:kind==='sp'?[['normal',g(1.6,2)],['sp',g(3,4.5)]]:[['normal',g(1.6,2)],['sp',g(2,2.5)],['spsp',g(3.5,5.5)]];}
+export function planSpin(win,holdsLeft,{gentle=true,rand=randomInt,variety=true}={}){const reach=win||rand(15)===0;let left=rand(9)+1,right=left,middle=left;if(!win){if(reach){const far=[1,2,3,4,5,6,7,8,9].filter(n=>n!==left&&n!==wrap(left-1)&&n!==wrap(left+1));middle=far[rand(far.length)];}else{right=wrap(left+1+rand(8));middle=rand(9)+1;}}
+if(reach){const o=win?'win':'miss',kind=variety?pick(REACH_PICK[o],rand):'normal',color=variety?pick(REACH_COLOR[o],rand):'pink';let at=2.8;const stages=reachStages(kind,gentle).map(([k,len])=>{const s={kind:k,at,until:at+len};at+=len;return s;}),last=stages[stages.length-1];
+  return {numbers:[left,middle,right],reach,kind,color,stages,stops:[2,at,2.8],duration:at,push:last.at+(last.until-last.at)/2};}
 const duration=holdsLeft>=3?2.5:holdsLeft>=1?4:5;return {numbers:[left,middle,right],reach,stops:[duration-1.2,duration,duration-.6],duration};}
+// The reach stage showing at time t of a draw (null before the reach; the last stage lasts until the button stops the middle number).
+export function reachStage(plan,t){return plan?.reach?plan.stages.findLast(s=>t>=s.at)??null:null;}

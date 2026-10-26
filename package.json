@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "test": "node --test tests/*.test.js",
-    "check": "node --check app.js && node --check engine.js && node --check sound.js && node --check music.js && node --check journal.js && node --check slot-view.js && node --check lcd-character.js && node --check navigator-art.js && node --check navigator-rig.js && node --check cabinet-leds.js && node --check cabinet-parts.js && node --check celebration.js && node --check updater.js && node --check scripts/stamp-version.mjs",
+    "check": "node --check app.js && node --check reach-fx.js && node --check engine.js && node --check sound.js && node --check music.js && node --check journal.js && node --check slot-view.js && node --check lcd-character.js && node --check navigator-art.js && node --check navigator-rig.js && node --check cabinet-leds.js && node --check cabinet-parts.js && node --check celebration.js && node --check updater.js && node --check scripts/stamp-version.mjs && node --check scripts/make-icons.mjs",
     "start": "python3 -m http.server 3000 --bind 0.0.0.0"
   }
 }
