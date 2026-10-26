@@ -3,7 +3,7 @@
 // three reels showing three symbols each, bet lamps 1/2/3 in the left medallions, START / REPLAY / PAY lamps in the right ones,
 // and 7-segment CREDIT / PAYOUT counters on the plates under the window. The lever, MAX BET dome and stop buttons
 // painted on the cabinet are tappable, and get a lit / pressed look here. All drawings are original.
-import {REELS} from './engine.js';
+import {REELS,LINES} from './engine.js';
 
 // Coordinates follow the parts painted in astral.webp, so hit areas and highlights sit on the art.
 export const LAYOUT={
@@ -16,6 +16,9 @@ export const LAYOUT={
   bet:{x:587,y:549,r:24},
   stops:{x:[283,360,437],y:600,r:18},
 };
+
+// Centre of the cell in row (0 top, 1 middle, 2 bottom) of a reel, where the drum's curve puts it on screen.
+export function cellCenter(reel,row){const [x,w]=LAYOUT.reels[reel],{reelY,reelH,pitch,radius:R}=LAYOUT;return [x+w/2,reelY+reelH/2+R*Math.sin((row-1)*pitch/R)];}
 
 // Returns 'lever' | 'bet' | 'stop0' | 'stop1' | 'stop2' | null for a point in canvas coordinates.
 export function hitSlot(x,y){
@@ -215,9 +218,18 @@ function reels(v){
   LAYOUT.reels.forEach(([x,w])=>{ctx.fillStyle=grad(0,reelY,0,reelY+10,[[0,'#000000d0'],[1,'#00000000']]);ctx.fillRect(x,reelY,w,10);
     ctx.fillStyle=grad(0,reelY+reelH-6,0,reelY+reelH,[[0,'#00000000'],[1,'#000000a0']]);ctx.fillRect(x,reelY+reelH-6,w,6);
     ctx.strokeStyle='#6b7690';ctx.lineWidth=1;ctx.strokeRect(x-2.5,reelY-.5,w+5,reelH+1);ctx.strokeStyle='#00000099';ctx.strokeRect(x-3.5,reelY-1.5,w+7,reelH+3);});
-  // Pay line lamps: small red arrows at both ends of the centre row, lit while medals are bet.
-  const lit=v.bet>0;
-  for(const [x,dir] of [[wx+2,1],[wx+ww-2,-1]]){ctx.save();if(lit){ctx.shadowColor='#ff2a3a';ctx.shadowBlur=v.gentle?4:10;}ctx.fillStyle=lit?'#ff4050':'#4a1218';ctx.beginPath();ctx.moveTo(x,mid-6);ctx.lineTo(x+dir*7,mid);ctx.lineTo(x,mid+6);ctx.closePath();ctx.fill();ctx.restore();}
+  // Pay line lamps: small red arrows at both ends of the 5 lines (the 3 rows, and the 2 diagonals from the corners), lit while medals are bet.
+  // After a game the lines that won (v.lines, indexes into LINES) light up across the reels: the cells glow and a gold line joins them.
+  const lit=v.bet>0,won=v.showResult?v.lines??[]:[],pulse=v.gentle?1:.65+.35*Math.cos((v.resultLeft??0)*Math.PI*3);
+  LINES.forEach((line,k)=>{const win=won.includes(k),a=cellCenter(0,line[0]),b=cellCenter(2,line[2]),ang=Math.atan2(b[1]-a[1],b[0]-a[0]);
+    const ends=line[0]===line[2]?[[wx+2,a[1],ang],[wx+ww-2,b[1],ang+Math.PI]]:[[wx+3,line[0]?wy+wh-4:wy+4,ang],[wx+ww-3,line[2]?wy+wh-4:wy+4,ang+Math.PI]];
+    for(const [x,y,t] of ends){ctx.save();ctx.translate(x,y);ctx.rotate(t);if(lit||win){ctx.shadowColor=win?'#ffd36a':'#ff2a3a';ctx.shadowBlur=v.gentle?4:10;}ctx.fillStyle=win?'#fff1b8':lit?'#ff4050':'#4a1218';ctx.beginPath();ctx.moveTo(0,-5);ctx.lineTo(7,0);ctx.lineTo(0,5);ctx.closePath();ctx.fill();ctx.restore();}});
+  if(won.length){ctx.save();ctx.beginPath();ctx.rect(wx,wy,ww,wh);ctx.clip();ctx.globalCompositeOperation='lighter';
+    for(const k of won){const pts=LINES[k].map((row,i)=>cellCenter(i,row));
+      for(const [x,y] of pts){const g=ctx.createRadialGradient(x,y,4,x,y,46);g.addColorStop(0,`rgba(255,226,140,${.42*pulse})`);g.addColorStop(1,'rgba(255,226,140,0)');ctx.fillStyle=g;ctx.fillRect(x-54,y-30,108,60);}
+      const [x0,y0]=pts[0],[x2,y2]=pts[2],dx=(x2-x0)/2,dy=(y2-y0)/2,ext=(wx+8-x0)/dx;
+      ctx.lineCap='round';for(const [lw,col] of [[9,`rgba(255,190,60,${.35*pulse})`],[3,`rgba(255,248,214,${.9*pulse})`]]){ctx.lineWidth=lw;ctx.strokeStyle=col;ctx.beginPath();ctx.moveTo(x0+dx*ext,y0+dy*ext);for(const [x,y] of pts)ctx.lineTo(x,y);ctx.lineTo(x2-dx*ext,y2-dy*ext);ctx.stroke();}}
+    ctx.restore();}
   // Glass over the whole window: a soft diagonal reflection and a faint highlight along the top edge.
   ctx.save();ctx.beginPath();ctx.rect(wx,wy,ww,wh);ctx.clip();
   ctx.fillStyle=grad(wx,wy,wx+ww*.75,wy+wh,[[0,'#ffffff20'],[.26,'#ffffff06'],[.27,'#ffffff14'],[.36,'#ffffff02'],[.37,'#ffffff00'],[1,'#ffffff00']]);ctx.fillRect(wx,wy,ww,wh);
