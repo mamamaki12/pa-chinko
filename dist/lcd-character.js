@@ -5,10 +5,10 @@
 // gentle lines about breaks are fine. Gentle mode keeps the motion but dims sparkles; prefers-reduced-motion keeps poses still.
 
 // Palettes. hair: highlight, base, shadow, deep shadow; eye: bottom glow, iris, top of iris, pupil, upper white shade;
-// dress: white, white shade, colour, colour shadow; skin: base, shade, deep shade.
+// dress: white, white shade, colour, colour shadow; shade: shadow tint for white cloth; skin: base, shade, deep shade.
 export const KINDS={
-  hana:{name:'ハナ',pitch:1.15,line:'#5a2740',hairLine:'#8e3a5c',skin:['#fff4ef','#f7d2cc','#eaa9b0'],hair:['#fff6f9','#ffcfdc','#f39ab6','#cf5f88'],eye:['#ffd6e4','#e8578f','#7d1d4c','#2a0a1a','#f3dce6'],dress:['#ffffff','#f4dbe6','#ff86b4','#c8457f'],trim:'#ebc76c',trimDark:'#a87a22',gem:'#ff5fa8',ribbon:'#ff5fa8',wing:'#ffb6dc',accent:'flower'},
-  sora:{name:'ソラ',pitch:.95,line:'#33295e',hairLine:'#4d4590',skin:['#fff4ef','#f5d3cd','#e3aab2'],hair:['#ffffff','#e2e0fb','#b5b1ea','#8780cf'],eye:['#c9ecff','#5e86ee','#26308c','#100d36','#dde3f6'],dress:['#ffffff','#dde3f6','#3553bd','#1c2c7a'],trim:'#ebc76c',trimDark:'#a87a22',gem:'#4fb8ff',ribbon:'#5fb6ff',wing:'#a9d4ff',accent:'star'},
+  hana:{name:'ハナ',pitch:1.15,line:'#5a2740',hairLine:'#8e3a5c',skin:['#fff4ef','#f7d2cc','#eaa9b0'],hair:['#fff6f9','#ffcfdc','#f39ab6','#cf5f88'],eye:['#ffd6e4','#e8578f','#7d1d4c','#2a0a1a','#f3dce6'],dress:['#ffffff','#f4dbe6','#ff86b4','#c8457f'],shade:'#c88aa8',trim:'#ebc76c',trimDark:'#a87a22',gem:'#ff5fa8',ribbon:'#ff5fa8',wing:'#ffb6dc',accent:'flower'},
+  sora:{name:'ソラ',pitch:.95,line:'#33295e',hairLine:'#4d4590',skin:['#fff4ef','#f5d3cd','#e3aab2'],hair:['#ffffff','#e2e0fb','#b5b1ea','#8780cf'],eye:['#c9ecff','#5e86ee','#26308c','#100d36','#dde3f6'],dress:['#ffffff','#dde3f6','#3553bd','#1c2c7a'],shade:'#7e8cc6',trim:'#ebc76c',trimDark:'#a87a22',gem:'#4fb8ff',ribbon:'#5fb6ff',wing:'#a9d4ff',accent:'star'},
 };
 
 // pose: body motion; expr: face; dur: seconds the pose holds; chance: how often a line is spoken; prio: a lower priority
@@ -97,6 +97,11 @@ const paths=new Map();function P(d){let p=paths.get(d);if(!p){p=new Path2D(d);pa
 function shape(d,fill,stroke,lw=1.6){const p=P(d);if(fill){ctx.fillStyle=fill;ctx.fill(p);}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw*.8;ctx.lineJoin='round';ctx.stroke(p);}return p;}
 // Fills only inside path d (for shading a part).
 function within(d,fn){ctx.save();ctx.clip(P(d));fn();ctx.restore();}
+// Volume: light comes from the upper left, so each part gets a soft highlight on its left, a cel shadow on its right
+// and a darker bottom. dark is the shadow colour of that part.
+function vol(d,x0,x1,y0,y1,dark){within(d,()=>{const w=x1-x0;
+  ctx.fillStyle=grad(x0,0,x1,0,[[0,'#ffffff40'],[.3,'#ffffff00'],[.62,dark+'00'],[.7,dark+'66'],[1,dark+'aa']]);ctx.fillRect(x0-2,y0-2,w+4,y1-y0+4);
+  ctx.fillStyle=grad(0,y0,0,y1,[[0,'#ffffff00'],[.75,dark+'00'],[1,dark+'66']]);ctx.fillRect(x0-2,y0-2,w+4,y1-y0+4);});}
 function line(pts,color,lw,alpha=1){ctx.save();ctx.globalAlpha*=alpha;ctx.strokeStyle=color;ctx.lineWidth=lw;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(pts[0],pts[1]);for(let i=2;i<pts.length;i+=6)ctx.bezierCurveTo(pts[i],pts[i+1],pts[i+2],pts[i+3],pts[i+4],pts[i+5]);ctx.stroke();ctx.restore();}
 // Mirrors an SVG path horizontally (x → -x), so left/right parts are authored once.
 const mirrored=new Map();function M(d){let m=mirrored.get(d);if(!m){let i=0;m=d.replace(/-?\d*\.?\d+/g,n=>' '+(i++%2===0?-n:+n));mirrored.set(d,m);}return m;}
@@ -166,7 +171,12 @@ function face(k,n,t,still,talking){
   shape(FACE,radial(-8,-12,4,46,[[0,k.skin[0]],[.7,k.skin[0]],[1,k.skin[1]]]),k.line,1.7);
   // Shadow the bangs cast on the forehead, and a soft shade under the side hair.
   within(FACE,()=>{ctx.fillStyle=grad(0,-16,0,8,[[0,k.skin[2]],[1,k.skin[1]+'00']]);ctx.fillRect(-40,-20,80,26);
-    ellipse(-38,8,9,26,k.skin[1]+'aa');ellipse(38,8,9,26,k.skin[1]+'aa');});
+    ellipse(-38,8,9,26,k.skin[1]+'aa');ellipse(38,8,9,26,k.skin[1]+'aa');
+    ctx.fillStyle=k.skin[2]+'99';ctx.beginPath();ctx.moveTo(-46,-30);for(const [tx,ty] of TIPS.slice().reverse())ctx.lineTo(tx+2,ty+5);ctx.lineTo(46,-30);ctx.closePath();ctx.fill();
+    // Cel shadow along the right cheek and jaw, a soft shade under the chin, and a sheen on the left cheek and the nose.
+    ctx.fillStyle=k.skin[2]+'88';ctx.beginPath();ctx.moveTo(40,-12);ctx.bezierCurveTo(30,4,32,22,12,40);ctx.lineTo(40,40);ctx.closePath();ctx.fill();
+    ctx.fillStyle=grad(0,24,0,38,[[0,k.skin[1]+'00'],[1,k.skin[2]+'99']]);ctx.fillRect(-40,24,80,16);
+    ellipse(-22,14,6,3.4,'#ffffffaa',null,1,-.3);ellipse(-.6,23,1.4,.9,'#ffffffcc');});
   // Blush with a few hatch lines.
   for(const s of [-1,1])ellipse(s*25,26,9,5.4,radial(s*25,26,0,9,[[0,'#ff7fa2cc'],[1,'#ff7fa200']]));
   for(const s of [-1,1])for(let i=0;i<3;i++)line([s*(21+i*3.4),28,s*(21.6+i*3.4),26.5,s*(22.4+i*3.4),25,s*(23+i*3.4),23.5],'#e8708c',.9,.55);
@@ -180,16 +190,22 @@ function face(k,n,t,still,talking){
 function hairFront(k){
   const H=k.hair,HL=k.hairLine;
   for(const s of [-1,1]){const d1=s<0?SIDE_LOCK:M(SIDE_LOCK),d2=s<0?SIDE_LOCK2:M(SIDE_LOCK2);
-    shape(d1,grad(0,-14,0,78,[[0,H[1]],[.6,H[2]],[1,H[3]]]),HL,1.5);within(d1,()=>{line([s*38,-4,s*44,14,s*42,36,s*46,64],H[0],2.2,.7);});
+    shape(d1,grad(0,-14,0,78,[[0,H[1]],[.6,H[2]],[1,H[3]]]),HL,1.5);vol(d1,s<0?-50:30,s<0?-30:50,-14,78,H[3]);within(d1,()=>{line([s*38,-4,s*44,14,s*42,36,s*46,64],H[0],2.2,.7);});
     shape(d2,grad(0,0,0,56,[[0,H[1]],[1,H[2]]]),HL,1.3);}
   const fill=grad(0,-62,0,16,[[0,H[1]],[.5,H[1]],[.85,H[2]],[1,H[3]]]);shape(FRONT_HAIR,fill,HL,1.7);
   within(FRONT_HAIR,()=>{ctx.fillStyle=radial(-22,-48,2,40,[[0,'#ffffff66'],[1,'#ffffff00']]);ctx.fillRect(-60,-70,120,90);
     // Darker hair in the gaps between locks, and the glossy "angel ring" highlight across the crown.
     ctx.fillStyle=grad(0,-36,0,-14,[[0,H[2]+'00'],[1,H[2]+'88']]);ctx.fillRect(-50,-36,100,60);
     ellipse(-30,-26,18,28,H[2]+'55',null,1,.4);
-    for(const x of [-31,-19,-7,6,18,30]){const y=-43+(x/34)**2*14;ellipse(x,y,5,1.6,H[0]+'ee',null,1,Math.atan(x/34*.8));}
+    ctx.beginPath();for(let x=-44;x<=44;x+=2){const y=-36+(x/34)**2*14;x===-44?ctx.moveTo(x,y):ctx.lineTo(x,y);}ctx.strokeStyle=H[3]+'70';ctx.lineWidth=6;ctx.stroke();
+    for(const x of [-33,-21,-9,4,16,28]){const y=-44+(x/34)**2*14;ellipse(x,y,6.4,2,'#ffffff',null,1,Math.atan(x/34*.8));}
     for(let i=1;i<TIPS.length-1;i++){const [tx,ty]=TIPS[i];line([tx,ty-1,tx*1.01,ty-7,tx*.96,ty-13,tx*.9,ty-19],HL,.9,.5);}
+    // Round crown: shadow on the right half, glossy strands on the left, deep shade at the tips of the locks.
+    ctx.fillStyle=H[3]+'66';ctx.beginPath();ctx.moveTo(4,-62);ctx.bezierCurveTo(40,-58,56,-30,50,16);ctx.lineTo(60,16);ctx.lineTo(60,-70);ctx.closePath();ctx.fill();
+    for(const [x,y,len] of [[-26,-46,20],[-16,-52,16],[-34,-34,16]])line([x,y,x-3,y+len*.4,x-4,y+len*.8,x-5,y+len],'#ffffff',1.6,.65);
+    for(let i=1;i<TIPS.length-1;i++){const [tx,ty]=TIPS[i];ellipse(tx,ty-3,4,5,H[3]+'55');}
   });
+  line([-46,14,-54,-30,-32,-60,0,-62],'#ffffff',1.6,.45);
   line([-6,-60,-10,-74,4,-84,14,-74],HL,4.4);line([-6,-60,-10,-74,4,-84,14,-74],H[1],2.6);
 }
 
@@ -226,7 +242,7 @@ const WING='M0 0C-10-14-34-22-46-12C-40-6-34-2-26 0C-36 4-42 12-40 20C-28 18-12 
 function arm(k,side,angle){
   ctx.save();ctx.translate(side*14,-103);ctx.rotate(-side*angle);
   ellipse(0,28.5,4.8,4.6,k.skin[0],k.line,1.3);ellipse(side*-3.6,26.6,1.8,2.6,k.skin[0],k.line,1);
-  shape(SLEEVE,grad(-9,0,9,0,[[0,k.dress[1]],[.45,k.dress[0]],[1,k.dress[1]]]),k.line,1.4);
+  shape(SLEEVE,grad(-9,0,9,0,[[0,k.dress[1]],[.45,k.dress[0]],[1,k.dress[1]]]),k.line,1.4);vol(SLEEVE,side<0?-9:9,side<0?9:-9,0,28,k.shade);
   within(SLEEVE,()=>{ellipse(0,25,10,4,k.dress[2]);ctx.fillStyle=k.trim;ctx.fillRect(-10,20,20,1.6);});
   line([-9,24,-3,28.5,3,28.5,9,24],k.line,1.4);
   ctx.restore();
@@ -237,17 +253,20 @@ function body(k,m,t,still){
   for(const s of [-1,1])shape(s<0?BOW_TAIL:M(BOW_TAIL),grad(0,-84,0,-46,[[0,D[2]],[1,D[3]]]),L,1.3);
   // Legs: white tights and small boots with a gold strap.
   for(const s of [-1,1]){ctx.lineCap='round';ctx.strokeStyle=L;ctx.lineWidth=8.6;ctx.beginPath();ctx.moveTo(s*6.5,-42);ctx.lineTo(s*7,-8);ctx.stroke();ctx.strokeStyle='#fbfbff';ctx.lineWidth=6.2;ctx.stroke();
-    ctx.strokeStyle=k.skin[1];ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(s*8.2,-36);ctx.lineTo(s*8.4,-12);ctx.stroke();
+    ctx.strokeStyle=k.shade+'aa';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(s*6.5+2,-36);ctx.lineTo(s*7+2,-12);ctx.stroke();ctx.strokeStyle='#ffffffcc';ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(s*6.5-1.6,-36);ctx.lineTo(s*7-1.6,-14);ctx.stroke();ctx.fillStyle=k.shade+'88';ctx.fillRect(s*6.5-3,-42,6,4);
     ctx.beginPath();ctx.moveTo(s*2.5,-12);ctx.quadraticCurveTo(s*1.5,-1,s*4,0);ctx.lineTo(s*13.5,0);ctx.quadraticCurveTo(s*14,-6,s*11.5,-12);ctx.closePath();ctx.fillStyle=grad(0,-12,0,0,[[0,D[2]],[1,D[3]]]);ctx.fill();ctx.strokeStyle=L;ctx.lineWidth=1.3;ctx.stroke();
     ctx.fillStyle=k.trim;ctx.fillRect(s>0?3:-12,-9,9,1.8);ellipse(s*7.5,-3.5,2,1,'#ffffff88');}
   shape(SKIRT_UNDER,grad(0,-84,0,-34,[[0,D[0]],[.7,D[0]],[1,D[1]]]),L,1.4);
-  within(SKIRT_UNDER,()=>{for(const x of [-18,-6,6,18])line([x*.35,-82,x*.6,-66,x*.85,-52,x,-38],D[1],1.6,.9);ctx.fillStyle=k.trim+'aa';ctx.fillRect(-40,-42,80,1.4);
+  vol(SKIRT_UNDER,-32,32,-84,-34,k.shade);
+  within(SKIRT_UNDER,()=>{ctx.fillStyle=k.shade+'70';for(const x of [-12,0,12,24]){ctx.beginPath();ctx.moveTo(x*.3,-84);ctx.quadraticCurveTo(x*.7+1,-60,x+3,-36);ctx.lineTo(x+8,-36);ctx.quadraticCurveTo(x*.7+3,-60,x*.3+1,-84);ctx.fill();}
+    for(const x of [-18,-6,6,18])line([x*.35,-82,x*.6,-66,x*.85,-52,x,-38],D[1],1.6,.9);ctx.fillStyle=k.trim+'aa';ctx.fillRect(-40,-42,80,1.4);
     for(let i=-2;i<=2;i++)ellipse(i*7,-45+Math.abs(i)*.6,1.3,1.3,k.trim);if(k.accent==='star'){star(0,-58,5.4,k.trimDark,4,.35);star(0,-58.3,4.4,k.trim,4,.35);}else for(let i=0;i<5;i++){const a=i*Math.PI*2/5;ellipse(Math.cos(a)*2.6,-58+Math.sin(a)*2.6,2.2,1.6,D[2],null,1,a);}});
   for(const s of [-1,1]){const d=s<0?SKIRT_PANEL:M(SKIRT_PANEL);shape(d,grad(s*-36,-84,s*-6,-40,[[0,D[3]],[.5,D[2]],[1,D[2]]]),L,1.4);
-    within(d,()=>{line([s*9,-82,s*16,-66,s*22,-54,s*26,-42],D[3],1.4,.7);line([s*12,-82,s*20,-66,s*26,-54,s*32,-42],'#ffffff',1,.25);});
+    vol(d,s<0?-36:5,s<0?-5:36,-84,-38,D[3]);within(d,()=>{line([s*9,-82,s*16,-66,s*22,-54,s*26,-42],D[3],1.4,.7);line([s*12,-82,s*20,-66,s*26,-54,s*32,-42],'#ffffff',1,.25);});
     line([s*5,-84,s*10,-70,s*17,-54,s*21,-39],k.trim,1.8);line([s*21,-39,s*26,-37,s*31,-36,s*36,-41],k.trim,1.8);}
   shape(BODICE,grad(-15,0,15,0,[[0,D[1]],[.4,D[0]],[1,D[1]]]),L,1.5);
-  within(BODICE,()=>{ctx.fillStyle=grad(0,-92,0,-82,[[0,D[2]],[1,D[3]]]);ctx.fillRect(-16,-92,32,10);ctx.fillStyle=k.trim;ctx.fillRect(-16,-93,32,1.6);ctx.fillRect(-16,-83.5,32,1.4);
+  vol(BODICE,-15,15,-110,-82,k.shade);
+  within(BODICE,()=>{ellipse(0,-110,16,7,'#2a1a5a30');ctx.fillStyle=grad(0,-92,0,-82,[[0,D[2]],[1,D[3]]]);ctx.fillRect(-16,-92,32,10);ctx.fillStyle=k.trim;ctx.fillRect(-16,-93,32,1.6);ctx.fillRect(-16,-83.5,32,1.4);
     line([-3,-92,-1,-89,1,-89,3,-86],k.trim,.9);line([3,-92,1,-89,-1,-89,-3,-86],k.trim,.9);});
   // Puff sleeves on the shoulders and a gem brooch at the collar.
   for(const s of [-1,1]){ellipse(s*15,-104,7,5.6,grad(0,-110,0,-98,[[0,D[0]],[1,D[1]]]),L,1.3,s*.3);line([s*10,-101,s*13,-99,s*17,-99,s*21,-101],k.trim,1.2);}
@@ -282,6 +301,17 @@ function motion(pose,a,still){
 function headTransform(m){ctx.translate(0,HEAD_Y+m.headDrop);ctx.translate(0,36);ctx.rotate(m.tilt);ctx.translate(0,-36);}
 
 // Draws the character with its feet at (x,y). t: the game clock in seconds.
+// Lighting over the finished figure in the buffer: a soft key light from the upper left and a darker lower right,
+// then a cool rim light along the right-hand edges (the edge left over when the silhouette is shifted left).
+let rim=null;
+function light(bw,bh,u){
+  const g=buf.getContext('2d');g.save();g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation='source-atop';
+  g.fillStyle=g.createLinearGradient(0,0,bw,bh);g.fillStyle.addColorStop(0,'#fff6ff2e');g.fillStyle.addColorStop(.45,'#ffffff00');g.fillStyle.addColorStop(1,'#1a0f4a5a');g.fillRect(0,0,bw,bh);
+  rim??=document.createElement('canvas');if(rim.width<buf.width||rim.height<buf.height){rim.width=buf.width;rim.height=buf.height;}
+  const r=rim.getContext('2d'),d=Math.max(1,2.4*u);r.globalCompositeOperation='copy';r.drawImage(buf,0,0);r.globalCompositeOperation='destination-out';r.drawImage(buf,-d,d*.5);
+  r.globalCompositeOperation='source-in';r.fillStyle='#e8f4ff';r.fillRect(0,0,bw,bh);
+  g.globalAlpha=.75;g.drawImage(rim,0,0);g.restore();
+}
 // The figure is painted into an offscreen buffer first, then put on the LCD with a soft white halo, so it stands out
 // from the busy background like the cut-out mini characters of a real machine.
 let buf=null;
@@ -298,7 +328,12 @@ export function drawNavi(c,n,t,{x,y,scale=1,gentle=true,reduced=false,flip=false
   wings(k,m);
   ctx.save();headTransform(m);shape(BACK_HAIR[n.kind],grad(0,-30,0,120,[[0,k.hair[2]],[1,k.hair[3]]]),k.hairLine,1.6);
   if(n.kind==='hana')for(const s of [-1,1])shape(s<0?TAIL:M(TAIL),grad(0,-26,0,66,[[0,k.hair[1]],[1,k.hair[3]]]),k.hairLine,1.5);
-  within(BACK_HAIR[n.kind],()=>{ellipse(0,44,32,34,k.hair[3]+'cc');for(const x of [-44,-30,30,44])line([x*.8,0,x,30,x*1.05,60,x*1.1,100],k.hairLine,1,.35);ctx.fillStyle=grad(-60,0,60,0,[[0,'#ffffff55'],[.2,'#ffffff00'],[.8,'#ffffff00'],[1,'#ffffff33']]);ctx.fillRect(-70,-40,140,170);});ctx.restore();
+  within(BACK_HAIR[n.kind],()=>{const H=k.hair;
+    for(let i=0;i<13;i++){const x=-60+i*10;line([x*.7,-30,x*.95,10,x*1.02,60,x*1.06,124],i%2?H[3]+'70':H[1]+'60',7);}
+    ctx.fillStyle=grad(0,50,0,124,[[0,H[3]+'00'],[1,H[3]+'b0']]);ctx.fillRect(-70,50,140,80);
+    ellipse(0,44,34,38,H[3]+'dd');
+    for(const [x,c,a] of [[-48,'#ffffff',.6],[-38,'#ffffff',.35],[44,'#ffffff',.3]])line([x*.8,-10,x*.98,20,x*1.04,50,x*1.08,90],c,2,a);
+    for(const x of [-44,-30,30,44])line([x*.8,0,x,30,x*1.05,60,x*1.1,100],k.hairLine,1,.35);ctx.fillStyle=grad(-60,0,60,0,[[0,'#ffffff55'],[.2,'#ffffff00'],[.8,'#ffffff00'],[1,'#ffffff33']]);ctx.fillRect(-70,-40,140,170);});ctx.restore();
   body(k,m,t,still);
   const up=m.arms.map(v=>v>1.6);m.arms.forEach((v,i)=>{if(!up[i])arm(k,i?1:-1,v);});
   ctx.save();headTransform(m);
@@ -309,7 +344,7 @@ export function drawNavi(c,n,t,{x,y,scale=1,gentle=true,reduced=false,flip=false
   // Raised arms go in front of the hair.
   m.arms.forEach((v,i)=>{if(up[i])arm(k,i?1:-1,v);});
   if(ctx===c)ctx.restore();
-  else{ctx=c;ctx.save();ctx.shadowColor=gentle?'#ffffffaa':'#ffffffdd';ctx.shadowBlur=Math.max(3,5*scale)*px;const bw=W*f,bh=H*f;
+  else{light(Math.ceil(W*f*px),Math.ceil(H*f*px),f*px);ctx=c;ctx.save();ctx.shadowColor=gentle?'#ffffffaa':'#ffffffdd';ctx.shadowBlur=Math.max(3,5*scale)*px;const bw=W*f,bh=H*f;
     ctx.drawImage(buf,0,0,Math.ceil(bw*px),Math.ceil(bh*px),x-OX*f,y-OY*f,Math.ceil(bw*px)/px,Math.ceil(bh*px)/px);ctx.restore();}
   // Sparkles around a cheer (also for clap, smaller).
   if((n.pose==='cheer'||n.pose==='clap')&&t<n.poseUntil){
