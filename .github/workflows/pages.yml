@@ -27,6 +27,7 @@ jobs:
           node-version: 20
       - run: npm test
       - run: npm run check
+      - run: node scripts/stamp-version.mjs dist "$GITHUB_SHA"
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
