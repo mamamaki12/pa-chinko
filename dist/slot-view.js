@@ -82,31 +82,33 @@ function twinkle(x,y,r,color='#f2b730'){ctx.save();ctx.translate(x,y);ctx.fillSt
   const ray=k=>{ctx.beginPath();for(let i=0;i<8;i++){const a=i*Math.PI/4-Math.PI/2,rr=i%2?r*.22*k:r*k;ctx.lineTo(Math.cos(a)*rr,Math.sin(a)*rr);}ctx.closePath();ctx.fill();};
   ctx.fillStyle=color;ray(1);ctx.fillStyle='#ffffff';ray(.55);ctx.restore();}
 const GOLD=(y0,y1)=>grad(0,y0,0,y1,[[0,'#fff6c8'],[.3,'#f2c552'],[.55,'#a8701a'],[.8,'#f6d36c'],[1,'#fff0b0']]);
-const P7=typeof Path2D==='undefined'?null:new Path2D('M-19-22L21-22L21-14C13-4 7 8 5 22L-9 22C-7 8 0-4 7-12L-11-12L-13-6L-19-6Z');
+// The BIG 7 is wide like the 7s of real machines, filling the reel; the ASTRAL heroine is printed inside it.
+const P7=typeof Path2D==='undefined'?null:new Path2D('M-40-22L42-22L42-8L10 22L-17 22L14-6L-26-6L-29-1L-40-1Z');
+let symArt=null;
 export function symbol(c,name,x,y,size=1,sy=1){
   ctx=c;ctx.save();ctx.translate(x,y);ctx.scale(size,size*sy);
   if(name==='seven'){
-    // BIG symbol: a slanted red 7 with a gold bevel, a navy and white border, a glossy facet and twinkles on a blue halo.
-    ctx.save();ctx.scale(1,.55);ctx.fillStyle=radial(0,0,4,42,[[0,'#7fb4ff70'],[.6,'#9fc6ff26'],[1,'#9fc6ff00']]);ctx.fillRect(-46,-44,92,88);ctx.restore();
-    ctx.save();ctx.transform(1,0,-.2,1,0,0);const seven=P7;
-    ctx.lineJoin='round';for(const [col,lw] of [['#ffffff',13],['#14123a',9],[GOLD(-26,26),5.4],['#5a0610',1.4]]){ctx.strokeStyle=col;ctx.lineWidth=lw;ctx.stroke(seven);}
-    ctx.fillStyle=grad(0,-22,0,22,[[0,'#ff9a7c'],[.25,'#f52a34'],[.6,'#b80a1c'],[1,'#ff4a36']]);ctx.fill(seven);
+    ctx.save();ctx.transform(1,0,-.22,1,0,0);const seven=P7;
+    ctx.lineJoin='round';for(const [col,lw] of [['#ffffff',12],['#14123a',8.5],[GOLD(-25,25),5],['#5a0610',1.2]]){ctx.strokeStyle=col;ctx.lineWidth=lw;ctx.stroke(seven);}
     ctx.save();ctx.clip(seven);
-    ctx.fillStyle='#6a00104d';ctx.beginPath();ctx.moveTo(21,-14);ctx.lineTo(21,-22);ctx.lineTo(30,-22);ctx.lineTo(14,22);ctx.lineTo(5,22);ctx.bezierCurveTo(7,8,13,-4,21,-14);ctx.fill();
-    ctx.fillStyle=grad(0,-22,0,-13,[[0,'#ffffffaa'],[1,'#ffffff10']]);ctx.fillRect(-20,-22,42,9);
-    ctx.fillStyle='#ffffff40';ctx.beginPath();ctx.moveTo(-4,22);ctx.lineTo(4,-12);ctx.lineTo(8,-12);ctx.lineTo(0,22);ctx.fill();
+    ctx.fillStyle=grad(0,-21,0,21,[[0,'#ff9a7c'],[.25,'#f52a34'],[.6,'#b80a1c'],[1,'#ff4a36']]);ctx.fillRect(-46,-22,92,44);
+    // The heroine's face from the cabinet art, tinted red so the 7 still reads as a red 7.
+    if(symArt){ctx.drawImage(symArt,48,128,116,76,-44,-26,96,62);
+      ctx.globalCompositeOperation='color';ctx.fillStyle='#ff3030';ctx.fillRect(-46,-22,92,44);
+      ctx.globalCompositeOperation='multiply';ctx.fillStyle=grad(0,-22,0,22,[[0,'#ffd0c0'],[.6,'#ff8070'],[1,'#ffa080']]);ctx.fillRect(-46,-22,92,44);ctx.globalCompositeOperation='source-over';}
+    ctx.fillStyle=grad(0,-21,0,-12,[[0,'#ffffffaa'],[1,'#ffffff00']]);ctx.fillRect(-46,-21,92,9);
+    ctx.fillStyle='#ffffff30';ctx.beginPath();ctx.moveTo(-12,22);ctx.lineTo(18,-6);ctx.lineTo(21,-6);ctx.lineTo(-9,22);ctx.fill();
     ctx.restore();ctx.restore();
-    twinkle(25,-19,7);twinkle(-24,13,4.5,'#5fa0ff');
+    twinkle(38,-20,7);twinkle(-34,14,4.5,'#5fa0ff');
   }else if(name==='bar'){
-    // A navy plate in a gold frame with chrome lettering and gold stars at both ends.
-    const plate=m=>{ctx.beginPath();ctx.roundRect(-41,-16,82,32,7);ctx[m]();};
-    keyed(plate,'#0a0a18',3);ctx.fillStyle=grad(0,-16,0,16,[[0,'#2b3a7a'],[.5,'#0b1030'],[1,'#1c2760']]);plate('fill');
-    ctx.strokeStyle=GOLD(-13,13);ctx.lineWidth=2.4;ctx.beginPath();ctx.roundRect(-37,-12.5,74,25,4.5);ctx.stroke();
-    ctx.fillStyle='#ffffff22';ctx.beginPath();ctx.roundRect(-37,-12.5,74,10,[4.5,4.5,0,0]);ctx.fill();
-    for(const sx of [-30,30]){twinkle(sx,0,5.6,'#ffd76a');}
-    ctx.font='900 19px "Arial Black", "Arial Bold", Arial, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';if('letterSpacing' in ctx)ctx.letterSpacing='1.5px';
-    ctx.lineJoin='round';ctx.strokeStyle='#05060f';ctx.lineWidth=4;ctx.strokeText('BAR',1,1.5);
-    ctx.fillStyle=grad(0,-9,0,10,[[0,'#ffffff'],[.45,'#dfe4ee'],[.55,'#8a94a8'],[.8,'#e8ecf4'],[1,'#ffffff']]);ctx.fillText('BAR',1,1.5);
+    // A black pill with red-gold lettering, like the BAR of real machines, framed in gold.
+    const plate=m=>{ctx.beginPath();ctx.roundRect(-42,-15,84,30,15);ctx[m]();};
+    keyed(plate,'#05050a',3);ctx.fillStyle=grad(0,-15,0,15,[[0,'#3a3a46'],[.45,'#08080c'],[1,'#22222a']]);plate('fill');
+    ctx.strokeStyle=GOLD(-12,12);ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(-38.5,-11.5,77,23,11.5);ctx.stroke();
+    ctx.fillStyle='#ffffff26';ctx.beginPath();ctx.ellipse(0,-7,34,4,0,0,7);ctx.fill();
+    ctx.font='900 20px "Arial Black", "Arial Bold", Arial, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';if('letterSpacing' in ctx)ctx.letterSpacing='2px';
+    ctx.lineJoin='round';ctx.strokeStyle='#ffffff';ctx.lineWidth=4.4;ctx.strokeText('BAR',1,1.5);ctx.strokeStyle='#4a0008';ctx.lineWidth=2;ctx.strokeText('BAR',1,1.5);
+    ctx.fillStyle=grad(0,-9,0,10,[[0,'#ffd27a'],[.35,'#ff3a3a'],[.75,'#b8001a'],[1,'#ff6a4a']]);ctx.fillText('BAR',1,1.5);
   }else if(name==='cherry'){
     // Two glossy cherries on curved stems, with a veined leaf and a small twinkle.
     ctx.lineCap='round';for(const [col,lw] of [['#ffffff',8.5],['#1f3d14',5],['#6bb243',2.4]]){ctx.strokeStyle=col;ctx.lineWidth=lw;ctx.beginPath();ctx.moveTo(-14,0);ctx.bezierCurveTo(-10,-10,-2,-17,8,-20);ctx.moveTo(12,2);ctx.bezierCurveTo(13,-8,11,-14,8,-20);ctx.stroke();}
@@ -119,6 +121,7 @@ export function symbol(c,name,x,y,size=1,sy=1){
       ellipse(cx-4.5,cy-5,4,2.6,'#ffffffdd',null,1,-.6);ellipse(cx-1,cy-8.5,1.2,1,'#ffffffcc');}
     twinkle(-25,-10,5);
   }else if(name==='bell'){
+    ctx.scale(1.22,1);
     // A golden bell with an engraved band of dots, an embossed star, a ring on top and a clapper.
     const bell=m=>{ctx.beginPath();ctx.moveTo(-26,15);ctx.quadraticCurveTo(-16,10,-16,-4);ctx.quadraticCurveTo(-15,-21,0,-21);ctx.quadraticCurveTo(15,-21,16,-4);ctx.quadraticCurveTo(16,10,26,15);ctx.quadraticCurveTo(0,21,-26,15);ctx.closePath();ctx[m]();};
     keyed(m=>{bell(m);ctx.beginPath();ctx.arc(0,-23,4.4,0,7);ctx[m]();},'#5a3300',2.6);
@@ -143,16 +146,16 @@ export function symbol(c,name,x,y,size=1,sy=1){
     ctx.strokeStyle='#ffffffaa';ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(-30,cy+1.2);ctx.lineTo(30,cy+1.2);ctx.stroke();
     twinkle(-28,cy-3,4.5);
   }else{
-    // Replay: a glossy blue banner with white lettering and a gold medallion holding a looping arrow.
-    const band=m=>{ctx.beginPath();ctx.roundRect(-30,-11,72,22,11);ctx[m]();};
-    keyed(band,'#0b2368',2.6);ctx.fillStyle=grad(0,-11,0,11,[[0,'#7cc8ff'],[.45,'#2a7df0'],[1,'#0f3aa8']]);band('fill');
-    ctx.fillStyle='#ffffff3a';ctx.beginPath();ctx.roundRect(-28,-9.5,68,8,[8,8,2,2]);ctx.fill();
-    ctx.font='italic 900 12.5px "Arial Black", "Arial Bold", Arial, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.lineJoin='round';ctx.strokeStyle='#0b2368';ctx.lineWidth=3;ctx.strokeText('REPLAY',9,1.2);ctx.fillStyle='#ffffff';ctx.fillText('REPLAY',9,1.2);
-    keyed(m=>{ctx.beginPath();ctx.arc(-32,0,13,0,7);ctx[m]();},'#5a3300',2.2);ctx.fillStyle=radial(-36,-4,1,15,[[0,'#fff6c8'],[.5,'#f2c552'],[1,'#a8701a']]);ctx.beginPath();ctx.arc(-32,0,13,0,7);ctx.fill();
-    ctx.fillStyle=radial(-32,0,1,10,[[0,'#5fb0ff'],[1,'#123fae']]);ctx.beginPath();ctx.arc(-32,0,9.6,0,7);ctx.fill();
-    ctx.lineCap='round';ctx.strokeStyle='#ffffff';ctx.lineWidth=2.6;ctx.beginPath();ctx.arc(-32,.6,5.2,Math.PI*.2,Math.PI*1.7);ctx.stroke();
-    ctx.fillStyle='#ffffff';ctx.beginPath();ctx.moveTo(-28.6,-7.4);ctx.lineTo(-24.2,-3.4);ctx.lineTo(-30,-2.2);ctx.closePath();ctx.fill();
+    // Replay: an oval sky-blue gem in a silver rim with a white looping arrow, like the replay medallions of real machines.
+    const gem=m=>{ctx.beginPath();ctx.ellipse(0,0,30,17,0,0,7);ctx[m]();};
+    keyed(gem,'#0b2368',2.4);ctx.fillStyle=grad(0,-17,0,17,[[0,'#f4f8ff'],[.5,'#9aa8c0'],[1,'#eef2fa']]);gem('fill');
+    ctx.fillStyle=radial(-6,-6,2,30,[[0,'#d6f0ff'],[.35,'#5fb0ff'],[.8,'#1e5ad8'],[1,'#0f2f8a']]);ctx.beginPath();ctx.ellipse(0,0,26.5,13.8,0,0,7);ctx.fill();
+    ctx.save();ctx.beginPath();ctx.ellipse(0,0,26.5,13.8,0,0,7);ctx.clip();ctx.fillStyle='#ffffff40';ctx.beginPath();ctx.ellipse(-4,-9,24,7,-.1,0,7);ctx.fill();
+    ctx.strokeStyle='#ffffff30';ctx.lineWidth=1;for(let i=-3;i<=3;i++){ctx.beginPath();ctx.moveTo(i*8,-14);ctx.lineTo(i*8+4,14);ctx.stroke();}ctx.restore();
+    // A big white looping arrow in the middle of the gem.
+    ctx.lineCap='round';for(const [col,lw] of [['#0b2368',6.4],['#ffffff',3.6]]){ctx.strokeStyle=col;ctx.lineWidth=lw;ctx.beginPath();ctx.arc(0,1,8,Math.PI*.15,Math.PI*1.7);ctx.stroke();}
+    ctx.fillStyle='#ffffff';ctx.strokeStyle='#0b2368';ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(4.4,-10.6);ctx.lineTo(11.4,-4.6);ctx.lineTo(2.6,-2.4);ctx.closePath();ctx.stroke();ctx.fill();
+    twinkle(24,-12,4,'#ffffff');
   }
   ctx.restore();
 }
@@ -161,16 +164,18 @@ export function symbol(c,name,x,y,size=1,sy=1){
 // Each reel strip is painted once into an offscreen canvas (plus a motion-blurred copy for spinning), then wrapped onto
 // a cylinder slice by slice every frame, so symbols bend away at the top and bottom of the window like a real drum.
 const SPX=3,SLICES=48;let strips=null;
-function buildStrips(){
-  if(typeof document==='undefined')return null;
+function buildStrips(art){
+  if(typeof document==='undefined')return null;symArt=art||null;
   const {pitch}=LAYOUT,N=REELS[0].length,margin=pitch*2,out=[];
   LAYOUT.reels.forEach(([,w],i)=>{
     const sharp=document.createElement('canvas');sharp.width=Math.ceil(w*SPX);sharp.height=Math.ceil((N*pitch+margin*2)*SPX);
     const g=sharp.getContext('2d'),keep=ctx;ctx=g;g.scale(SPX,SPX);
     // Reel paper: warm white with a faint pale-blue print toward the edges and tiny stars, as on a themed strip.
-    g.fillStyle=grad(0,0,w,0,[[0,'#dfe8f6'],[.18,'#fbfaf4'],[.82,'#fbfaf4'],[1,'#dfe8f6']]);g.fillRect(0,0,w,N*pitch+margin*2);
-    for(let s=0;s<(N*pitch+margin*2)/9;s++){const sx=(s*37.3)%w,sy=s*9+(s*13%7);if(sx>16&&sx<w-16)continue;star(sx,sy,1.6,'#9db6e566');}
-    for(let idx=0;idx<N;idx++)for(const wrap of [-1,0,1]){const cy=margin+(N-idx+wrap*N)*pitch;if(cy<-pitch||cy>N*pitch+margin*2+pitch)continue;symbol(g,REELS[i][idx],w/2,cy,.9);}
+    // Sky-blue reel paper (like the coloured strips of real machines) with soft clouds and small stars of the ASTRAL sky.
+    const H=N*pitch+margin*2;g.fillStyle=grad(0,0,w,0,[[0,'#7fb2ea'],[.2,'#c6e2ff'],[.5,'#e9f5ff'],[.8,'#c6e2ff'],[1,'#7fb2ea']]);g.fillRect(0,0,w,H);
+    for(let s=0;s<H/22;s++){const cx=(s*53.7)%w,cy=s*22+(s*7%11);g.fillStyle=radial(cx,cy,1,22,[[0,'#ffffffaa'],[1,'#ffffff00']]);g.beginPath();g.ellipse(cx,cy,26,9,0,0,7);g.fill();}
+    for(let s=0;s<H/8;s++){const sx=(s*37.3)%w,sy=s*8+(s*13%7);star(sx,sy,1.3+(s%3)*.5,s%4?'#ffffffcc':'#ffe9a0');}
+    for(let idx=0;idx<N;idx++)for(const wrap of [-1,0,1]){const cy=margin+(N-idx+wrap*N)*pitch;if(cy<-pitch||cy>N*pitch+margin*2+pitch)continue;symbol(g,REELS[i][idx],w/2,cy,1);}
     ctx=keep;
     const blur=document.createElement('canvas');blur.width=sharp.width;blur.height=sharp.height;const b=blur.getContext('2d'),K=12,len=pitch*.6*SPX;
     for(let k=0;k<K;k++){b.globalAlpha=1/(k+1);b.drawImage(sharp,0,(k/(K-1)-.5)*len);}
@@ -183,7 +188,8 @@ function ellipse(x,y,rx,ry,fill,stroke,lw=1,rot=0){ctx.beginPath();ctx.ellipse(x
 
 function reels(v){
   const [wx,wy,ww,wh]=LAYOUT.window,{reelY,reelH,pitch,radius:R}=LAYOUT,mid=reelY+reelH/2;
-  strips??=buildStrips();
+  // Built once, and once more when the cabinet art (used inside the 7) has loaded.
+  if(!strips||(!strips.art&&v.cabinet)){strips=buildStrips(v.cabinet);if(strips)strips.art=!!v.cabinet;}
   // The black mask of the reel window, with a bevel where it meets each reel opening.
   ctx.fillStyle=grad(0,wy,0,wy+wh,[[0,'#05070c'],[.5,'#10141e'],[1,'#05070c']]);ctx.fillRect(wx,wy,ww,wh);
   LAYOUT.reels.forEach(([x,w],i)=>{
