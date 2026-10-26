@@ -1,3 +1,4 @@
+import {drawPortrait} from './navigator-art.js';
 // LCD navigator characters: original chibi mascots that live on the LCD and react to what just happened, like the
 // mini characters of a real machine. ハナ lives on AURORA (pink, flower), ソラ on ASTRAL (silver-blue, star).
 // Rules: reactions come at or after a known result (spin start, reach, stop, payout); the lever / spin reactions are the
@@ -316,6 +317,7 @@ function light(bw,bh,u){
 // from the busy background like the cut-out mini characters of a real machine.
 let buf=null;
 export function drawNavi(c,n,t,{x,y,scale=1,gentle=true,reduced=false,flip=false}){
+  if(drawPortrait(c,n,t,{x,y,scale,gentle,reduced,flip}))return;
   const k=KINDS[n.kind],still=reduced,a=t-n.poseAt,m=motion(n.pose,a,still),talking=!!n.line&&t<n.lineUntil&&n.shown<n.line.length;
   // A payout cheer steps forward a little, like a cut-in.
   if(n.pose==='cheer'&&n.prio>=3)scale*=1+.22*(still?1:Math.min(1,a/.35))*Math.min(1,(n.poseUntil-t)/.4);
