@@ -13,7 +13,8 @@ function pachinkoParts(){const {cx,cy,r,display:d,button:b}=BOARD;return [
   {id:'glass',kind:'glass',label:'盤面ガラス',painted:true,shape:{circle:[cx,cy,r]}},
   {id:'lcd',kind:'lcd',label:'液晶',shape:{rect:[d.x1,d.y1,d.x2-d.x1,d.y2-d.y1]}},
   ...LED_PARTS.aurora.map(ledPart),
-  ...makePins().map((p,i)=>({id:p.id??`nail-${String(i+1).padStart(3,'0')}`,kind:'nail',label:`釘 ${i+1}`,group:'nails',shape:{circle:[p.x,p.y,p.r??3.2]}})),
+  // Nails are the gold nails painted on the board (engine.js NAILS); the ball bounces off the visible ones.
+  ...makePins().map((p,i)=>({id:p.id??`nail-${String(i+1).padStart(3,'0')}`,kind:'nail',label:`釘 ${i+1}`,group:'nails',painted:true,shape:{circle:[p.x,p.y,p.r]}})),
   ...BOARD.guides.map((g,i)=>({id:`guide${i+1}`,kind:'rail',label:['液晶左下のガイド','液晶上のガイド左','液晶上のガイド右'][i]??`ガイド ${i+1}`,shape:{line:g}})),
   {id:'start',kind:'pocket',label:'START入賞口',shape:{rect:[338,606,44,16]}},
   {id:'attacker',kind:'attacker',label:'大入賞口',shape:{rect:[ATTACKER.x1,ATTACKER.y1,ATTACKER.x2-ATTACKER.x1,ATTACKER.y2-ATTACKER.y1]},open:false},
@@ -43,13 +44,16 @@ export const MACHINES={aurora:pachinkoParts,astral:slotParts};
 export function createParts(machine){
   const list=MACHINES[machine]().map(p=>({visible:true,lit:false,...p})),byId=new Map(list.map(p=>[p.id,p]));
   const pick=target=>{const t=[].concat(target);return list.filter(p=>t.includes('all')||t.includes(p.id)||t.includes(p.kind)||t.includes(p.group));};
-  return {machine,list,
+  // version goes up on every set(), so callers can tell when to re-read derived lists such as the nails.
+  return {machine,list,version:0,
     // LED patterns (on / off / blink / breathe / chase, colour) per LED part: leds.set('led id or group',{mode:'blink'}) — see cabinet-leds.js.
     leds:createLeds(machine),
     get:id=>byId.get(id),
     find:target=>pick(target),
     // Changes the state of the targeted parts, e.g. set('attacker',{open:true}), set('nail',{visible:false}).
-    set(target,patch){for(const p of pick(target))Object.assign(p,patch);return this;},
+    set(target,patch){for(const p of pick(target))Object.assign(p,patch);this.version++;return this;},
+    // The visible nails as {id,x,y,r}, the form advanceBall() takes.
+    nails:()=>list.filter(p=>p.kind==='nail'&&p.visible).map(p=>{const [x,y,r]=p.shape.circle;return {id:p.id,x,y,r};}),
     lit:id=>!!byId.get(id)?.lit,
     shown:id=>byId.get(id)?.visible!==false,
   };
