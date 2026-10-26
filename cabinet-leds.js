@@ -40,7 +40,7 @@ export const LED_PARTS={
     {id:'cornerR',label:'右上の角',group:'top',seq:7,poly:[[544,12],[694,10],[694,70],[660,74],[590,82],[524,74]]},
     {id:'pillarR1',label:'右の柱 上',group:'side',seq:8,poly:[[660,74],[704,74],[704,330],[660,330]]},
     {id:'pillarR2',label:'右の柱 下',group:'side',seq:9,poly:[[636,332],[706,332],[706,554],[636,554]]},
-    {id:'shoulderR',label:'右の肩',group:'side',seq:10,poly:[[584,556],[710,556],[710,622],[584,622]]},
+    {id:'shoulderR',label:'右の肩',group:'side',seq:10,poly:[[612,560],[710,556],[710,622],[596,622],[596,580]]},
     {id:'lowerR',label:'右下のライン',group:'side',seq:11,poly:[[668,624],[708,624],[708,800],[668,800]]},
     {id:'lcdL',label:'液晶の左',group:'frame',seq:0,poly:[[158,134],[180,134],[180,292],[158,292]]},
     {id:'midBand',label:'液晶とリールの間',group:'frame',seq:1,poly:[[110,294],[610,294],[584,338],[136,338]]},
