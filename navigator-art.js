@@ -177,7 +177,7 @@ function getImage(path) {
   return image;
 }
 const ready = image => image?.complete && image.naturalWidth > 0;
-let comp, warp, glState = null;
+let comp, compKey = '', warp, glState = null;
 const MARGIN = 64;
 // The mesh is drawn with WebGL into an offscreen canvas (the picture as a texture, the bent mesh as triangles).
 function setupGL(w, h) {
@@ -206,19 +206,22 @@ function setupGL(w, h) {
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
     gl.uniform2f(gl.getUniformLocation(prog, 'size'), w, h); gl.uniform1f(gl.getUniformLocation(prog, 'm'), MARGIN);
     gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-    return (glState = { canvas, gl, posBuf, count: idx.length, weights: new Map(), out: null });
+    return (glState = { canvas, gl, w, h, posBuf, count: idx.length, weights: new Map(), out: null });
   } catch { return (glState = false); }
 }
-function drawMesh(state, n, column, pose) {
+function drawMesh(state, n, column, pose, fresh, res) {
   const rig = RIGS[n.kind]?.[column];
   if (!rig) return false;
   const key = n.kind + column;
   if (!state.weights.has(key)) state.weights.set(key, rigWeights(rig));
   const { gl } = state;
   state.out = deform(rig, state.weights.get(key), pose, state.out ?? undefined);
-  gl.viewport(0, 0, state.canvas.width, state.canvas.height);
+  // Rendered no finer than it will be shown, so small figures cost little.
+  const w = Math.round(state.w * res), h = Math.round(state.h * res);
+  if (state.canvas.width !== w || state.canvas.height !== h) { state.canvas.width = w; state.canvas.height = h; }
+  gl.viewport(0, 0, w, h);
   gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, comp);
+  if (fresh || !state.uploaded) { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, comp); state.uploaded = true; }
   gl.bindBuffer(gl.ARRAY_BUFFER, state.posBuf); gl.bufferData(gl.ARRAY_BUFFER, state.out, gl.DYNAMIC_DRAW);
   gl.drawElements(gl.TRIANGLES, state.count, gl.UNSIGNED_SHORT, 0);
   return true;
@@ -240,14 +243,21 @@ export function drawPortrait(c, n, t, { x, y, scale = 1, gentle = true, reduced 
   const m = portraitMotion(n, t, { gentle, reduced });
   const height = 106 * scale * m.pop, width = height * cw / ch;
   // 1. The face of this frame: the cell(s), then a blink or mouth patch.
-  comp = surface(comp, cw, ch);
-  const g = comp.getContext('2d');
-  g.imageSmoothingEnabled = false;
+  // Redrawn (and re-uploaded to WebGL) only when the picture changes: an expression fade, a blink or a lip flap.
   const layers = portraitLayers(n, t, reduced);
-  for (const { column, row, alpha } of layers) { g.globalAlpha = alpha; g.drawImage(atlas, column * cw, row * ch, cw, ch, 0, 0, cw, ch); }
-  g.globalAlpha = 1;
-  const patch = ready(faces) && NAVIGATOR_FACES[n.kind]?.[faceVariant(n, t, layers, reduced)];
-  if (patch) { const [px, py, ox, oy, w, h] = patch; g.drawImage(faces, px, py, w, h, ox, oy, w, h); }
+  const variant = ready(faces) ? faceVariant(n, t, layers, reduced) : null;
+  const key = n.kind + layers.map(l => `${l.column}:${l.alpha.toFixed(3)}`).join() + variant;
+  const fresh = key !== compKey;
+  if (fresh) {
+    compKey = key;
+    comp = surface(comp, cw, ch);
+    const g = comp.getContext('2d');
+    g.imageSmoothingEnabled = false;
+    for (const { column, row, alpha } of layers) { g.globalAlpha = alpha; g.drawImage(atlas, column * cw, row * ch, cw, ch, 0, 0, cw, ch); }
+    g.globalAlpha = 1;
+    const patch = NAVIGATOR_FACES[n.kind]?.[variant];
+    if (patch) { const [px, py, ox, oy, w, h] = patch; g.drawImage(faces, px, py, w, h, ox, oy, w, h); }
+  }
   // 2. Move the parts: the mesh bends the head, arms, legs, wings, hair and skirt about their joints (and leans the whole
   // body, feet planted). Without WebGL, the figure is bent in thin bands instead (a lean only).
   const column = layers[layers.length - 1].column, bend = m.bend * ch;
@@ -256,7 +266,8 @@ export function drawPortrait(c, n, t, { x, y, scale = 1, gentle = true, reduced 
   if (state && RIGS[n.kind]?.[column]) {
     const rig = RIGS[n.kind][column], pose = rigPose(n, t, rig, { gentle, reduced });
     pose.bend = m.bend;
-    drawMesh(state, n, column, pose);
+    const tr = c.getTransform(), res = Math.min(1, Math.max(.3, Math.ceil(height * (Math.hypot(tr.a, tr.b) || 1) / ch * 10) / 10));
+    drawMesh(state, n, column, pose, fresh, res);
     source = state.canvas; margin = MARGIN;
   } else {
     margin = Math.ceil(ch * .1);
