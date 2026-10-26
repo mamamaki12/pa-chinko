@@ -15,3 +15,33 @@
 @media(max-width:1100px){.workspace{grid-template-columns:160px minmax(310px,1fr)}}
 @media(max-width:640px){main{padding:16px 8px 0}.stage{border-radius:6px}.stage-top{padding:8px 10px}.cabinet-wrap,.cabinet-wrap[class]{width:100%;min-width:0}.machine-controls{margin:12px 10px 0}}
 .app-version{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:22px 0;padding:16px 0;border-top:1px solid #3e4942}.app-version>div{min-width:0}.app-version span{display:block;font-size:12px}.app-version strong{display:block;font-size:11px;font-weight:400;color:#d8ddd2;margin-top:6px}.app-version small{display:block;font-size:10px;line-height:1.7;color:#93a198;margin-top:4px}#update-app{flex:none;padding:10px 12px;font-size:11px}#update-app.ready{background:var(--gold);color:#1b211f;border-color:#e6ca9a;font-weight:600}#update-app:disabled{opacity:.6;cursor:wait}#settings{position:relative}#settings.has-update::after{content:'';position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 2px #111516}
+
+
+/* Open and play: the hero text is only for screen readers and the play-record button lives in the header, so the machine is the first thing on screen. On a phone the machine comes right after the machine tabs, is sized so its controls fit on the first screen, the session and week boxes move below it, and the play time shows on its top bar. */
+.heading{position:absolute;width:1px;height:1px;margin:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.cabinet-wrap,.cabinet-wrap[class]{width:min(100%,max(420px,calc((100vh - 270px)*.75)));width:min(100%,max(420px,calc((100svh - 270px)*.75)))}
+.stage-time{display:none;font-size:9px;letter-spacing:1.5px;color:#808e8e}
+.stage-time time{display:inline;font-size:11px;font-weight:400;letter-spacing:1px;margin:0 0 0 6px;color:#d8ddd2;font-variant-numeric:tabular-nums}
+
+@media(max-width:640px){header{height:50px;padding:0 12px}
+.brand{font-size:12px;letter-spacing:1.5px;gap:6px}
+.header-right{gap:6px}
+.header-right button{padding:7px 8px}
+.header-right .wide{display:none}
+.cabinet-wrap,.cabinet-wrap[class]{width:min(100%,max(300px,calc((100vh - 220px)*.75)));width:min(100%,max(300px,calc((100svh - 220px)*.75)));margin:auto}
+main{padding:8px 6px 0}
+.workspace{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sidebar{display:contents}
+.machine-card{order:1;padding:5px 8px;gap:8px;min-height:44px}
+.card-art{width:24px;height:32px}
+.machine-card small{display:none}
+.machine-card strong{font-size:12px}
+.machine-card em{margin-top:2px}
+.stage{order:2;grid-column:1/-1}
+.session-box,.week-box{order:3;grid-column:1/-1}
+.detail{order:4;grid-column:1/-1}
+.stage-top .stage-no{display:none}
+.stage-time{display:inline}
+.stage-top{padding:7px 10px}
+.canvas-caption{display:none}
+}
