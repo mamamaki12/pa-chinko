@@ -82,6 +82,11 @@ export function portraitMotion(n, t, { gentle = true, reduced = false } = {}) {
     // A big win starts with a quick twirl.
     if (n.prio >= 3 && age < .7) m.sx *= Math.cos(age / .7 * Math.PI * 2);
   } else if (pose === 'clap') { land(.035 * amt * env, age * 9); }
+  else if (pose === 'dance') {
+    // Bonus dance: a hop on every beat while stepping and swaying from side to side.
+    land(.045 * amt * env, age * 7.3); const side = Math.sin(age * 3.65);
+    m.dx += side * .05 * amt * env; m.angle += side * .05 * amt * env; m.bend += Math.sin(age * 7.3) * .03 * env;
+  }
   else if (pose === 'point') {
     // Startled hop, then a little shiver of excitement while leaning toward the reels.
     if (age < .4) land(.13 * amt, age / .4 * Math.PI);
@@ -141,6 +146,14 @@ export function rigPose(n, t, rig, { gentle = true, reduced = false } = {}) {
     else if (arms === 'down') both(beat * .3 * env);
     else both(Math.sin(age * 18) * .06 * env);
     p.legs[0] += beat * .1 * env; p.head[0] += Math.sin(age * 4.5) * .04 * env;
+  } else if (pose === 'dance') {
+    // Arms up in turn with the steps, the legs kicking out on the hops, the head bobbing to the beat.
+    const side = Math.sin(age * 3.65), air = Math.abs(Math.sin(age * 7.3));
+    if (arms === 'down') { p.arms[0] += (.55 + side * .35) * env; p.arms[1] += (.55 - side * .35) * env; }
+    else if (arms === 'wave') { p.arms[0] += side * .3 * env; p.arms[1] += (.45 - side * .3) * env; }
+    else both(side * .12 * env);
+    p.legs[0] += Math.max(0, side) * air * .3 * amt * env; p.legs[1] += Math.max(0, -side) * air * .3 * amt * env;
+    p.head[0] += side * .06 * env; p.head[2] += air * 2; p.wings += Math.sin(t * 12) * .12 * env; p.hair += 5 * env; p.skirt += 2 * env;
   } else if (pose === 'point') {
     // Startled: the head jerks back, the legs fly out on the hop, then excited little stamps and trembling hands.
     p.head[0] -= .09 * bump(age / .35); p.head[2] -= 3 * bump(age / .35);

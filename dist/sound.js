@@ -1,4 +1,5 @@
-// Original synthesized cabinet sounds and music (Web Audio only, no recorded audio). Win sounds stay short and quiet on purpose.
+// Original synthesized cabinet sounds and music (Web Audio only, no recorded audio). Small wins stay short and quiet; only the start
+// of a bonus gets a fanfare.
 import {createMusic,stepLength,STEPS} from './music.js';
 let ctx,master,bgm,noise,nails=[],pinVoices=0,lastTick=0,lastVoice=0,lastDrain=0,lastFrame=0,hum=null,humSeen=0;
 const now=()=>ctx.currentTime;
@@ -52,13 +53,14 @@ const sounds={
   payout(t,count=3){for(let i=0;i<count;i++){const at=t+.18+i*.045+Math.random()*.02;clink(at,.1+Math.random()*.05);if(Math.random()<.6)clink(at+.01+Math.random()*.02,.05);}},
   lcd(t){const p=performance.now();if(p-lastTick<83)return;lastTick=p;osc(1180,t,{type:'square',peak:.018,decay:.018});},
   lcdStop(t){[0,.09,.18].forEach((d,i)=>{hiss(t+d,{freq:900,q:2,peak:.08,decay:.03});osc(420-i*60,t+d,{type:'triangle',peak:.07,decay:.08,drop:.7});});},
-  win(t){[523.3,659.3,784,1046.5].forEach((f,i)=>bell(f,t+.25+i*.13,.07,.5));for(let i=0;i<10;i++)ping(t+.85+i*.07+Math.random()*.03,2400+Math.random()*1200,.03);},
   spin(t){hiss(t,{freq:700,kind:'lowpass',peak:.18,decay:.09});osc(150,t,{peak:.15,decay:.12,drop:.45});osc(1650,t+.04,{peak:.025,decay:.05});},
   reel(t){humSeen=performance.now();if(!hum)startHum(t);},
   stop(t,i=0){hiss(t,{freq:600-i*80,kind:'lowpass',peak:.2,decay:.05});osc(190-i*20,t,{peak:.16,decay:.07,drop:.5});ping(t+.005,1900,.025);},
   // LCD character's voice: short pitched blips while a line is typed out (no recorded speech).
   voice(t,pitch=1){const p=performance.now();if(p-lastVoice<75)return;lastVoice=p;const f=(560+Math.random()*180)*pitch;osc(f,t,{type:'triangle',peak:.045,attack:.006,decay:.045,drop:1.1});osc(f*2.01,t,{peak:.012,attack:.006,decay:.03});},
   // Chance button: a rising call when it asks to be pressed, and a solid click with a short sparkle when pressed (same for wins and misses).
+  // Reach development (発展): a rising sweep into a chord; 天空城 adds a higher bell.
+  develop(t,kind='sp'){hiss(t,{freq:1800,q:1,peak:.12,decay:.35});[0,1,2,3].forEach(i=>osc(300*2**(i/3),t+i*.05,{type:'triangle',peak:.05,decay:.25}));[659.3,830.6,987.8].forEach((f,i)=>bell(f,t+.3+i*.06,.06,.6));if(kind==='spsp')bell(1975.5,t+.55,.05,.9);},
   push(t){bell(988,t,.06,.22);bell(1480,t+.1,.06,.3);},
   press(t){hiss(t,{freq:500,kind:'lowpass',peak:.25,decay:.06});osc(160,t,{peak:.2,decay:.12,drop:.5});bell(1760,t+.04,.05,.3);},
   medal(t,count=1){bell(784,t,.06,.3);bell(1046.5,t+.1,.05,.35);const n=Math.min(8,Math.max(2,Math.ceil(count/10)));for(let i=0;i<n;i++)ping(t+.25+i*.09+Math.random()*.02,1700+Math.random()*700,.035);},
@@ -74,3 +76,6 @@ export function music(name,volume){init();void ctx.resume();songSeen=performance
   if(!songTimer){songNext=now()+.08;songTimer=setInterval(pump,25);pump();}}
 function pump(){if(performance.now()-songSeen>250){clearInterval(songTimer);songTimer=null;bgm.gain.setTargetAtTime(0,now(),.12);synth.cut(now()+.3);song=null;return;}
   while(songNext<now()+.15){synth.schedule(song,songStep,songNext);songNext+=stepLength(song);songStep=(songStep+1)%STEPS;}}
+// Bonus fanfare (music.js FANFARE) at the sound-effect volume, through its own synth so the BGM can be cut meanwhile.
+let fx=null;
+export function fanfare(name,volume){init();void ctx.resume();master.gain.setTargetAtTime(volume*.9,now(),.02);fx??=createMusic(ctx,master);fx.fanfare(name,now()+.02);}

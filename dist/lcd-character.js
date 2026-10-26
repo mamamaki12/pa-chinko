@@ -1,8 +1,8 @@
 import {drawPortrait} from './navigator-art.js';
 // LCD navigator characters: original chibi mascots that live on the LCD and react to what just happened, like the
 // mini characters of a real machine. ハナ lives on AURORA (pink, flower), ソラ on ASTRAL (silver-blue, star).
-// Rules: reactions come at or after a known result (spin start, reach, stop, payout); the lever / spin reactions are the
-// same for every game, so they never hint at the outcome. No near-miss teasing and no lines that push for more play;
+// Rules: reactions come at or after a known result (spin start, reach, stop, payout); the lever / spin / reach reactions are the
+// same for every game, so they never hint at the outcome. sp / spsp follow a developed reach, which does (see REACH_PICK in engine.js). No near-miss teasing and no lines that push for more play;
 // gentle lines about breaks are fine. Gentle mode keeps the motion but dims sparkles; prefers-reduced-motion keeps poses still
 // (no blinking, lip flaps, hops or idle fidgets).
 
@@ -23,6 +23,8 @@ export const EVENTS={
   enter:{pose:'nod',expr:'happy',dur:.6,chance:0,prio:0,lines:[]},
   spin:{pose:'watch',expr:'normal',dur:2,chance:.3,prio:1,lines:['くるくる〜','まわってるね','どれどれ…']},
   reach:{pose:'point',expr:'surprise',dur:3,chance:1,prio:2,lines:['リーチ！','リーチだね','左右がそろったよ']},
+  sp:{pose:'point',expr:'surprise',dur:2.5,chance:1,prio:2,lines:['流れ星がきた！','流星リーチ！','星がいっぱい！']},
+  spsp:{pose:'cheer',expr:'surprise',dur:3,chance:1,prio:2,lines:['お城が光ってる！','天空城リーチ！','わあ、お城だ！']},
   bonus:{pose:'point',expr:'surprise',dur:3.5,chance:1,prio:3,lines:['大当たり！ 右打ちで右下をねらってね','そろった！ 強めに打って右下へ']},
   win:{pose:'cheer',expr:'happy',dur:4.5,chance:1,prio:3,lines:['大当たり終了！ {n}玉だよ','おつかれさま、{n}玉！'],next:'afterWin'},
   afterWin:{pose:'idle',expr:'happy',dur:3,chance:1,prio:1,lines:['いい区切り。ここで休むのもアリだよ','うれしい気分のまま、ひと休みしよっか']},
@@ -72,13 +74,16 @@ export function react(n,event,t,{rand=Math.random,count=0,chance}={}){
 
 // Advances timers. busy: a draw or the reels are running (no idle chatter then). Returns how many characters of the
 // current line were newly revealed, so the caller can play the voice blips.
-export function tick(n,t,{busy=false,rand=Math.random,reduced=false}={}){
+// party: a bonus (BIG / jackpot rounds) is running after its opening show; between reactions the character dances to the music.
+export function tick(n,t,{busy=false,party=false,rand=Math.random,reduced=false}={}){
   if(!n.greeted&&t>=GREET_AT)react(n,'hello',t,{rand});
   if(n.next&&t>=n.nextAt){const ev=n.next;n.next=null;react(n,ev,t,{rand});}
+  // During a bonus the dance is kept going half a second at a time, so it eases out by itself when the bonus ends.
+  if(party&&(n.pose==='dance'||t>=n.poseUntil)){if(n.pose!=='dance'){n.pose='dance';n.expr='happy';n.poseAt=t;}n.poseUntil=t+.5;}
   // While a draw or the reels run, the character keeps watching the screen; otherwise it goes back to idling.
   const rest=busy?'watch':'idle';if(t>=n.poseUntil&&n.pose!==rest){n.pose=rest;n.expr='normal';n.poseAt=t;}
   if(n.line&&t>=n.lineUntil){n.line='';n.prio=0;}
-  if(!busy&&!n.line&&t>=n.chatAt)react(n,'chat',t,{rand});
+  if(!busy&&!party&&!n.line&&t>=n.chatAt)react(n,'chat',t,{rand});
   if(!n.line)return 0;
   const shown=reduced?n.line.length:Math.min(n.line.length,Math.floor((t-n.lineAt)*CPS));
   const added=Math.max(0,shown-n.shown);n.shown=shown;return added;
@@ -291,6 +296,7 @@ function motion(pose,a,still){
   const s=still?0:1,m={bob:Math.sin(a*2.4)*3*s,jump:0,tilt:Math.sin(a*.9)*.04*s,arms:[.22+Math.sin(a*2.4)*.05*s,.22-Math.sin(a*2.4)*.05*s],headDrop:0,lean:0,wing:Math.sin(a*5)*.12*s};
   if(pose==='wave'){m.arms[1]=2.35+Math.sin(a*11)*.3*s;m.tilt=.08;}
   else if(pose==='cheer'){m.arms=[2.25+Math.sin(a*12)*.15*s,2.25-Math.sin(a*12)*.15*s];m.jump=Math.abs(Math.sin(a*6.5))*20*s;m.wing=Math.sin(a*14)*.3*s;m.tilt=0;}
+  else if(pose==='dance'){const b=Math.sin(a*7.3);m.arms=[1.2+b*.9*s,1.2-b*.9*s];m.jump=Math.abs(Math.sin(a*7.3))*7*s;m.tilt=b*.12*s;m.lean=b*5*s;m.wing=Math.sin(a*14)*.25*s;}
   else if(pose==='clap'){const c=Math.abs(Math.sin(a*9))*s;m.arms=[-.5-c*.45,-.5-c*.45];m.jump=Math.abs(Math.sin(a*9))*4*s;}
   else if(pose==='watch'){m.arms=[-.9,-.9];m.lean=4;m.bob=Math.sin(a*6)*1.8*s;m.tilt=.06*Math.sin(a*1.5)*s;}
   else if(pose==='point'){m.arms[1]=1.15+Math.sin(a*8)*.08*s;m.arms[0]=.35;m.jump=a<.3?Math.sin(a/.3*Math.PI)*13*s:0;m.tilt=-.06;}
@@ -350,8 +356,8 @@ export function drawNavi(c,n,t,{x,y,scale=1,gentle=true,reduced=false,flip=false
   else{light(Math.ceil(W*f*px),Math.ceil(H*f*px),f*px);ctx=c;ctx.save();ctx.shadowColor=gentle?'#ffffffaa':'#ffffffdd';ctx.shadowBlur=Math.max(3,5*scale)*px;const bw=W*f,bh=H*f;
     ctx.drawImage(buf,0,0,Math.ceil(bw*px),Math.ceil(bh*px),x-OX*f,y-OY*f,Math.ceil(bw*px)/px,Math.ceil(bh*px)/px);ctx.restore();}
   // Sparkles around a cheer (also for clap, smaller).
-  if((n.pose==='cheer'||n.pose==='clap')&&t<n.poseUntil){
-    const count=still?3:n.pose==='cheer'?9:4,alpha=gentle?.55:.95;ctx.save();ctx.globalCompositeOperation='lighter';
+  if((n.pose==='cheer'||n.pose==='clap'||n.pose==='dance')&&t<n.poseUntil){
+    const count=still?3:n.pose==='cheer'?9:n.pose==='dance'?6:4,alpha=gentle?.55:.95;ctx.save();ctx.globalCompositeOperation='lighter';
     for(let i=0;i<count;i++){const p=still?.5:(a*.9+i/count)%1,ang=i*2.4+(still?0:a*.6),r=(30+p*30)*scale;
       ctx.globalAlpha=alpha*Math.sin(p*Math.PI);star(x+Math.cos(ang)*r,y-50*scale+Math.sin(ang)*r*.8,(3+2*(i%3))*scale*(1-p*.4),i%2?'#fff6c8':k.wing);}
     ctx.restore();
@@ -359,13 +365,13 @@ export function drawNavi(c,n,t,{x,y,scale=1,gentle=true,reduced=false,flip=false
 }
 
 // Little marks around the illustrated character, like the effects that pop around a real machine's mini characters:
-// sparkles for a cheer or clap, a "!" for a reach or a bonus, notes while waving and z's
+// sparkles for a cheer, clap or dance, a "!" for a reach or a bonus, notes while waving and z's
 // while resting. head: where the head is drawn this frame, so the marks follow the jumps.
 function emotes(n,t,{head:[hx,hy],height},{scale,gentle,still}){
   const a=t-n.poseAt,active=t<n.poseUntil,pose=n.pose,k=KINDS[n.kind],alpha=gentle?.6:.95;
   ctx.save();
-  if((pose==='cheer'||pose==='clap')&&active){
-    const count=still?3:pose==='cheer'?9:4;ctx.globalCompositeOperation='lighter';
+  if((pose==='cheer'||pose==='clap'||pose==='dance')&&active){
+    const count=still?3:pose==='cheer'?9:pose==='dance'?6:4;ctx.globalCompositeOperation='lighter';
     for(let i=0;i<count;i++){const p=still?.5:(a*.9+i/count)%1,ang=i*2.4+(still?0:a*.6),r=height*(.3+p*.28);
       ctx.globalAlpha=alpha*Math.sin(p*Math.PI);star(hx+Math.cos(ang)*r,hy+height*.12+Math.sin(ang)*r*.8,(3+2*(i%3))*scale*(1-p*.4),i%2?'#fff6c8':k.wing);}
   }
