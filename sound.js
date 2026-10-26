@@ -1,4 +1,5 @@
-// Original synthesized cabinet sounds and music (Web Audio only, no recorded audio). Win sounds stay short and quiet on purpose.
+// Original synthesized cabinet sounds and music (Web Audio only, no recorded audio). Small wins stay short and quiet; only the start
+// of a bonus gets a fanfare.
 import {createMusic,stepLength,STEPS} from './music.js';
 let ctx,master,bgm,noise,nails=[],pinVoices=0,lastTick=0,lastVoice=0,lastDrain=0,lastFrame=0,hum=null,humSeen=0;
 const now=()=>ctx.currentTime;
@@ -52,7 +53,6 @@ const sounds={
   payout(t,count=3){for(let i=0;i<count;i++){const at=t+.18+i*.045+Math.random()*.02;clink(at,.1+Math.random()*.05);if(Math.random()<.6)clink(at+.01+Math.random()*.02,.05);}},
   lcd(t){const p=performance.now();if(p-lastTick<83)return;lastTick=p;osc(1180,t,{type:'square',peak:.018,decay:.018});},
   lcdStop(t){[0,.09,.18].forEach((d,i)=>{hiss(t+d,{freq:900,q:2,peak:.08,decay:.03});osc(420-i*60,t+d,{type:'triangle',peak:.07,decay:.08,drop:.7});});},
-  win(t){[523.3,659.3,784,1046.5].forEach((f,i)=>bell(f,t+.25+i*.13,.07,.5));for(let i=0;i<10;i++)ping(t+.85+i*.07+Math.random()*.03,2400+Math.random()*1200,.03);},
   spin(t){hiss(t,{freq:700,kind:'lowpass',peak:.18,decay:.09});osc(150,t,{peak:.15,decay:.12,drop:.45});osc(1650,t+.04,{peak:.025,decay:.05});},
   reel(t){humSeen=performance.now();if(!hum)startHum(t);},
   stop(t,i=0){hiss(t,{freq:600-i*80,kind:'lowpass',peak:.2,decay:.05});osc(190-i*20,t,{peak:.16,decay:.07,drop:.5});ping(t+.005,1900,.025);},
@@ -74,3 +74,6 @@ export function music(name,volume){init();void ctx.resume();songSeen=performance
   if(!songTimer){songNext=now()+.08;songTimer=setInterval(pump,25);pump();}}
 function pump(){if(performance.now()-songSeen>250){clearInterval(songTimer);songTimer=null;bgm.gain.setTargetAtTime(0,now(),.12);synth.cut(now()+.3);song=null;return;}
   while(songNext<now()+.15){synth.schedule(song,songStep,songNext);songNext+=stepLength(song);songStep=(songStep+1)%STEPS;}}
+// Bonus fanfare (music.js FANFARE) at the sound-effect volume, through its own synth so the BGM can be cut meanwhile.
+let fx=null;
+export function fanfare(name,volume){init();void ctx.resume();master.gain.setTargetAtTime(volume*.9,now(),.02);fx??=createMusic(ctx,master);fx.fanfare(name,now()+.02);}

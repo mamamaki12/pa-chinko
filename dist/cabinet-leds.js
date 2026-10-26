@@ -95,7 +95,10 @@ export const SCENES={
     draw:[['all',{mode:'chase',speed:.5,min:.5}]],
     reach:[['side',{mode:'chase',speed:1.2,min:.3,color:'#ff3c8c'}],['top',{mode:'blink',speed:1.5,min:.4,color:'#ff3c8c'}],['board',{mode:'blink',speed:1.5,min:.4,color:'#ff3c8c'}],['front',{mode:'breathe',speed:.8,min:.5}]],
     push:[['side',{mode:'on',level:.25}],['top',{mode:'on',level:.25}],['board',{mode:'on',level:.25}],['front',{mode:'blink',speed:2.5,min:.2,color:'#ffffff'}]],
-    bonus:[['all',{mode:'chase',speed:1,min:.45,color:'rainbow'}]],
+    // fanfare: the opening show of a jackpot (celebration.js), every lamp at full speed; finale: the end of the rounds.
+    fanfare:[['top',{mode:'blink',speed:3,min:.15,color:'#ffd36a'}],['board',{mode:'blink',speed:3,min:.15,color:'#ffffff'}],['side',{mode:'chase',speed:2.5,min:.2,color:'rainbow'}],['front',{mode:'chase',speed:2.5,min:.2,color:'rainbow'}]],
+    bonus:[['side',{mode:'chase',speed:1.4,min:.4,color:'rainbow'}],['front',{mode:'chase',speed:1.4,min:.4,color:'rainbow'}],['top',{mode:'breathe',speed:.9,min:.55,color:'#ffd36a'}],['board',{mode:'blink',speed:1,min:.5,color:'#ff7cc4'}]],
+    finale:[['all',{mode:'chase',speed:1,min:.5,color:'#ffd36a'}]],
     win:[['all',{mode:'blink',speed:1.5,min:.45,color:'#ffd36a'}]],
     dark:[['all',{mode:'off'}]],
     lit:[['all',{mode:'on'}]],
@@ -105,7 +108,10 @@ export const SCENES={
     spin:[['side',{mode:'chase',speed:.6,min:.5}],['top',{mode:'chase',speed:.6,min:.5}],['frame',{mode:'on'}]],
     win:[['all',{mode:'blink',speed:1.5,min:.45,color:'#ffd36a'}]],
     replay:[['all',{mode:'breathe',speed:.6,min:.5,color:'#5ff0b4'}]],
-    big:[['all',{mode:'chase',speed:1,min:.45,color:'rainbow'}]],
+    // fanfare: the opening show of BIG after 7-7-7 (celebration.js), every lamp at full speed; finale: the end of BIG.
+    fanfare:[['top',{mode:'blink',speed:3,min:.15,color:'#ffd36a'}],['frame',{mode:'blink',speed:3,min:.15,color:'#ffffff'}],['side',{mode:'chase',speed:2.5,min:.2,color:'rainbow'}]],
+    big:[['side',{mode:'chase',speed:1.4,min:.4,color:'rainbow'}],['top',{mode:'breathe',speed:.9,min:.55,color:'#ffd36a'}],['frame',{mode:'chase',speed:1,min:.45,color:'#7fd8ff'}]],
+    finale:[['all',{mode:'chase',speed:1,min:.5,color:'#ffd36a'}]],
     dark:[['all',{mode:'off'}]],
     lit:[['all',{mode:'on'}]],
   },
