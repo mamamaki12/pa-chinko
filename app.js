@@ -9,7 +9,7 @@ import {SHOWS,startShow,showOn,fanfareOn,showScene,drawShow,drawStage,drawWinCel
 import {KINDS,createNavi,react,tick,drawNavi,drawBubble} from './lcd-character.js';
 import {LED_PARTS,buildLeds,drawLeds,applyScene} from './cabinet-leds.js';
 import {createParts,drawPartMap} from './cabinet-parts.js';
-import {createBackdrop,stepBackdrop,drawBackdrop,stageChange} from './lcd-scenes.js';
+import {createBackdrop,stepBackdrop,drawBackdrop,stageChange,loadStageImages} from './lcd-scenes.js';
 import {readBuild,isNewer,versionLabel,formatBuiltAt,fetchLatest,refreshFiles,reloadUrl,cleanUrl} from './updater.js';
 loadSlotFonts();
 // Work out the reel control for each role in idle moments after the page opens, so the first stop of each role does not stutter.
@@ -103,7 +103,7 @@ function rr(x,y,w,h,r,fill,stroke){ctx.beginPath();ctx.roundRect(x,y,w,h,r);if(f
 function grad(x,y,x2,y2,stops){const g=ctx.createLinearGradient(x,y,x2,y2);stops.forEach(([p,c])=>g.addColorStop(p,c));return g;}
 function text(t,x,y,size,color,font='Arial',align='center'){ctx.textAlign=align;ctx.font=`${size}px ${font}`;ctx.fillStyle=color;ctx.fillText(t,x,y);}
 function circle(x,y,r,fill,stroke){ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.stroke();}}
-const art={},ledLayers={};for(const [key,src] of [['aurora','assets/aurora.webp'],['astral','assets/astral.webp'],['lcd','assets/lcd-illustration.jpg']]){const img=new Image();img.onload=()=>{art[key]=img;if(LED_PARTS[key])ledLayers[key]=buildLeds(img,LED_PARTS[key]);if(key==='aurora')buildArtBlur(img);};img.src=src;}
+const art={},ledLayers={};for(const [key,src] of [['aurora','assets/aurora.webp'],['astral','assets/astral.webp'],['lcd','assets/lcd-illustration.jpg']]){const img=new Image();img.onload=()=>{art[key]=img;if(LED_PARTS[key])ledLayers[key]=buildLeds(img,LED_PARTS[key]);if(key==='aurora')buildArtBlur(img);if(key==='lcd')loadStageImages();};img.src=src;}
 // Machine parts (cabinet-parts.js): every element of each machine with its state. The cabinet LEDs follow the scene of the moment
 // (idle / draw / reach / push / bonus / win …, see cabinet-leds.js) unless the room setting keeps them all on or all off.
 // Page options: ?parts draws the part map, ?leds=<scene> keeps the LEDs on one scene (e.g. ?leds=reach) to check a lamp program.
@@ -156,7 +156,7 @@ const pos=reduced?Math.round(p):p+settle,k=Math.floor(pos),f=pos-k;g.setTransfor
 for(let j=0;j<n;j++){g.globalAlpha=n>1?1.7/n:1;const o=n>1?-blur/2+blur*j/(n-1):0;for(const d of [-1,0,1]){const y=COL_H/2-DIGIT_H/2+(f-d)*CELL+o;if(y>-DIGIT_H&&y<COL_H)g.drawImage(DIGITS[((k+d)%9+9)%9],0,y,DIGIT_W,DIGIT_H);}}
 g.globalAlpha=1;g.globalCompositeOperation='destination-in';g.fillStyle=stops(g.createLinearGradient(0,0,0,COL_H),[[0,'#0000'],[.2,'#000'],[.8,'#000'],[1,'#0000']]);g.fillRect(0,0,DIGIT_W,COL_H);g.globalCompositeOperation='source-over';
 const pop=reduced||since<0||since>.25?1:1+.07*(1-since/.25);ctx.save();ctx.translate(cx,cy);ctx.scale(pop*scale,pop*scale);ctx.drawImage(colCanvas,-DIGIT_W/2,-COL_H/2,DIGIT_W,COL_H);ctx.restore();}
-// LCD background (lcd-scenes.js): hundreds of scenes (45 drawn stages of the sky kingdom × time of day, with a weather and a sky event), one deck
+// LCD background (lcd-scenes.js): scenes of the sky kingdom (painted stages × camera shot × time of day, with a weather and a sky event), one deck
 // per machine. They cycle while idle, change at the start of a draw, turn dramatic for a reach and festive for a bonus, and everything
 // speeds up while a draw is spinning, the same for every draw. ?scene=<number> keeps one scene on screen to check it.
 const backdrops={pachinko:createBackdrop('aurora'),slot:createBackdrop('astral')},scenePin=+query.get('scene')||null;
