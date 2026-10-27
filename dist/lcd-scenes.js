@@ -366,15 +366,34 @@ for(const s of STAGES)s.theme??='both';
 // Paintings in the style of the illustration, one file each in assets/lcd-stages/ (16:9, 1024×576 or larger). file: the image;
 // shots: camera moves over it; times: the times of day whose light fits the painting (its colours are then graded like the castle).
 // Add an entry when its file is in place; a scene of an image stage is skipped while its image is still loading.
-export const IMAGE_STAGES=[];
-for(const im of IMAGE_STAGES)STAGES.push({painted:true,theme:'both',times:ALL,weathers:SOFT,skies:OPEN,...im,image:`assets/lcd-stages/${im.file}`});
+const NIGHT=['twilight','night','moon','nebula','polar'],SUNSET=['dawn','sunset','twilight','rose','gold'],HALL=['clear','rays','halo'];
+export const IMAGE_STAGES=[
+  {id:'cloudsea',name:'雲海を飛ぶ',file:'cloudsea.webp',shots:[[.5,.45,1.1,1.3,0],[.3,.4,1.4,1.2,.12],[.7,.5,1.3,1.5,-.1]]},
+  {id:'skybridge',name:'空の回廊',file:'skybridge.webp',shots:[[.5,.45,1.1,1.4,0],[.5,.35,1.6,1.3,0],[.35,.5,1.3,1.2,.1]]},
+  {id:'whale',name:'空の鯨',file:'whale.webp',shots:[[.4,.4,1.1,1.3,.08],[.3,.35,1.45,1.2,.1],[.6,.45,1.25,1.4,-.08]]},
+  {id:'gate',name:'光の大門',file:'gate.webp',party:true,shots:[[.5,.4,1.1,1.4,0],[.5,.35,1.65,1.3,0],[.3,.45,1.3,1.2,.12]]},
+  {id:'spires',name:'塔の街',file:'spires.webp',shots:[[.5,.4,1.1,1.3,.06],[.25,.4,1.5,1.3,.12],[.75,.4,1.5,1.3,-.12]]},
+  {id:'garden',name:'空中庭園',file:'garden.webp',shots:[[.5,.4,1.1,1.35,.05],[.3,.4,1.5,1.3,.12],[.72,.35,1.4,1.2,-.1]]},
+  {id:'stairs',name:'天への階段',file:'stairs.webp',party:true,shots:[[.6,.45,1.1,1.4,-.05],[.65,.6,1.5,1.3,0],[.45,.35,1.3,1.5,.08]]},
+  {id:'throne',name:'女神の間',file:'throne.webp',party:true,skies:HALL,weathers:['calm','motes','sparkle','feather','petal'],shots:[[.5,.4,1.1,1.35,0],[.5,.3,1.6,1.3,0],[.4,.5,1.3,1.2,.1]]},
+  {id:'crystalcave',name:'水晶の洞窟',file:'crystalcave.webp',drama:true,times:['day','twilight','night','moon','nebula','polar','frost','jade'],skies:HALL,weathers:['calm','motes','sparkle','crystal','bubble'],shots:[[.5,.45,1.1,1.3,0],[.3,.4,1.5,1.3,.1],[.7,.5,1.4,1.6,-.1]]},
+  {id:'worldtree',name:'世界樹',file:'worldtree.webp',shots:[[.45,.4,1.1,1.35,.06],[.3,.3,1.5,1.3,.12],[.6,.45,1.3,1.15,-.08]]},
+  {id:'lake',name:'鏡の湖',file:'lake.webp',shots:[[.5,.45,1.1,1.3,0],[.5,.6,1.3,1.5,.08],[.3,.4,1.4,1.2,.12]]},
+  {id:'sakura',name:'桜の並木',file:'sakura.webp',times:['day','dawn','rose','gold','twilight','night','moon'],weathers:['petal','calm','motes','sparkle'],shots:[[.4,.4,1.1,1.35,.1],[.15,.4,1.5,1.3,.1],[.55,.35,1.3,1.5,-.06]]},
+  {id:'nightcastle',name:'星夜の天空城',file:'nightcastle.webp',drama:true,times:NIGHT,shots:[[.45,.35,1.1,1.35,.06],[.8,.3,1.5,1.3,-.1],[.4,.5,1.3,1.15,.1]]},
+  {id:'sunsetisles',name:'夕焼けの浮島',file:'sunsetisles.webp',times:SUNSET,shots:[[.5,.45,1.1,1.3,0],[.3,.35,1.4,1.2,.1],[.7,.5,1.3,1.5,-.1]]},
+  {id:'aurora',name:'オーロラの空',file:'aurora.webp',drama:true,times:NIGHT,skies:['clear','aurora','meteor','galaxy','halo'],shots:[[.4,.3,1.1,1.35,.08],[.7,.25,1.5,1.3,-.1],[.3,.45,1.3,1.15,.1]]},
+  {id:'moonroad',name:'月の道',file:'moonroad.webp',drama:true,times:NIGHT,skies:['clear','meteor','galaxy','halo'],shots:[[.55,.4,1.1,1.3,0],[.55,.3,1.5,1.3,-.05],[.35,.5,1.3,1.15,.1]]},
+];
+for(const im of IMAGE_STAGES)STAGES.push({painted:true,theme:'both',times:ALL.filter(t=>t!=='frost'),weathers:SOFT,skies:OPEN,...im,image:`assets/lcd-stages/${im.file}`});
 export const DRAWN_ON=false;
 export const DRAWN=STAGES.filter(s=>!s.painted);
+for(const s of DRAWN){s.id='drawn-'+s.id;s.name+='（描画）';}
 export function stageOn(stage){return !!stage.painted||DRAWN_ON;}
 // Browser side: the images of the image stages, loaded after the main art (loadStageImages) and used once ready.
 const IMAGES=new Map();
 export function loadStageImages(){for(const st of STAGES)if(st.image&&!IMAGES.has(st.id)){const img=new Image();img.decoding='async';img.onload=()=>{img.ready=true;};img.src=st.image;IMAGES.set(st.id,img);}}
-export function stageReady(stage){return !stage.image||!!IMAGES.get(stage.id)?.ready;}
+export function stageReady(stage){return !stage.image||typeof Image==='undefined'||!!IMAGES.get(stage.id)?.ready;}
 
 export function stageList(){return STAGES.map(s=>({id:s.id,name:s.name}));}
 export const VARIANTS=2;
@@ -401,7 +420,7 @@ function spread(deck){const a=deck.slice();for(let i=1;i<a.length;i++){if(a[i].s
 export function createBackdrop(machine,rand=n=>Math.floor(Math.random()*n)){const deck=shuffle(deckFor(machine),rand),decks={};
   for(const pool of Object.keys(POOLS))decks[pool]=spread(deck.filter(POOLS[pool]));return {machine,decks,next:{normal:0,reach:0,bonus:0},pool:'normal',scene:null,at:0,len:SHOT_LEN,fade:0,prev:null,prevAt:0,prevLen:SHOT_LEN,draw:null};}
 // Next scene of a pool, going through the whole shuffled deck before any scene comes back. Two stages in a row are avoided too.
-function take(b,pool){const deck=b.decks[pool];let s=deck[b.next[pool]++%deck.length];if(s.stage===b.scene?.stage&&deck.length>1)s=deck[b.next[pool]++%deck.length];for(let k=0;k<deck.length&&!stageReady(s.stage);k++)s=deck[b.next[pool]++%deck.length];return s;}
+function take(b,pool){const deck=b.decks[pool];let s=deck[b.next[pool]++%deck.length];if(s.stage===b.scene?.stage&&deck.length>1)s=deck[b.next[pool]++%deck.length];for(let k=0;k<deck.length&&!(stageReady(s.stage)&&(s!==b.scene||deck.length===1));k++)s=deck[b.next[pool]++%deck.length];return s;}
 // phase: 'idle' | 'draw' | 'reach' | 'bonus'. draw: anything that changes at the start of each draw (a new draw shows a new scene).
 // timed:false (prefers-reduced-motion) changes scenes only on those events, with a cut instead of a cross-fade. pin: a scene number to keep.
 export function stepBackdrop(b,t,{phase='idle',draw=null,timed=true,pin=null}={}){if(b.stage&&(phase!=='draw'&&phase!=='reach'||draw!==b.draw))b.stage=null;const pool=b.stage??(phase==='bonus'||phase==='reach'?phase:'normal');let fade=null;
@@ -474,7 +493,7 @@ function plate(stage,P,W,H,img){return sprite(`plate|${stage.id}|${P.id}|${W}x${
 function paintScene(g,img,sc,u,w,h,t,count){const {time:P,stage}=sc;g.globalCompositeOperation='source-over';g.globalAlpha=1;g.fillStyle='#0b1022';g.fillRect(0,0,w,h);
   if(sc.shot){const pic=stage.image?IMAGES.get(stage.id):img;if(pic?.ready!==false&&pic?.width)shot(g,pic,w,h,sc.shot,u);for(let i=0;i<5;i++){const k=.7+(i%3)*.3,cw=180*k,span=w+cw,px=span-((t*(14+i*7)+i*137)%span)-cw*.5,py=18+i*26+Math.sin(t*.3+i)*5;g.globalAlpha=(.32+.06*(i%3))*(1-P.dark*.65);g.drawImage(CLOUD(),px-cw/2,py-35*k,cw,70*k);}g.globalAlpha=1;
     if(P.mul){g.globalCompositeOperation='multiply';g.fillStyle=linear(g,0,0,0,h,[[0,P.mul[0]],[1,P.mul[1]]]);g.fillRect(0,0,w,h);}
-    g.globalCompositeOperation='lighter';g.fillStyle=radial(g,P.sun[0]*w,P.sun[1]*h,Math.max(w,h)*.7,[[0,al(P.glow,.25)],[1,al(P.glow,0)]]);g.fillRect(0,0,w,h);g.globalCompositeOperation='source-over';}
+    g.globalCompositeOperation='lighter';g.fillStyle=radial(g,P.sun[0]*w,P.sun[1]*h,Math.max(w,h)*.7,[[0,al(P.glow,stage.image?.12:.25)],[1,al(P.glow,0)]]);g.fillRect(0,0,w,h);g.globalCompositeOperation='source-over';}
   else{const W=Math.round(w*OVER),H=Math.round(h*OVER),z=1+.06*u,dx=(u-.5)*(W-w)*.6;g.save();g.translate(w/2,h/2);g.scale(z,z);g.translate(-W/2-dx,-H/2);g.drawImage(plate(stage,P,W,H,img),0,0,W,H);stage.live(g,W,H,t,P,img);g.restore();
     g.globalCompositeOperation='lighter';g.fillStyle=radial(g,P.sun[0]*w,P.sun[1]*h,Math.max(w,h)*.8,[[0,al(P.glow,.16)],[1,al(P.glow,0)]]);g.fillRect(0,0,w,h);g.globalCompositeOperation='source-over';g.drawImage(sprite(`vignette${w}x${h}`,w,h,c=>{c.fillStyle=radial(c,w/2,h/2,Math.max(w,h)*.72,[[0,'#00000000'],[.6,'#00000000'],[1,'#00000066']]);c.fillRect(0,0,w,h);}),0,0,w,h);}
   if(P.stars&&sc.shot)stars(g,w,h,t,P.stars);sky(g,sc.sky.id,w,h,t,P.glow,P.dark);weather(g,sc.weather,w,h,t,count);
