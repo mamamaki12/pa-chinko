@@ -1,26 +1,28 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {SCENES,SCENE_COUNT,STAGES,TIMES,WEATHERS,SKIES,skyFits,deckFor,createBackdrop,stepBackdrop,backdropView,stageChange,SHOT_LEN,MIN_SHOW} from '../lcd-scenes.js';
+import {SCENES,SCENE_COUNT,STAGES,DRAWN,DRAWN_ON,IMAGE_STAGES,stageOn,TIMES,WEATHERS,SKIES,skyFits,deckFor,createBackdrop,stepBackdrop,backdropView,stageChange,SHOT_LEN,MIN_SHOW} from '../lcd-scenes.js';
 
-test('背景のシーンは構図の違う舞台が数十種類あり、どの舞台も描き方（止まった絵と動く絵）か元の絵のカメラを持つ',()=>{
-  assert.ok(STAGES.length>=40,String(STAGES.length));assert.equal(new Set(STAGES.map(s=>s.id)).size,STAGES.length);assert.equal(new Set(STAGES.map(s=>s.name)).size,STAGES.length);
-  for(const s of STAGES){assert.ok(s.shot||typeof s.plate==='function'&&typeof s.live==='function',s.id);assert.ok(s.times.length>=4&&s.weathers.length>=1&&s.skies.length>=1,s.id);
+test('背景のシーンは構図の違う舞台が数十種類あり、どの舞台も描き方（止まった絵と動く絵）か絵のカメラを持ち、絵を使う舞台だけが出る',()=>{
+  assert.ok(STAGES.length>=40,String(STAGES.length));assert.ok(STAGES.filter(stageOn).length>=7);assert.equal(DRAWN_ON,false);assert.ok(DRAWN.every(s=>!s.painted&&!stageOn(s)));
+  for(const im of IMAGE_STAGES)assert.ok(im.id&&im.name&&im.file&&im.shots?.length,im.id);assert.equal(new Set(STAGES.map(s=>s.id)).size,STAGES.length);assert.equal(new Set(STAGES.map(s=>s.name)).size,STAGES.length);
+  for(const s of STAGES){assert.ok(s.shots?.length||s.image||typeof s.plate==='function'&&typeof s.live==='function',s.id);assert.ok(s.times.length>=4&&s.weathers.length>=1&&s.skies.length>=1,s.id);
     for(const id of s.times)assert.ok(TIMES.some(t=>t.id===id),`${s.id} ${id}`);for(const id of s.weathers)assert.ok(WEATHERS.some(w=>w.id===id),`${s.id} ${id}`);for(const id of s.skies)assert.ok(SKIES.some(k=>k.id===id),`${s.id} ${id}`);}
 });
 
-test('背景は数百種類あり、番号・名前・組み合わせがすべて違い、どの舞台も時間帯ごとに出てくる',()=>{
-  assert.equal(SCENES.length,SCENE_COUNT);assert.ok(SCENE_COUNT>=300,String(SCENE_COUNT));
+test('背景は百種類以上あり、番号・名前・組み合わせがすべて違い、どの舞台も時間帯ごとに出てくる',()=>{
+  assert.equal(SCENES.length,SCENE_COUNT);assert.ok(SCENE_COUNT>=100,String(SCENE_COUNT));assert.ok(SCENES.every(s=>stageOn(s.stage)));
   assert.deepEqual(SCENES.map(s=>s.no),SCENES.map((_,i)=>i+1));
   assert.equal(new Set(SCENES.map(s=>s.name)).size,SCENES.length);
   assert.equal(new Set(SCENES.map(s=>[s.stage.id,s.time.id,s.weather.id,s.sky.id].join())).size,SCENES.length);
-  for(const st of STAGES)assert.equal(SCENES.filter(s=>s.stage===st).length,st.times.length,st.id);
+  for(const st of STAGES.filter(stageOn))assert.ok(SCENES.filter(s=>s.stage===st).length>=st.times.length,st.id);
+  for(const s of SCENES)if(s.stage.shots)assert.ok(s.stage.shots.includes(s.shot),s.name);
   for(const s of SCENES){assert.ok(skyFits(s.sky,s.time),s.name);assert.ok(s.stage.times.includes(s.time.id)&&s.stage.weathers.includes(s.weather.id)&&s.stage.skies.includes(s.sky.id),s.name);}
   assert.ok(!SCENES.some(s=>s.sky.id==='rainbow'&&s.time.dark>.1));assert.ok(!SCENES.some(s=>s.sky.id==='fireworks'&&s.time.dark<.3));assert.ok(!SCENES.some(s=>s.sky.id==='moon'&&s.time.dark>=.8),'夜は時間帯が月を描くので満月の出来事は重ねない');
 });
 
 test('台ごとの背景はそれぞれ百種類以上あり、リーチ用と大当たり用の背景もそろっている',()=>{
-  for(const machine of ['aurora','astral']){const deck=deckFor(machine);assert.ok(deck.length>=150,`${machine}: ${deck.length}`);assert.ok(new Set(deck.map(s=>s.stage)).size>=35,`${machine} stages`);
-    const b=createBackdrop(machine);assert.ok(b.decks.reach.length>=10,`${machine} reach: ${b.decks.reach.length}`);assert.ok(b.decks.bonus.length>=30,`${machine} bonus: ${b.decks.bonus.length}`);}
+  for(const machine of ['aurora','astral']){const deck=deckFor(machine);assert.ok(deck.length>=60,`${machine}: ${deck.length}`);assert.ok(new Set(deck.map(s=>s.stage)).size>=6,`${machine} stages`);
+    const b=createBackdrop(machine);assert.ok(b.decks.reach.length>=10,`${machine} reach: ${b.decks.reach.length}`);assert.ok(b.decks.bonus.length>=15,`${machine} bonus: ${b.decks.bonus.length}`);}
   assert.ok(deckFor('aurora').every(s=>s.time.theme!=='astral'));assert.ok(deckFor('astral').every(s=>s.time.theme!=='aurora'));
 });
 

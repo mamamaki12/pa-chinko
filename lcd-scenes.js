@@ -1,6 +1,8 @@
 // LCD background scenes, like the many background stages of a real machine. Every STAGE is its own picture of the sky kingdom
-// (the world of the LCD illustration): its own composition, motifs and motion, drawn on the canvas, some with painted pieces cut
-// from the illustration (the castle, the islands, the goddess). A scene is a stage at a time of day (sky colours, sun or moon, stars)
+// (the world of the LCD illustration): its own composition, motifs and motion. Painted stages use the illustration itself or pieces
+// cut from it (the castle, the islands, the goddess); IMAGE_STAGES are further paintings in the same style (assets/lcd-stages/);
+// the drawn stages (DRAWN) are made of shapes on the canvas and are kept out of the catalogue while DRAWN_ON is false, because
+// their look is far from the paintings. A scene is a stage at a time of day (sky colours, sun or moon, stars)
 // with a weather (falling or rising particles) and an event in the sky, so SCENES holds stages × their times × a few extras.
 // Each machine shuffles its own deck (AURORA leans to warm, pink skies and ASTRAL to night and starry ones) and the same scenes
 // are reused in every state: they cycle while idle, change at the start of a draw, a reach switches to a darker, more dramatic
@@ -120,26 +122,26 @@ const ALL=TIMES.map(t=>t.id),DAYS=['day','dawn','sunset','rose','gold','frost','
 const SOFT=['calm','petal','motes','feather','sparkle'],NIGHTW=['calm','motes','firefly','sparkle'],OPEN=['clear','rays','meteor','aurora','moon','rainbow','birds','halo'],FEST=['clear','rays','lanterns','fireworks','halo'];
 export const STAGES=[
   // 1. The illustration itself, with a slow camera over it.
-  {id:'castle',name:'天空城',times:ALL,weathers:SOFT,skies:OPEN,shot:[.3,.42,1.12,1.4,.12]},
-  {id:'muse',name:'女神',times:ALL,weathers:['calm','petal','motes','sparkle','feather'],skies:['clear','rays','meteor','halo'],shot:[.86,.48,1.6,1.3,-.08]},
+  {id:'castle',name:'天空城',painted:true,times:ALL,weathers:SOFT,skies:OPEN,shots:[[.3,.42,1.12,1.4,.12],[.28,.24,1.75,2.1,.04],[.5,.3,1.04,1.22,0],[.08,.5,1.5,1.3,.12],[.38,.62,1.5,1.75,-.1],[.55,.16,1.6,1.4,-.12]]},
+  {id:'muse',name:'女神',painted:true,times:ALL,weathers:['calm','petal','motes','sparkle','feather'],skies:['clear','rays','meteor','halo'],shots:[[.86,.48,1.6,1.3,-.08],[.72,.36,1.38,1.12,-.16],[.8,.3,2,1.7,.05]]},
   // 2. New views of the castle, made from painted pieces.
-  {id:'farcastle',name:'雲海の彼方の天空城',times:ALL,weathers:SOFT,skies:OPEN,
+  {id:'farcastle',painted:true,name:'雲海の彼方の天空城',times:ALL,weathers:SOFT,skies:OPEN,
     plate:(g,W,H,P,img)=>{skyFill(g,W,H,P,.8);orb(g,W,H,P,[P.sun[0],Math.min(P.sun[1],.3)]);cut(g,img,P,'castle',W*.22,H*.18,W*.56,null,.3);mist(g,W,H*.35,H*.62,P.sky[2],.8);},
     live:(g,W,H,t,P)=>{clouds(g,W,H*.68,1.3,t,9,.9,1,5,3);clouds(g,W,H*.8,2,t,16,1,2,4,3);clouds(g,W,H*.95,2.6,t,24,1,3,3,2);for(let i=0;i<5;i++)bird(g,((t*18+i*90)%(W+60))-30,H*.3+i*9+Math.sin(t*2+i)*3,5,Math.sin(t*9+i),P.sil[1]);}},
-  {id:'mirror',name:'鏡の湖の天空城',times:['day','dawn','sunset','twilight','moon','rose','frost'],weathers:['calm','petal','motes','sparkle'],skies:['clear','moon','rainbow','meteor','birds'],
+  {id:'mirror',painted:true,name:'鏡の湖の天空城',times:['day','dawn','sunset','twilight','moon','rose','frost'],weathers:['calm','petal','motes','sparkle'],skies:['clear','moon','rainbow','meteor','birds'],
     plate:(g,W,H,P,img)=>{skyFill(g,W,H,P,.55);cut(g,img,P,'castle',W*.2,H*.02,W*.6,null,.3);water(g,W,H,H*.56,P,0,{glitter:0});
       if(img){g.save();g.globalAlpha=.55;g.translate(0,H*1.12);g.scale(1,-1);cut(g,img,P,'castle',W*.2,H*.02,W*.6,null,.3);g.restore();}mist(g,W,H*.5,H*.62,P.sky[2],.5);},
     live:(g,W,H,t,P)=>{g.save();g.globalCompositeOperation='lighter';for(let i=0;i<14;i++){const d=hash(i+9),ly=H*.58+d*H*.4,len=20+60*d,lx=((hash(i+5)*W+t*(8+12*d))%(W+len))-len;g.fillStyle=al('#ffffff',.18*(.5+.5*Math.sin(t*1.3+i)));g.fillRect(lx,ly,len,1.5+2*d);}g.restore();
       for(let i=0;i<3;i++){const r=((t*.25+i/3)%1)*W*.3;g.strokeStyle=al('#ffffff',.25*(1-r/(W*.3)));g.lineWidth=1;g.beginPath();g.ellipse(W*(.3+.4*hash(i)),H*(.7+.2*hash(i+1)),r,r*.25,0,0,7);g.stroke();}}},
-  {id:'archipelago',name:'浮島の群れ',times:ALL,weathers:SOFT,skies:OPEN,
+  {id:'archipelago',painted:true,name:'浮島の群れ',times:ALL,weathers:SOFT,skies:OPEN,
     plate:(g,W,H,P,img)=>{skyFill(g,W,H,P,.9);orb(g,W,H,P);cut(g,img,P,'isleD',W*.62,H*.12,W*.2,null,.3);cut(g,img,P,'isleE',W*.05,H*.2,W*.2,null,.3);mist(g,W,H*.55,H,P.sky[2],.6);},
     live:(g,W,H,t,P,img)=>{const bob=(i)=>Math.sin(t*.5+i*2)*4;g.save();g.translate(0,bob(1));cut(g,img,P,'isleA',W*.0,H*.42,W*.5,null,.3);g.restore();g.save();g.translate(0,bob(2));cut(g,img,P,'isleC',W*.58,H*.3,W*.36,null,.28);g.restore();
       g.save();g.translate(0,bob(3));cut(g,img,P,'isleB',W*.36,H*.62,W*.26,null,.3);g.restore();clouds(g,W,H*.9,2,t,10,.9,4,3,2);}},
-  {id:'crystalisle',name:'水晶の浮島',times:['day','twilight','night','moon','nebula','polar','frost','jade'],weathers:['calm','motes','sparkle','crystal','snow'],skies:['clear','meteor','aurora','galaxy','moon','halo'],
+  {id:'crystalisle',painted:true,name:'水晶の浮島',times:['day','twilight','night','moon','nebula','polar','frost','jade'],weathers:['calm','motes','sparkle','crystal','snow'],skies:['clear','meteor','aurora','galaxy','moon','halo'],
     plate:(g,W,H,P,img)=>{skyFill(g,W,H,P,.9);orb(g,W,H,P,[.2,.18]);cut(g,img,P,'blue',W*.7,H*.4,W*.2,null,.3);mist(g,W,H*.5,H,P.sky[2],.55);},
     live:(g,W,H,t,P,img)=>{const s=1+.03*Math.sin(t*.7);g.save();g.translate(W*.42,H*.62+Math.sin(t*.6)*5);g.scale(s,s);cut(g,img,P,'crystal',-W*.22,-H*.3,W*.44,null,.32);g.restore();
       const pulse=.4+.3*Math.sin(t*1.5);glow(g,W*.42,H*.5,W*.22,'#9a7cff',pulse*.9);for(let i=0;i<6;i++){const a=t*.6+i*TAU/6;glow(g,W*.42+Math.cos(a)*W*.2,H*.52+Math.sin(a)*H*.16,6,'#d8c0ff',.8);}clouds(g,W,H*.92,1.8,t,8,.9,5,3,2);}},
-  {id:'goddess',name:'女神の見守る空',times:['dawn','twilight','night','moon','rose','nebula'],weathers:['calm','petal','motes','sparkle','feather'],skies:['clear','rays','meteor','galaxy','halo'],
+  {id:'goddess',painted:true,name:'女神の見守る空',times:['dawn','twilight','night','moon','rose','nebula'],weathers:['calm','petal','motes','sparkle','feather'],skies:['clear','rays','meteor','galaxy','halo'],
     plate:(g,W,H,P,img)=>{skyFill(g,W,H,P,.9);if(img){g.save();g.globalAlpha=.42;cut(g,img,P,'muse',W*.3,-H*.1,W*.8,null,.45);g.restore();}orb(g,W,H,P,[.18,.22],Math.min(W,H)*.05);},
     live:(g,W,H,t,P,img)=>{for(let i=0;i<3;i++){const y=H*(.8+.1*i)+Math.sin(t*.4+i)*3;const s=.9+.2*i;const c=CLOUD();g.globalAlpha=.8;for(let k=0;k<3;k++)g.drawImage(c,((k*W*.45+t*(6+4*i))%(W+200))-150,y-35*s,200*s,70*s);}g.globalAlpha=1;
       g.save();g.translate(0,Math.sin(t*.8)*3);cut(g,img,P,'isleD',W*.08,H*.5,W*.28,null,.3);g.restore();}},
@@ -361,18 +363,30 @@ export const STAGES=[
       g.save();g.globalAlpha=.5;const pf=PUFF();for(let i=0;i<4;i++){const q=(t*.5+i/4)%1,s=20+30*q;g.globalAlpha=.4*(1-q);g.drawImage(pf,W*.15+i*W*.12-s/2,H*.78-q*H*.1-s/2,s,s);}g.restore();}},
 ];
 for(const s of STAGES)s.theme??='both';
+// Paintings in the style of the illustration, one file each in assets/lcd-stages/ (16:9, 1024×576 or larger). file: the image;
+// shots: camera moves over it; times: the times of day whose light fits the painting (its colours are then graded like the castle).
+// Add an entry when its file is in place; a scene of an image stage is skipped while its image is still loading.
+export const IMAGE_STAGES=[];
+for(const im of IMAGE_STAGES)STAGES.push({painted:true,theme:'both',times:ALL,weathers:SOFT,skies:OPEN,...im,image:`assets/lcd-stages/${im.file}`});
+export const DRAWN_ON=false;
+export const DRAWN=STAGES.filter(s=>!s.painted);
+export function stageOn(stage){return !!stage.painted||DRAWN_ON;}
+// Browser side: the images of the image stages, loaded after the main art (loadStageImages) and used once ready.
+const IMAGES=new Map();
+export function loadStageImages(){for(const st of STAGES)if(st.image&&!IMAGES.has(st.id)){const img=new Image();img.decoding='async';img.onload=()=>{img.ready=true;};img.src=st.image;IMAGES.set(st.id,img);}}
+export function stageReady(stage){return !stage.image||!!IMAGES.get(stage.id)?.ready;}
 
 export function stageList(){return STAGES.map(s=>({id:s.id,name:s.name}));}
-export const VARIANTS=1;
+export const VARIANTS=2;
 // A small seeded random generator, so the catalogue is the same on every device and in every version.
 function seeded(seed){let a=seed>>>0;return n=>{a=a+0x6d2b79f5>>>0;let t=a;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return Math.floor(((t^t>>>14)>>>0)/4294967296*n);};}
 function shuffle(list,rand){const a=list.slice();for(let i=a.length-1;i>0;i--){const j=rand(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;}
 // Every stage at each of its times, with VARIANTS different pairs of weather and sky event, shuffled so the numbers mix the stages.
 function catalogue(){const rand=seeded(20261027),all=[];
-  for(const stage of STAGES)for(const time of TIMES.filter(t=>stage.times.includes(t.id))){const ws=WEATHERS.filter(w=>stage.weathers.includes(w.id)),ks=SKIES.filter(s=>stage.skies.includes(s.id)&&skyFits(s,time)),pairs=[];
+  for(const stage of STAGES.filter(stageOn))for(const time of TIMES.filter(t=>stage.times.includes(t.id))){const ws=WEATHERS.filter(w=>stage.weathers.includes(w.id)),ks=SKIES.filter(s=>stage.skies.includes(s.id)&&skyFits(s,time)),pairs=[];
     for(const w of ws)for(const k of ks)pairs.push([w,k]);const picked=[];for(const [w,k] of shuffle(pairs,rand)){if(picked.length>=VARIANTS)break;if(picked.some(([pw,pk])=>pw===w||pk===k))continue;picked.push([w,k]);}
     for(const [weather,sky] of picked)all.push({stage,time,weather,sky});}
-  return shuffle(all,rand).map((c,i)=>({...c,no:i+1,name:`${c.time.name}の${c.stage.name}`+(c.weather.n?`・${c.weather.name}`:'')+(c.sky.id!=='clear'?`と${c.sky.name}`:''),
+  return shuffle(all,rand).map((c,i)=>({...c,no:i+1,shot:c.stage.shots?.[i%c.stage.shots.length]??null,name:`${c.time.name}の${c.stage.name}`+(c.weather.n?`・${c.weather.name}`:'')+(c.sky.id!=='clear'?`と${c.sky.name}`:''),
     machines:['aurora','astral'].filter(m=>(c.time.theme==='both'||c.time.theme===m)&&(c.stage.theme==='both'||c.stage.theme===m)),party:!!(c.sky.party||c.stage.party),drama:!!(c.stage.drama||c.sky.drama&&c.time.dark>=.3)}));}
 export const SCENES=catalogue();
 export const SCENE_COUNT=SCENES.length;
@@ -387,7 +401,7 @@ function spread(deck){const a=deck.slice();for(let i=1;i<a.length;i++){if(a[i].s
 export function createBackdrop(machine,rand=n=>Math.floor(Math.random()*n)){const deck=shuffle(deckFor(machine),rand),decks={};
   for(const pool of Object.keys(POOLS))decks[pool]=spread(deck.filter(POOLS[pool]));return {machine,decks,next:{normal:0,reach:0,bonus:0},pool:'normal',scene:null,at:0,len:SHOT_LEN,fade:0,prev:null,prevAt:0,prevLen:SHOT_LEN,draw:null};}
 // Next scene of a pool, going through the whole shuffled deck before any scene comes back. Two stages in a row are avoided too.
-function take(b,pool){const deck=b.decks[pool];let s=deck[b.next[pool]++%deck.length];if(s.stage===b.scene?.stage&&deck.length>1)s=deck[b.next[pool]++%deck.length];return s;}
+function take(b,pool){const deck=b.decks[pool];let s=deck[b.next[pool]++%deck.length];if(s.stage===b.scene?.stage&&deck.length>1)s=deck[b.next[pool]++%deck.length];for(let k=0;k<deck.length&&!stageReady(s.stage);k++)s=deck[b.next[pool]++%deck.length];return s;}
 // phase: 'idle' | 'draw' | 'reach' | 'bonus'. draw: anything that changes at the start of each draw (a new draw shows a new scene).
 // timed:false (prefers-reduced-motion) changes scenes only on those events, with a cut instead of a cross-fade. pin: a scene number to keep.
 export function stepBackdrop(b,t,{phase='idle',draw=null,timed=true,pin=null}={}){if(b.stage&&(phase!=='draw'&&phase!=='reach'||draw!==b.draw))b.stage=null;const pool=b.stage??(phase==='bonus'||phase==='reach'?phase:'normal');let fade=null;
@@ -458,13 +472,13 @@ function plate(stage,P,W,H,img){return sprite(`plate|${stage.id}|${P.id}|${W}x${
 // One scene into a w×h canvas: the stage under a slow camera (zoom and pan over u), its colour grade for the picture stages,
 // the stars, the sky event and the particles on top.
 function paintScene(g,img,sc,u,w,h,t,count){const {time:P,stage}=sc;g.globalCompositeOperation='source-over';g.globalAlpha=1;g.fillStyle='#0b1022';g.fillRect(0,0,w,h);
-  if(stage.shot){if(img)shot(g,img,w,h,stage.shot,u);for(let i=0;i<5;i++){const k=.7+(i%3)*.3,cw=180*k,span=w+cw,px=span-((t*(14+i*7)+i*137)%span)-cw*.5,py=18+i*26+Math.sin(t*.3+i)*5;g.globalAlpha=(.32+.06*(i%3))*(1-P.dark*.65);g.drawImage(CLOUD(),px-cw/2,py-35*k,cw,70*k);}g.globalAlpha=1;
+  if(sc.shot){const pic=stage.image?IMAGES.get(stage.id):img;if(pic?.ready!==false&&pic?.width)shot(g,pic,w,h,sc.shot,u);for(let i=0;i<5;i++){const k=.7+(i%3)*.3,cw=180*k,span=w+cw,px=span-((t*(14+i*7)+i*137)%span)-cw*.5,py=18+i*26+Math.sin(t*.3+i)*5;g.globalAlpha=(.32+.06*(i%3))*(1-P.dark*.65);g.drawImage(CLOUD(),px-cw/2,py-35*k,cw,70*k);}g.globalAlpha=1;
     if(P.mul){g.globalCompositeOperation='multiply';g.fillStyle=linear(g,0,0,0,h,[[0,P.mul[0]],[1,P.mul[1]]]);g.fillRect(0,0,w,h);}
     g.globalCompositeOperation='lighter';g.fillStyle=radial(g,P.sun[0]*w,P.sun[1]*h,Math.max(w,h)*.7,[[0,al(P.glow,.25)],[1,al(P.glow,0)]]);g.fillRect(0,0,w,h);g.globalCompositeOperation='source-over';}
   else{const W=Math.round(w*OVER),H=Math.round(h*OVER),z=1+.06*u,dx=(u-.5)*(W-w)*.6;g.save();g.translate(w/2,h/2);g.scale(z,z);g.translate(-W/2-dx,-H/2);g.drawImage(plate(stage,P,W,H,img),0,0,W,H);stage.live(g,W,H,t,P,img);g.restore();
     g.globalCompositeOperation='lighter';g.fillStyle=radial(g,P.sun[0]*w,P.sun[1]*h,Math.max(w,h)*.8,[[0,al(P.glow,.16)],[1,al(P.glow,0)]]);g.fillRect(0,0,w,h);g.globalCompositeOperation='source-over';g.drawImage(sprite(`vignette${w}x${h}`,w,h,c=>{c.fillStyle=radial(c,w/2,h/2,Math.max(w,h)*.72,[[0,'#00000000'],[.6,'#00000000'],[1,'#00000066']]);c.fillRect(0,0,w,h);}),0,0,w,h);}
-  if(P.stars&&stage.shot)stars(g,w,h,t,P.stars);sky(g,sc.sky.id,w,h,t,P.glow,P.dark);weather(g,sc.weather,w,h,t,count);
-  if(stage.shot){for(let i=0;i<2;i++){const cw=180*2.1,span=w+cw,px=span-((t*(46+i*20)+i*260)%span)-cw*.5,py=h-20-i*14;g.globalAlpha=.4*(1-P.dark*.65);g.drawImage(CLOUD(),px-cw/2,py-70,cw,147);}g.globalAlpha=1;}}
+  if(P.stars&&sc.shot)stars(g,w,h,t,P.stars);sky(g,sc.sky.id,w,h,t,P.glow,P.dark);weather(g,sc.weather,w,h,t,count);
+  if(sc.shot){for(let i=0;i<2;i++){const cw=180*2.1,span=w+cw,px=span-((t*(46+i*20)+i*260)%span)-cw*.5,py=h-20-i*14;g.globalAlpha=.4*(1-P.dark*.65);g.drawImage(CLOUD(),px-cw/2,py-70,cw,147);}g.globalAlpha=1;}}
 const layers=[];function layer(i,w,h){const c=layers[i]??=canvas(w,h);if(c.width!==Math.ceil(w*DPR)||c.height!==Math.ceil(h*DPR)){c.width=Math.ceil(w*DPR);c.height=Math.ceil(h*DPR);}const g=c.getContext('2d');g.setTransform(DPR,0,0,DPR,0,0);return [c,g];}
 // Draws the backdrop b into the box at x,y. level: how busy the state is (idle .8 … bonus 1.4), which sets the number of particles.
 export function drawBackdrop(ctx,img,b,{x,y,w,h,t,level=1,gentle=true,reduced=false,dpr=1}){if(DPR!==dpr){DPR=dpr;sprites.clear();}const v=backdropView(b,t),count=reduced?.6:level*(gentle?.75:1),time=reduced?0:t;
