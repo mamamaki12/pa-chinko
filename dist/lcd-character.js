@@ -2,7 +2,7 @@ import {drawPortrait} from './navigator-art.js';
 // LCD navigator characters: original chibi mascots that live on the LCD and react to what just happened, like the
 // mini characters of a real machine. ハナ lives on AURORA (pink, flower), ソラ on ASTRAL (silver-blue, star).
 // Rules: reactions come at or after a known result (spin start, reach, stop, payout); the lever / spin / reach reactions are the
-// same for every game, so they never hint at the outcome. sp / spsp follow a developed reach, which does (see REACH_PICK in engine.js). No near-miss teasing and no lines that push for more play;
+// same for every game, so they never hint at the outcome. sp / spsp / battle follow a developed reach, which does (see REACH_PICK in engine.js); revive / battleMiss come after the battle is settled. No near-miss teasing and no lines that push for more play;
 // gentle lines about breaks are fine. Gentle mode keeps the motion but dims sparkles; prefers-reduced-motion keeps poses still
 // (no blinking, lip flaps, hops or idle fidgets).
 
@@ -26,6 +26,9 @@ export const EVENTS={
   reach:{pose:'point',expr:'surprise',dur:3,chance:1,prio:2,lines:['リーチ！','リーチだね','左右がそろったよ']},
   sp:{pose:'point',expr:'surprise',dur:2.5,chance:1,prio:2,lines:['流れ星がきた！','流星リーチ！','星がいっぱい！']},
   spsp:{pose:'cheer',expr:'surprise',dur:3,chance:1,prio:2,lines:['お城が光ってる！','天空城リーチ！','わあ、お城だ！']},
+  battle:{pose:'cheer',expr:'surprise',dur:3,chance:1,prio:2,lines:['モクモが来た！','バトルだよ！','負けないよ！']},
+  revive:{pose:'cheer',expr:'happy',dur:3,chance:1,prio:3,lines:['まだまだ！','みんなの力、借りるね！']},
+  battleMiss:{pose:'idle',expr:'normal',dur:1.6,chance:1,prio:1,lines:['モクモ、またね','いっちゃった。のんびりいこう']},
   bonus:{pose:'point',expr:'surprise',dur:3.5,chance:1,prio:3,lines:['大当たり！ 右打ちで右下をねらってね','そろった！ 強めに打って右下へ']},
   win:{pose:'cheer',expr:'happy',dur:4.5,chance:1,prio:3,lines:['大当たり終了！ {n}玉だよ','おつかれさま、{n}玉！'],next:'afterWin'},
   afterWin:{pose:'idle',expr:'happy',dur:3,chance:1,prio:1,lines:['いい区切り。ここで休むのもアリだよ','うれしい気分のまま、ひと休みしよっか']},

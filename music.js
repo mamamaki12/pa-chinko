@@ -1,7 +1,7 @@
 // Background music for the two machines, written for this app and synthesized live with Web Audio (no recorded audio).
 // Each track loops 8 bars of 16th-note steps with one chord per bar. Melodies are in 8th notes: a note name starts a note,
 // '-' holds the previous note and '.' is a rest. Drum and bass rows are 16 steps per bar (bass: r root, o octave up, f fifth,
-// '-' hold, '.' rest). The music follows only what the screen already shows (reach, jackpot rounds, BIG), so it never hints at a result.
+// '-' hold, '.' rest). The music follows only what the screen already shows (reach, battle, jackpot rounds, BIG), so it never hints at a result.
 const NAMES={C:0,'C#':1,Db:1,D:2,'D#':3,Eb:3,E:4,F:5,'F#':6,Gb:6,G:7,'G#':8,Ab:8,A:9,'A#':10,Bb:10,B:11};
 const KINDS={'':[0,4,7],m:[0,3,7],maj7:[0,4,7,11],m7:[0,3,7,10],'7':[0,4,7,10],'6':[0,4,7,9]};
 export function noteNumber(s){const m=/^([A-G][#b]?)(\d)$/.exec(s);if(!m)throw new Error(`bad note ${s}`);return (+m[2]+1)*12+NAMES[m[1]];}
@@ -21,6 +21,11 @@ export const TRACKS={
     lead:'F#5 - - - - - E5 F#5 | G5 - - - F#5 - E5 - | B5 - - - A5 - G5 - | A#5 - - - C#6 - - - | D6 - - - C#6 - B5 - | B5 - - - A5 - G5 - | G5 - F#5 - E5 - G5 - | F#5 - - - - - - -',
     bass:'rrorrrorrrorrror',drums:{k:'x...x...x...x...',s:'....x.......x...',h:'xxxxxxxxxxxxxxxx'},fill:{s:'....x...x.xxxxxx'},
     lead_:'strings',arp:'none',pad:'pulse',crash:true},
+  // バトルリーチ: a driving E-minor battle theme, faster than the reach.
+  'aurora-battle':{bpm:168,chords:'Em C D B Em C Am B',
+    lead:'E5 - G5 - B5 - E6 - | E6 - D6 - C6 - B5 - | A5 - D6 - F#6 - E6 D6 | D#6 - - - B5 - - - | E6 - B5 - G5 - E5 - | G5 - C6 - E6 - G6 - | A5 - C6 - E6 - A6 - | F#6 - - - D#6 - B5 -',
+    bass:'rrorrrorrrorrror',drums:{k:'x..x..x.x..x..x.',s:'....x.......x...',h:'xxxxxxxxxxxxxxxx'},fill:{s:'....x...x.xxxxxx'},
+    lead_:'strings',arp:'up',pad:'pulse',crash:true},
   'aurora-bonus':{bpm:160,chords:'D A Bm F#m G D G A',
     lead:'A5 - D6 - - - C#6 D6 | E6 - - - C#6 - A5 - | B5 - D6 - F#6 - E6 D6 | C#6 - - - A5 - - - | B5 - D6 - G6 - F#6 E6 | F#6 - - - D6 - A5 - | B5 - - D6 - - E6 - | E6 - - - C#6 - E6 -',
     bass:'r-o-r-o-r-o-r-o-',drums:{k:'x...x...x...x...',c:'....x.......x...',h:'.x.x.x.x.x.x.x.x',o:'..x...x...x...x.'},fill:{c:'....x.......x.xx'},
@@ -39,7 +44,7 @@ const SONGS=Object.fromEntries(Object.entries(TRACKS).map(([k,t])=>[k,{...t,bars
 export const BARS=8,STEPS=BARS*16;
 export const stepLength=name=>60/TRACKS[name].bpm/4;
 // Which track fits what the machine is showing now.
-export function trackFor({mode,reach=false,bonus=false}){return mode==='slot'?(bonus?'astral-bonus':'astral'):bonus?'aurora-bonus':reach?'aurora-reach':'aurora';}
+export function trackFor({mode,reach=false,battle=false,bonus=false}){return mode==='slot'?(bonus?'astral-bonus':'astral'):bonus?'aurora-bonus':battle?'aurora-battle':reach?'aurora-reach':'aurora';}
 
 // Fanfare for the start of a bonus (7-7-7 on ASTRAL, a jackpot on AURORA), about 3.4 s: brass in triplets, "ta-ta-ta TAA,
 // ta-ta-ta-ta TAAA", over a held chord, with timpani hits and a roll, crash cymbals and bells rising at the end. It is written

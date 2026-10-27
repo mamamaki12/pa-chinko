@@ -1,6 +1,6 @@
 import {REACH_KINDS} from './engine.js';
 // Reach presentation on the AURORA LCD (see planSpin in engine.js for how the kind and colour are picked).
-// 流星リーチ: the sky turns to night and shooting stars pour across it. 天空城リーチ: golden light from the floating castle,
+// (バトルリーチ is drawn by battle-fx.js.) 流星リーチ: the sky turns to night and shooting stars pour across it. 天空城リーチ: golden light from the floating castle,
 // turning rays and rising sparks, with a rainbow rim. Each development opens with a short cut-in banner naming the reach.
 // Gentle mode dims and slows everything and skips the white flash; prefers-reduced-motion shows still versions.
 
@@ -17,11 +17,11 @@ const hash=i=>{const s=Math.sin(i*127.1+311.7)*43758.5453;return s-Math.floor(s)
 
 // How far the digits have moved aside for a developed reach (0 = normal layout, 1 = small corner digits and a big middle one).
 export function reachLayout(plan,t,drawing){const dev=plan?.reach&&plan.stages[1];return drawing&&dev?ease(clamp((t-dev.at)/.5)):0;}
-// Centre and scale of LCD column i for layout amount k.
-export function columnPlace(i,k){const x=262+i*98,y=410;if(i===1)return {x,y:y-8*k,scale:1+.25*k};return {x:x+(i?48:-48)*k,y:y-110*k,scale:1-.5*k};}
+// Centre and scale of LCD column i for layout amount k. In a battle all three digits shrink into the top-left corner, clear of the fight.
+export function columnPlace(i,k,battle=false){const x=262+i*98,y=410;if(battle)return {x:x+(214+i*30-x)*k,y:y+(284-y)*k,scale:1-.68*k};if(i===1)return {x,y:y-8*k,scale:1+.25*k};return {x:x+(i?48:-48)*k,y:y-110*k,scale:1-.5*k};}
 
 // Background layer of a developed stage, drawn over the LCD art and under the character and digits.
-export function reachBackdrop(ctx,stage,{x,y,w,h,t,gentle,reduced}){if(!stage||stage.kind==='normal')return;const age=t-stage.at,fade=reduced?1:clamp(age/.4);ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();
+export function reachBackdrop(ctx,stage,{x,y,w,h,t,gentle,reduced}){if(!stage||stage.kind==='normal'||stage.kind==='battle')return;const age=t-stage.at,fade=reduced?1:clamp(age/.4);ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();
   if(stage.kind==='sp'){ctx.fillStyle=`rgba(6,10,40,${.62*fade})`;ctx.fillRect(x,y,w,h);ctx.globalCompositeOperation='lighter';
     for(let i=0;i<40;i++){const a=(.25+.35*hash(i))*(reduced?1:.6+.4*Math.sin(t*2+i));ctx.fillStyle=`rgba(220,235,255,${a*fade})`;ctx.fillRect(x+hash(i+3)*w,y+hash(i+7)*h*.8,1.6,1.6);}
     const n=reduced?0:gentle?4:9;for(let i=0;i<n;i++){const life=1.1+hash(i)*.7,ph=(age*(gentle?.6:1)+hash(i+9)*life)%life,q=ph/life,sx=x+w*(.1+1.1*hash(i+Math.floor((age+hash(i+9)*life)/life)*17))-q*w*.55,sy=y-10+q*h*.9,len=60+hash(i+5)*60,al=Math.sin(Math.PI*q)*(gentle?.6:1)*fade;
