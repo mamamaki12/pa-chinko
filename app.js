@@ -156,7 +156,7 @@ const pos=reduced?Math.round(p):p+settle,k=Math.floor(pos),f=pos-k;g.setTransfor
 for(let j=0;j<n;j++){g.globalAlpha=n>1?1.7/n:1;const o=n>1?-blur/2+blur*j/(n-1):0;for(const d of [-1,0,1]){const y=COL_H/2-DIGIT_H/2+(f-d)*CELL+o;if(y>-DIGIT_H&&y<COL_H)g.drawImage(DIGITS[((k+d)%9+9)%9],0,y,DIGIT_W,DIGIT_H);}}
 g.globalAlpha=1;g.globalCompositeOperation='destination-in';g.fillStyle=stops(g.createLinearGradient(0,0,0,COL_H),[[0,'#0000'],[.2,'#000'],[.8,'#000'],[1,'#0000']]);g.fillRect(0,0,DIGIT_W,COL_H);g.globalCompositeOperation='source-over';
 const pop=reduced||since<0||since>.25?1:1+.07*(1-since/.25);ctx.save();ctx.translate(cx,cy);ctx.scale(pop*scale,pop*scale);ctx.drawImage(colCanvas,-DIGIT_W/2,-COL_H/2,DIGIT_W,COL_H);ctx.restore();}
-// LCD background (lcd-scenes.js): hundreds of scenes of the sky castle (camera shot × time of day × weather × sky event), one deck
+// LCD background (lcd-scenes.js): hundreds of scenes (45 drawn stages of the sky kingdom × time of day, with a weather and a sky event), one deck
 // per machine. They cycle while idle, change at the start of a draw, turn dramatic for a reach and festive for a bonus, and everything
 // speeds up while a draw is spinning, the same for every draw. ?scene=<number> keeps one scene on screen to check it.
 const backdrops={pachinko:createBackdrop('aurora'),slot:createBackdrop('astral')},scenePin=+query.get('scene')||null;
