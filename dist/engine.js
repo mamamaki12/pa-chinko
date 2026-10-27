@@ -74,23 +74,34 @@ export const PUSH_WAIT=3.5;
 export function addHold(holds){return holds<MAX_HOLDS?holds+1:holds;}
 const wrap=n=>((n-1)%9+9)%9+1;
 // Reach kinds, like the ノーマル → SP → SPSP reaches of a real machine: every reach starts as a normal reach and may develop
-// (発展) into 流星リーチ and then 天空城リーチ. The kind and the title colour are picked after the draw, from the tables below,
+// (発展) into 流星リーチ and then 天空城リーチ, or straight into バトルリーチ (Hana fights an enemy; see BATTLE and battle-fx.js). The kind and the title colour are picked after the draw, from the tables below,
 // so the jackpot odds (1/99) never change; only the presentation follows the result. Longer reaches and redder colours are
 // picked more often for a win, which gives each kind its own 信頼度 (see reachTrust). variety:false keeps every reach normal and pink.
-export const REACH_KINDS={normal:'ノーマルリーチ',sp:'流星リーチ',spsp:'天空城リーチ'};
-export const REACH_PICK={win:{normal:10,sp:35,spsp:55},miss:{normal:75,sp:20,spsp:5}};
+export const REACH_KINDS={normal:'ノーマルリーチ',sp:'流星リーチ',spsp:'天空城リーチ',battle:'バトルリーチ'};
+export const REACH_PICK={win:{normal:10,sp:30,spsp:25,battle:35},miss:{normal:72,sp:20,spsp:5,battle:3}};
 export const REACH_COLOR={win:{blue:15,green:30,red:55},miss:{blue:60,green:30,red:10}};
 export const WIN_ODDS=1/99,MISS_REACH=1/15;
 const pick=(table,rand)=>{let r=rand(100);for(const [k,w] of Object.entries(table)){if(r<w)return k;r-=w;}return Object.keys(table)[0];};
 // Share of reaches showing this kind (and colour, if given) that win.
 export function reachTrust(kind,color){const share=(o,c)=>(kind?REACH_PICK[o][kind]/100:1)*(color?REACH_COLOR[o][color]/100:1)*c;
   const w=share('win',WIN_ODDS),m=share('miss',(1-WIN_ODDS)*MISS_REACH);return w/(w+m);}
+// バトルリーチ: the battle stage opens with the enemy and a VS title (intro s), then Hana and the enemy trade attacks every cycle s,
+// the same for every draw, until the button. After the button the fight is settled on screen and the middle number stops hold s later:
+// a win ends with Hana's special move, a loss with the enemy leaving. revive % of battle wins first play the loss (identical to a real
+// loss up to reviveAt s, well before a real loss stops at hold.lose), then Hana glows, gets back up and wins (復活). A miss never
+// revives, and nothing happens after the middle number has stopped, so a stopped miss is final.
+export const BATTLE={intro:1.9,cycle:1.6,clash:.6,reviveAt:1,hold:{win:1.9,lose:1.8,revive:3.1},revive:10,enemies:{cloud:'雲のいたずら精 モクモ'}};
 // Seconds of each stage: a plain reach is one stage; a developing one shortens the normal stage and adds the later ones.
-function reachStages(kind,gentle){const g=(a,b)=>gentle?a:b;return kind==='normal'?[['normal',g(2.5,4)]]:kind==='sp'?[['normal',g(1.6,2)],['sp',g(3,4.5)]]:[['normal',g(1.6,2)],['sp',g(2,2.5)],['spsp',g(3.5,5.5)]];}
-export function planSpin(win,holdsLeft,{gentle=true,rand=randomInt,variety=true}={}){const reach=win||rand(15)===0;let left=rand(9)+1,right=left,middle=left;if(!win){if(reach){const far=[1,2,3,4,5,6,7,8,9].filter(n=>n!==left&&n!==wrap(left-1)&&n!==wrap(left+1));middle=far[rand(far.length)];}else{right=wrap(left+1+rand(8));middle=rand(9)+1;}}
-if(reach){const o=win?'win':'miss',kind=variety?pick(REACH_PICK[o],rand):'normal',color=variety?pick(REACH_COLOR[o],rand):'pink';let at=2.8;const stages=reachStages(kind,gentle).map(([k,len])=>{const s={kind:k,at,until:at+len};at+=len;return s;}),last=stages[stages.length-1];
-  return {numbers:[left,middle,right],reach,kind,color,stages,stops:[2,at,2.8],duration:at,push:last.at+(last.until-last.at)/2};}
+// The button comes halfway through the last stage, so a battle gets one exchange of attacks (gentle) or two before it.
+function reachStages(kind,gentle){const g=(a,b)=>gentle?a:b;return kind==='normal'?[['normal',g(2.5,4)]]:kind==='sp'?[['normal',g(1.6,2)],['sp',g(3,4.5)]]:kind==='battle'?[['normal',g(1.6,2)],['battle',2*(BATTLE.intro+BATTLE.cycle*g(1,2))]]:[['normal',g(1.6,2)],['sp',g(2,2.5)],['spsp',g(3.5,5.5)]];}
+// force: {kind, revive} from the ?reach= page option, to check how a reach looks. It changes only the presentation, never the result.
+export function planSpin(win,holdsLeft,{gentle=true,rand=randomInt,variety=true,force=null}={}){const reach=win||rand(15)===0;let left=rand(9)+1,right=left,middle=left;if(!win){if(reach){const far=[1,2,3,4,5,6,7,8,9].filter(n=>n!==left&&n!==wrap(left-1)&&n!==wrap(left+1));middle=far[rand(far.length)];}else{right=wrap(left+1+rand(8));middle=rand(9)+1;}}
+if(reach){const o=win?'win':'miss',picked=variety?pick(REACH_PICK[o],rand):'normal',kind=variety&&force?.kind in REACH_KINDS?force.kind:picked,color=variety?pick(REACH_COLOR[o],rand):'pink';let at=2.8;const stages=reachStages(kind,gentle).map(([k,len])=>{const s={kind:k,at,until:at+len};at+=len;return s;}),last=stages[stages.length-1];
+  const plan={numbers:[left,middle,right],reach,kind,color,stages,stops:[2,at,2.8],duration:at,push:last.at+(last.until-last.at)/2};
+  if(kind==='battle')plan.battle={enemy:'cloud',outcome:!win?'lose':force?.revive||rand(100)<BATTLE.revive?'revive':'win'};return plan;}
 const duration=holdsLeft>=3?2.5:holdsLeft>=1?4:5;return {numbers:[left,middle,right],reach,stops:[duration-1.2,duration,duration-.6],duration};}
+// Share of battles whose loss scene (the enemy starting to leave) turns into a revival.
+export function reviveTrust(){const w=WIN_ODDS*REACH_PICK.win.battle/100*BATTLE.revive/100,m=(1-WIN_ODDS)*MISS_REACH*REACH_PICK.miss.battle/100;return w/(w+m);}
 // The reach stage showing at time t of a draw (null before the reach; the last stage lasts until the button stops the middle number).
 export function reachStage(plan,t){return plan?.reach?plan.stages.findLast(s=>t>=s.at)??null:null;}
 

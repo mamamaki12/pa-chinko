@@ -96,6 +96,9 @@ export const SCENES={
     reach:[['side',{mode:'chase',speed:1.2,min:.3,color:'#ff3c8c'}],['top',{mode:'blink',speed:1.5,min:.4,color:'#ff3c8c'}],['board',{mode:'blink',speed:1.5,min:.4,color:'#ff3c8c'}],['front',{mode:'breathe',speed:.8,min:.5}]],
     'reach-sp':[['side',{mode:'chase',speed:1.6,min:.25,color:'#5fb0ff'}],['top',{mode:'chase',speed:1.6,min:.25,color:'#9fd0ff'}],['board',{mode:'breathe',speed:1,min:.35,color:'#5fb0ff'}],['front',{mode:'breathe',speed:.8,min:.5,color:'#cfe6ff'}]],
     'reach-spsp':[['side',{mode:'chase',speed:1.8,min:.3,color:'rainbow'}],['top',{mode:'blink',speed:2,min:.4,color:'#ffd36a'}],['board',{mode:'chase',speed:1.4,min:.35,color:'#ffd36a'}],['front',{mode:'breathe',speed:1,min:.5,color:'#ffd36a'}]],
+    // reach-battle: バトルリーチ, pink and violet; revive: the comeback of a battle, gold and rainbow at full speed.
+    'reach-battle':[['side',{mode:'chase',speed:2,min:.25,color:'#ff4fa8'}],['top',{mode:'blink',speed:2,min:.35,color:'#b48cff'}],['board',{mode:'chase',speed:1.6,min:.3,color:'#ff4fa8'}],['front',{mode:'breathe',speed:1.2,min:.5,color:'#b48cff'}]],
+    revive:[['top',{mode:'blink',speed:3,min:.2,color:'#ffd36a'}],['board',{mode:'blink',speed:3,min:.2,color:'#ffffff'}],['side',{mode:'chase',speed:2.6,min:.25,color:'rainbow'}],['front',{mode:'chase',speed:2.6,min:.25,color:'rainbow'}]],
     push:[['side',{mode:'on',level:.25}],['top',{mode:'on',level:.25}],['board',{mode:'on',level:.25}],['front',{mode:'blink',speed:2.5,min:.2,color:'#ffffff'}]],
     // fanfare: the opening show of a jackpot (celebration.js), every lamp at full speed; finale: the end of the rounds.
     fanfare:[['top',{mode:'blink',speed:3,min:.15,color:'#ffd36a'}],['board',{mode:'blink',speed:3,min:.15,color:'#ffffff'}],['side',{mode:'chase',speed:2.5,min:.2,color:'rainbow'}],['front',{mode:'chase',speed:2.5,min:.2,color:'rainbow'}]],

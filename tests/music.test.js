@@ -28,7 +28,8 @@ test('the track follows only what the machine shows', () => {
   assert.equal(trackFor({mode: 'pachinko'}), 'aurora');
   assert.equal(trackFor({mode: 'pachinko', reach: true}), 'aurora-reach');
   assert.equal(trackFor({mode: 'pachinko', reach: true, bonus: true}), 'aurora-bonus');
+  assert.equal(trackFor({mode: 'pachinko', reach: true, battle: true}), 'aurora-battle');
   assert.equal(trackFor({mode: 'slot'}), 'astral');
   assert.equal(trackFor({mode: 'slot', bonus: true}), 'astral-bonus');
-  for (const name of ['aurora', 'aurora-reach', 'aurora-bonus', 'astral', 'astral-bonus']) assert.ok(TRACKS[name]);
+  for (const name of ['aurora', 'aurora-reach', 'aurora-battle', 'aurora-bonus', 'astral', 'astral-bonus']) assert.ok(TRACKS[name]);
 });
