@@ -136,12 +136,14 @@ function drawBall(b){ctx.drawImage(BALL_BACK,b.x-BC,b.y-BC,BS,BS);if(artBlur){ct
 function glassClip(){ctx.beginPath();ctx.arc(BOARD.cx,BOARD.cy,BOARD.r,0,7);ctx.clip();ctx.beginPath();ctx.rect(0,0,720,688);ctx.clip();buttonCut();}
 // Cuts the chance button dome out of the clip: it sits in front of the glass, so pins, balls and reflections go behind it.
 function buttonCut(){const {x,y,rx,ry}=BOARD.button;ctx.beginPath();ctx.rect(0,0,720,960);ctx.ellipse(x,y,rx+2,ry+2,0,0,Math.PI*2);ctx.clip('evenodd');}
-// LCD numerals: chunky italic figures with an extruded edge, dark outline, gold rim and glossy fill, one sprite per digit.
+// LCD numerals: jewelled gold-rimmed figures from assets/pachinko-digit-sprites.webp (a 3×3 sheet of 288×312 cells cut from the painted
+// assets/pachinko-digits.png), one sprite per digit. Until the sheet loads, chunky italic figures drawn here stand in.
 const DIGIT_W=96,DIGIT_H=104,DIGITS=[1,2,3,4,5,6,7,8,9].map(n=>sprite(DIGIT_W,DIGIT_H,g=>{const x=DIGIT_W/2,y=86;g.font='italic 900 82px "Arial Black","Helvetica Neue",Arial,sans-serif';g.textAlign='center';g.lineJoin='round';
 for(let d=6;d>0;d--){g.fillStyle=d>1?'#3a0b2c':'#5a1442';g.fillText(n,x+d*.6,y+d);}
 g.lineWidth=11;g.strokeStyle='#14040f';g.strokeText(n,x,y);g.lineWidth=5;g.strokeStyle=stops(g.createLinearGradient(0,18,0,90),[[0,'#fff6d6'],[.45,'#e6b85a'],[.55,'#9c6a1e'],[1,'#ffe4a0']]);g.strokeText(n,x,y);
 g.fillStyle=stops(g.createLinearGradient(0,18,0,90),[[0,'#ffffff'],[.4,'#ffd3ec'],[.55,'#ff6fb8'],[1,'#b81f72']]);g.fillText(n,x,y);
 g.save();g.globalCompositeOperation='source-atop';g.fillStyle=stops(g.createLinearGradient(0,18,0,60),[[0,'#ffffffcc'],[.6,'#ffffff33'],[.61,'#ffffff00']]);g.fillRect(0,0,DIGIT_W,58);g.restore();}));
+{const img=new Image();img.onload=()=>DIGITS.forEach((_,i)=>{DIGITS[i]=sprite(DIGIT_W,DIGIT_H,g=>g.drawImage(img,i%3*288,(i/3|0)*312,288,312,0,0,DIGIT_W,DIGIT_H));});img.src='assets/pachinko-digit-sprites.webp';}
 const COL_H=124,CELL=96,colCanvas=document.createElement('canvas');colCanvas.width=DIGIT_W*dpr;colCanvas.height=COL_H*dpr;const colCtx=colCanvas.getContext('2d');
 // Scroll position (in cells) of one LCD column at time t of the current draw. Columns accelerate from the previous number, cruise
 // (the middle one runs at half speed during a reach), decelerate evenly and land on the drawn number. The cruise speed is nudged per column
