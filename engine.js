@@ -155,8 +155,8 @@ const duration=holdsLeft>=3?2.5:holdsLeft>=1?4:5;return {numbers:[left,middle,ri
 export const HOLD_COLORS=['white','blue','green','red','gold','rainbow'];
 export const HOLD_PICK={win:{white:2500,blue:1000,green:1500,red:2500,gold:2000,rainbow:500},chance:{white:7846,blue:1200,green:600,red:300,gold:54,rainbow:0},miss:{white:9854,blue:122,green:18,red:6,gold:0,rainbow:0}};
 export const HOLD_CHANGE=35;
-// After a reach that misses, the stopped numbers stay on screen REACH_REST s before the next draw starts.
-export const REACH_REST=1;
+// After a miss (with or without a reach), the stopped numbers stay on screen MISS_REST s before the next draw starts.
+export const MISS_REST=1;
 // One hold, drawn at the START entry: the result (prize, win), whether a miss shows a reach, and the colour shown now (shown) and at its draw (color).
 export function drawHold({rand=randomInt,variety=true,force=null}={}){const prize=resolvePachinko(rand(99)),win=prize>0,reach=win||rand(15)===0,outcome=win?'win':reach?'chance':'miss';
   const color=!variety?'white':HOLD_COLORS.includes(force)?force:weighted(HOLD_PICK[outcome],rand),below=HOLD_COLORS.indexOf(color);
