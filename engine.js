@@ -14,23 +14,29 @@ export const PLASTIC=[
   [210,508,268,538],[268,538,313,559],[313,559,347,568],
   [373,568,407,559],[407,559,452,538],[452,538,510,508],[510,508,562,480],
 ];
-// 独自の役抽選テーブル（16384分の）。BIGは7揃い150枚の一回払い、リプレイは次ゲームのメダル不要。
-export const ROLE_TABLE=[['big',40],['watermelon',200],['cherry',400],['bell',1800],['replay',2240]];
+// 独自の役抽選テーブル（16384分の）。BIGは7・7・7、REG（レギュラーボーナス）は左から7・7・BAR、リプレイは次ゲームのメダル不要。
+export const ROLE_TABLE=[['big',40],['reg',30],['watermelon',200],['cherry',400],['bell',1800],['replay',2240]];
 export const ROLE_RANGE=16384;
 // 7揃いは実機のAタイプのようにBIGボーナスの開始（7揃い自体の払い出しはなし）。BIG中は毎ゲーム、どこで押しても揃う15枚のベルが成立し、合計 BIG.total 枚を払い出したら終了。
 export const BIG={pay:15,total:150};
+// REG（レギュラーボーナス）は7・7・BARで始まる小さいボーナス。中身はBIGと同じで、合計 REG.total 枚で終わる（実機のAタイプのREGはBIGの4割ほど）。
+export const REG={pay:15,total:60};
+// ボーナスの役ごとの中身。
+export const SLOT_BONUS={big:BIG,reg:REG};
 export const MAX_SLIP=4;
 const LINE_SYMBOL={big:'seven',watermelon:'watermelon',bell:'bell',replay:'replay'};
+// REGはそろいではなく、左・中・右の順に7・7・BAR。
+export const REG_LINE=['seven','seven','bar'];
 export function drawRole(n){let edge=0;for(const [role,weight] of ROLE_TABLE){edge+=weight;if(n<edge)return role;}return 'none';}
-export function judge(symbols){if(symbols.every(s=>s===symbols[0])){const role=Object.keys(LINE_SYMBOL).find(r=>LINE_SYMBOL[r]===symbols[0]);if(role)return role;}return symbols[0]==='cherry'?'cherry':'none';}
-const PAY={big:150,watermelon:10,bell:8,cherry:2,replay:0,none:0};
+export function judge(symbols){if(symbols.every((s,i)=>s===REG_LINE[i]))return 'reg';if(symbols.every(s=>s===symbols[0])){const role=Object.keys(LINE_SYMBOL).find(r=>LINE_SYMBOL[r]===symbols[0]);if(role)return role;}return symbols[0]==='cherry'?'cherry':'none';}
+const PAY={big:150,reg:60,watermelon:10,bell:8,cherry:2,replay:0,none:0};
 // 有効ライン：MAX BET（3枚）で横3本・斜め2本の5ラインがすべて有効。数は各リールの段（0上・1中・2下）。
 export const LINES=[[1,1,1],[0,0,0],[2,2,2],[0,1,2],[2,1,0]];
 // stop（中段に止まったコマ）から見た上・中・下の図柄。リールは番号の大きいコマほど上に並ぶ。
 export function column(reel,stop){const N=REELS[reel].length;return [1,0,-1].map(d=>REELS[reel][((stop+d)%N+N)%N]);}
 export function lineSymbols(stops,line){return line.map((row,i)=>column(i,stops[i])[row]);}
 // 止まった位置で5ラインを判定。wins：揃ったライン（line は LINES の番号）、hit：いちばん大きい役、pay：ラインごとの配当の合計（角チェリーは2ライン）。
-const RANK=['big','watermelon','bell','cherry','replay'];
+const RANK=['big','reg','watermelon','bell','cherry','replay'];
 export function settle(stops){const wins=[];LINES.forEach((l,line)=>{const role=judge(lineSymbols(stops,l));if(role!=='none')wins.push({line,role,pay:PAY[role]});});
   return {wins,hit:RANK.find(r=>wins.some(w=>w.role===r))??'none',pay:wins.reduce((a,w)=>a+w.pay,0)};}
 // 停止ボタンを押した位置baseから0〜4コマすべらせ、成立役はどれかのラインに引き込み、それ以外はどのラインにも揃えない。
@@ -181,8 +187,8 @@ export const NOTICE_KINDS={butterflies:'蝶の群れ',birds:'鳥の群れ',petal
 export const NOTICE_COLORS=['blue','green','red','gold'];
 export const NOTICE_PICK={win:{none:350,butterflies:80,birds:80,petals:100,stars:100,words:90,cutin:120,stage:80},chance:{none:700,butterflies:60,birds:60,petals:50,stars:40,words:40,cutin:30,stage:20},miss:{none:900,butterflies:25,birds:25,petals:20,stars:15,words:10,cutin:5,stage:0}};
 export const NOTICE_COLOR={win:{blue:200,green:300,red:350,gold:150},chance:{blue:500,green:350,red:140,gold:10},miss:{blue:700,green:250,red:50,gold:0}};
-// Share of draws with each outcome: pachinko (1/99, reaches on 1/15 of misses) and slot (BIG, watermelon + cherry, the rest).
-export const NOTICE_ODDS={pachinko:{win:WIN_ODDS,chance:(1-WIN_ODDS)*MISS_REACH,miss:(1-WIN_ODDS)*(1-MISS_REACH)},slot:{win:40/ROLE_RANGE,chance:600/ROLE_RANGE,miss:1-640/ROLE_RANGE}};
+// Share of draws with each outcome: pachinko (1/99, reaches on 1/15 of misses) and slot (BIG + REG, watermelon + cherry, the rest).
+export const NOTICE_ODDS={pachinko:{win:WIN_ODDS,chance:(1-WIN_ODDS)*MISS_REACH,miss:(1-WIN_ODDS)*(1-MISS_REACH)},slot:{win:70/ROLE_RANGE,chance:600/ROLE_RANGE,miss:1-670/ROLE_RANGE}};
 const weighted=(table,rand)=>{const total=Object.values(table).reduce((a,b)=>a+b,0);let r=rand(total);for(const [k,w] of Object.entries(table)){if(r<w)return k;r-=w;}return Object.keys(table)[0];};
 // The notice of one draw, or null. variety:false (the 「いつも同じ」 setting) never shows one.
 export function pickNotice(outcome,{rand=randomInt,variety=true}={}){if(!variety)return null;const kind=weighted(NOTICE_PICK[outcome],rand);return kind==='none'?null:{kind,color:weighted(NOTICE_COLOR[outcome],rand)};}
