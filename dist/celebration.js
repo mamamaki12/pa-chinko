@@ -1,4 +1,4 @@
-// Win shows: what the machine does once 7-7-7 lines up on ASTRAL (BIG) or the numbers line up on AURORA (jackpot),
+// Win shows: what the machine does once 7-7-7 (BIG) or 7-7-BAR (REG) lines up on ASTRAL or the numbers line up on AURORA (jackpot),
 // like the entry show of a real machine. The LCD gives one soft white flash, a gold sunburst turns behind the title,
 // shock rings spread, fireworks burst and confetti falls while the title zooms in with a bounce and the winning symbols glow.
 // Meanwhile the cabinet LEDs run the 'fanfare' scene (cabinet-leds.js) and a fanfare plays (music.js). During the bonus the LCD
@@ -8,13 +8,13 @@
 // prefers-reduced-motion shows the title still, with no flash, fireworks or confetti.
 
 // len: seconds the show lasts; fanfare: seconds the BGM waits for the fanfare.
-export const SHOWS={big:{len:5.5,fanfare:3.6},jackpot:{len:5,fanfare:3.6},bigEnd:{len:3.2,fanfare:0},jackpotEnd:{len:3.2,fanfare:0}};
+export const SHOWS={big:{len:5.5,fanfare:3.6},reg:{len:4.5,fanfare:3.6},jackpot:{len:5,fanfare:3.6},bigEnd:{len:3.2,fanfare:0},regEnd:{len:3.2,fanfare:0},jackpotEnd:{len:3.2,fanfare:0}};
 export const FLASH=.5;
 export function startShow(kind,t,extra={}){return {...extra,kind,at:t};}
 export function showOn(s,t){return !!s&&t>=s.at&&t-s.at<SHOWS[s.kind].len;}
 export function fanfareOn(s,t){return showOn(s,t)&&t-s.at<SHOWS[s.kind].fanfare;}
 // LED scene of the show, or null when the scene of the moment applies.
-export function showScene(s,t){return !showOn(s,t)?null:s.kind==='big'||s.kind==='jackpot'?'fanfare':'finale';}
+export function showScene(s,t){return !showOn(s,t)?null:s.kind.endsWith('End')?'finale':'fanfare';}
 // The single white flash at the start of an entry show (the finale has none).
 export function flashAlpha(s,t,{gentle=true,reduced=false}={}){const a=s?t-s.at:-1;if(reduced||!s||s.kind.endsWith('End')||a<0||a>=FLASH)return 0;return (gentle?.35:.8)*(1-a/FLASH)**2;}
 // Title zoom: from 2.6× to 1× with a damped bounce.
@@ -101,7 +101,7 @@ export function drawWinCells(ctx,s,t,cells,{machine,gentle=true,reduced=false}){
     g.addColorStop(0,'#fff0');g.addColorStop(.5,`rgba(255,255,255,${.7*k})`);g.addColorStop(1,'#fff0');ctx.fillStyle=g;ctx.fillRect(x0,y0,x1-x0,y1-y0);}
   ctx.restore();}
 
-// The BIG BONUS panel on the LCD during the bonus: shimmering title, a gauge of the medals paid so far and the count.
+// The BIG / REG BONUS panel on the LCD during the bonus: shimmering title, a gauge of the medals paid so far and the count.
 export function drawBonusPanel(ctx,[x,y,w,h],t,{machine,title,count,progress,alpha=1,gentle=true}){const pal=PALETTES[machine];
   ctx.save();ctx.globalAlpha=alpha;ctx.shadowColor=pal.glow;ctx.shadowBlur=gentle?6:14;ctx.beginPath();ctx.roundRect(x,y,w,h,10);ctx.fillStyle=pal.ink+'d8';ctx.fill();ctx.shadowBlur=0;
   const rim=ctx.createLinearGradient(x,y,x+w,y+h);[[0,pal.gold[0]],[.3,pal.gold[2]],[.5,pal.gold[1]],[.7,pal.gold[2]],[1,pal.gold[4]]].forEach(([p,c])=>rim.addColorStop(p,c));ctx.lineWidth=2.5;ctx.strokeStyle=rim;ctx.stroke();
