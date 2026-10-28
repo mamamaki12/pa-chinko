@@ -62,6 +62,8 @@ const sounds={
   // Reach development (発展): a rising sweep into a chord; 天空城 adds a higher bell.
   develop(t,kind='sp'){hiss(t,{freq:1800,q:1,peak:.12,decay:.35});[0,1,2,3].forEach(i=>osc(300*2**(i/3),t+i*.05,{type:'triangle',peak:.05,decay:.25}));[659.3,830.6,987.8].forEach((f,i)=>bell(f,t+.3+i*.06,.06,.6));if(kind==='spsp')bell(1975.5,t+.55,.05,.9);},
   // 予告: a short whoosh and a chime that climbs higher for a hotter colour (blue, green, red, gold).
+  // 保留変化: the current draw's hold ball changes to a higher colour; a short rising chime, brighter for higher colours.
+  holdUp(t,color='blue'){const k={blue:0,green:1,red:2,gold:3,rainbow:4}[color]??0;hiss(t,{freq:2000+k*300,q:2,peak:.06,decay:.08});[0,1].forEach(i=>bell(880*2**((k*2+i*7)/12),t+.03+i*.06,.06,.3));if(k>=3)bell(2637,t+.18,.05,.45);},
   notice(t,color='blue'){const k={blue:0,green:1,red:2,gold:3}[color]??0;hiss(t,{freq:1200+k*400,q:1,peak:.1,decay:.22});[0,1,2].forEach(i=>bell(660*2**((k*2+i*4)/12),t+.06+i*.07,.05,.25));if(k===3)bell(2093,t+.3,.06,.4);},
   // バトルリーチ (battle-fx.js battleEvents): the VS hit, Hana's petal shot, the enemy's gust, the clash after the button, the special-move
   // beam, the hit, the victory chime, and for a revival a rising bell chord and a bright swell. A loss has no sound of its own.

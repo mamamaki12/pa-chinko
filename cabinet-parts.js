@@ -20,7 +20,7 @@ function pachinkoParts(){const {cx,cy,r,display:d,button:b}=BOARD;return [
   {id:'attacker',kind:'attacker',label:'大入賞口',shape:{rect:[ATTACKER.x1,ATTACKER.y1,ATTACKER.x2-ATTACKER.x1,ATTACKER.y2-ATTACKER.y1]},open:false},
   {id:'button',kind:'button',label:'チャンスボタン',painted:true,shape:{ellipse:[b.x,b.y,b.rx,b.ry]}},
   {id:'handle',kind:'handle',label:'発射ハンドル',painted:true,shape:{circle:[628,826,44]}},
-  ...[0,1,2,3].map(i=>({id:`hold${i+1}`,kind:'hold',label:`保留 ${i+1}`,shape:{circle:[d.x1+24+i*16,d.y2-20,5]}})),
+  ...[0,1,2,3].map(i=>({id:`hold${i+1}`,kind:'hold',label:`保留 ${i+1}`,shape:{circle:[d.x1+46+i*17,d.y2-20,5.5]}})),
 ];}
 
 function slotParts(){const {window:w,reels,reelY,reelH,lamps,plates,lever,bet,stops}=LAYOUT;return [
