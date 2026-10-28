@@ -7,9 +7,11 @@ export const STRIP=REELS[0];
 export const BOARD={cx:360,cy:430,r:300,gravity:860,ball:4.5,guide:7,display:{x1:188,x2:532,y1:256,y2:504},button:{x:360,y:702,rx:98,ry:54},guides:[[182,258,360,226],[360,226,538,258],[349,599,349,618,6],[370,599,370,618,6]]};
 // The clear lower apron is a playable surface, not a row of decorative nail heads.
 // Traced on the 720×960 artwork. Leave the central drop open above the life nails.
+// 左のステージは液晶の左下の角（210,508）から始める。液晶より外にはみ出た所まで面にすると、左の通り道を落ちてきた玉の
+// ほとんどがステージに乗ってしまい、下の金の釘（道釘）を流れない。
 export const START={x1:349,x2:370,y:606,bottom:626,rect:[338,600,44,34]};
 export const PLASTIC=[
-  [158,480,210,508],[210,508,268,538],[268,538,313,559],[313,559,347,568],
+  [210,508,268,538],[268,538,313,559],[313,559,347,568],
   [373,568,407,559],[407,559,452,538],[452,538,510,508],[510,508,562,480],
 ];
 // 独自の役抽選テーブル（16384分の）。BIGは7揃い150枚の一回払い、リプレイは次ゲームのメダル不要。
@@ -80,7 +82,10 @@ export function collidePlastic(b,oldX=b.x,oldY=b.y,dt=0,rand=Math.random){
   b.stage=false;if(b.front)return;
   for(const [x1,y1,x2,y2] of PLASTIC){const dx=x2-x1,dy=y2-y1,len=Math.hypot(dx,dy),nx=dy/len,ny=-dx/len;
     const before=(oldX-x1)*nx+(oldY-y1)*ny,d=(b.x-x1)*nx+(b.y-y1)*ny,t=((b.x-x1)*dx+(b.y-y1)*dy)/(len*len);
-    if(before<0||t<0||t>1||d>=BOARD.ball)continue;
+    if(t<0||t>1)continue;
+    // ステージより下を通った玉は、跳ね返ってもステージの面を下から抜けて上に乗ることはない（実物は板なので下からは上がれない）。
+    if(before<0&&d<0){b.front=true;return;}
+    if(before<0||d>=BOARD.ball)continue;
     if(dt>0&&rand()<STAGE_SPILL*dt){b.front=true;return;}
     b.stage=true;b.x+=nx*(BOARD.ball-d);b.y+=ny*(BOARD.ball-d);const vn=b.vx*nx+b.vy*ny;
     if(vn<0){const restitution=-vn>65?.18:0;b.vx-=(1+restitution)*vn*nx;b.vy-=(1+restitution)*vn*ny;}
