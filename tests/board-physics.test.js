@@ -36,3 +36,18 @@ test('ステージの玉は転がるうちに手前へこぼれ、こぼれた�
   const [x1,y1,x2,y2]=PLASTIC[2],x=(x1+x2)/2,y=(y1+y2)/2,c={x,y:y-1,vx:0,vy:100,front:true};collidePlastic(c,x,y-10,1/60,()=>0);assert.equal(c.y,y-1);
   const kept={x,y:y-1,vx:0,vy:100};collidePlastic(kept,x,y-10,1/60,()=>1);assert.ok(kept.y<y-1&&!kept.front);
 });
+test('ステージを転がる玉は縁の金の粒に挟まって止まらない（止まらずに中央の落とし口まで行く）',()=>{
+  assert.ok(NAILS.some(p=>p.rim));
+  for(const dt of [1/30,1/60,1/120])for(const x of [220,280,440,500,550]){
+    const b={x,y:x<360?470:x<520?480:460,vx:0,vy:0};let anchor={x:b.x,y:b.y,t:0},still=0,reached=false;
+    for(let t=0;t<5;t+=dt){advanceBall(b,dt,NAILS,()=>1);if(b.x>347&&b.x<373&&b.y>570){reached=true;break;}if(Math.hypot(b.x-anchor.x,b.y-anchor.y)>3)anchor={x:b.x,y:b.y,t};else still=Math.max(still,t-anchor.t);}
+    assert.ok(reached,`${dt} ${x}: ${b.x},${b.y}`);assert.ok(still<.2,`${dt} ${x}: ${still.toFixed(2)}秒止まった`);
+  }
+});
+test('縁の粒も、上から落ちてきた玉には当たる',()=>{
+  const p=NAILS.find(n=>n.id==='nail-237');assert.ok(p.rim);
+  const b={x:p.x,y:p.y-20,vx:0,vy:200};advanceBall(b,1/30,NAILS,()=>1);assert.ok(b.y<p.y);
+});
+test('釘の間に乗った玉は、止まって見えるほど待たずにこぼれ落ちる',()=>{
+  const b={x:172,y:318,vx:0,vy:0};let t=0;for(;t<2&&b.y<322;t+=1/120)advanceBall(b,1/120,NAILS,()=>1);assert.ok(t<.25,`${t.toFixed(2)}秒`);
+});
