@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {drawHold,holdTrust,HOLD_COLORS,HOLD_PICK,planSpin,REACH_REST} from '../engine.js';
+import {drawHold,holdTrust,HOLD_COLORS,HOLD_PICK,planSpin,MISS_REST} from '../engine.js';
 
 test('保留の抽選は1/99で当たり、外れの1/15がリーチになる',()=>{let win=0,reach=0,n=200000;for(let i=0;i<n;i++){const h=drawHold();if(h.win){win++;assert.equal(h.prize,300);assert.ok(h.reach);}else if(h.reach)reach++;}
   assert.ok(Math.abs(win/n-1/99)<.002,String(win/n));assert.ok(Math.abs(reach/(n-win)-1/15)<.004,String(reach/(n-win)));});
@@ -13,4 +13,4 @@ test('「いつも同じ」では保留はいつも白で変化もしない',()=
 test('保留の色を選んでも当たりの確率は変わらない',()=>{const seq=[0,0,0,0];let k=0;const rand=()=>seq[k++%seq.length];assert.equal(drawHold({rand}).win,true);
   let wins=0;for(let i=0;i<100000;i++)if(drawHold({force:'rainbow'}).win)wins++;assert.ok(Math.abs(wins/100000-1/99)<.002);});
 test('入賞時に決めたリーチの有無で変動する',()=>{for(let i=0;i<300;i++){assert.equal(planSpin(false,0,{reach:true}).reach,true);assert.equal(planSpin(false,0,{reach:false}).reach,false);}});
-test('リーチ外れのあとは1秒ほど止める',()=>{assert.ok(REACH_REST>=.8&&REACH_REST<=1.5);});
+test('外れのあとは1秒ほど止める',()=>{assert.ok(MISS_REST>=.8&&MISS_REST<=1.5);});
