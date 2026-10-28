@@ -95,11 +95,29 @@ export const BATTLE={intro:1.9,cycle:1.6,clash:.6,reviveAt:1,hold:{win:1.9,lose:
 // The button comes halfway through the last stage, so a battle gets one exchange of attacks (gentle) or two before it.
 function reachStages(kind,gentle){const g=(a,b)=>gentle?a:b;return kind==='normal'?[['normal',g(2.5,4)]]:kind==='sp'?[['normal',g(1.6,2)],['sp',g(3,4.5)]]:kind==='battle'?[['normal',g(1.6,2)],['battle',2*(BATTLE.intro+BATTLE.cycle*g(1,2))]]:[['normal',g(1.6,2)],['sp',g(2,2.5)],['spsp',g(3.5,5.5)]];}
 // force: {kind, revive} from the ?reach= page option, to check how a reach looks. It changes only the presentation, never the result.
-export function planSpin(win,holdsLeft,{gentle=true,rand=randomInt,variety=true,force=null}={}){const reach=win||rand(15)===0;let left=rand(9)+1,right=left,middle=left;if(!win){if(reach){const far=[1,2,3,4,5,6,7,8,9].filter(n=>n!==left&&n!==wrap(left-1)&&n!==wrap(left+1));middle=far[rand(far.length)];}else{right=wrap(left+1+rand(8));middle=rand(9)+1;}}
+// reach: whether a miss shows a reach, when it was already decided at the START entry (drawHold); left out, it is drawn here.
+export function planSpin(win,holdsLeft,{gentle=true,rand=randomInt,variety=true,force=null,reach:missReach}={}){const reach=win||(missReach??rand(15)===0);let left=rand(9)+1,right=left,middle=left;if(!win){if(reach){const far=[1,2,3,4,5,6,7,8,9].filter(n=>n!==left&&n!==wrap(left-1)&&n!==wrap(left+1));middle=far[rand(far.length)];}else{right=wrap(left+1+rand(8));middle=rand(9)+1;}}
 if(reach){const o=win?'win':'miss',picked=variety?pick(REACH_PICK[o],rand):'normal',kind=variety&&force?.kind in REACH_KINDS?force.kind:picked,color=variety?pick(REACH_COLOR[o],rand):'pink';let at=2.8;const stages=reachStages(kind,gentle).map(([k,len])=>{const s={kind:k,at,until:at+len};at+=len;return s;}),last=stages[stages.length-1];
   const plan={numbers:[left,middle,right],reach,kind,color,stages,stops:[2,at,2.8],duration:at,push:last.at+(last.until-last.at)/2};
   if(kind==='battle')plan.battle={enemy:'cloud',outcome:!win?'lose':force?.revive||rand(100)<BATTLE.revive?'revive':'win'};return plan;}
 const duration=holdsLeft>=3?2.5:holdsLeft>=1?4:5;return {numbers:[left,middle,right],reach,stops:[duration-1.2,duration,duration-.6],duration};}
+// 保留 (hold): like a real machine, the jackpot draw is made when the ball enters START (入賞時), and the hold lamp takes a colour
+// (色保留) from the tables below: white (no hint), blue, green, red, gold, or rainbow (大当たり確定). The colour is picked after the draw,
+// so the odds (1/99) never change; only how often each colour shows differs by outcome, which gives each one its 信頼度 (holdTrust),
+// near real machines (青 5–15%, 緑 10–38%, 赤 40–60%, 金 77–96%, 虹 確定). Weights are per 10000. change % of coloured holds first
+// show a lower colour and change to their own when their draw starts (当該保留の変化); trust is for the colour after any change.
+// variety:false (the 「いつも同じ」 setting) keeps every hold white.
+export const HOLD_COLORS=['white','blue','green','red','gold','rainbow'];
+export const HOLD_PICK={win:{white:2500,blue:1000,green:1500,red:2500,gold:2000,rainbow:500},chance:{white:7846,blue:1200,green:600,red:300,gold:54,rainbow:0},miss:{white:9854,blue:122,green:18,red:6,gold:0,rainbow:0}};
+export const HOLD_CHANGE=35;
+// After a reach that misses, the stopped numbers stay on screen REACH_REST s before the next draw starts.
+export const REACH_REST=1;
+// One hold, drawn at the START entry: the result (prize, win), whether a miss shows a reach, and the colour shown now (shown) and at its draw (color).
+export function drawHold({rand=randomInt,variety=true,force=null}={}){const prize=resolvePachinko(rand(99)),win=prize>0,reach=win||rand(15)===0,outcome=win?'win':reach?'chance':'miss';
+  const color=!variety?'white':HOLD_COLORS.includes(force)?force:weighted(HOLD_PICK[outcome],rand),below=HOLD_COLORS.indexOf(color);
+  const shown=variety&&below>0&&rand(100)<HOLD_CHANGE?HOLD_COLORS[rand(below)]:color;return {prize,win,reach,color,shown};}
+// Share of holds ending in this colour that win.
+export function holdTrust(color){const odds=NOTICE_ODDS.pachinko,share=o=>HOLD_PICK[o][color]/10000*odds[o];return share('win')/(share('win')+share('chance')+share('miss'));}
 // Share of battles whose loss scene (the enemy starting to leave) turns into a revival.
 export function reviveTrust(){const w=WIN_ODDS*REACH_PICK.win.battle/100*BATTLE.revive/100,m=(1-WIN_ODDS)*MISS_REACH*REACH_PICK.miss.battle/100;return w/(w+m);}
 // The reach stage showing at time t of a draw (null before the reach; the last stage lasts until the button stops the middle number).
