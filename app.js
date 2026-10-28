@@ -6,14 +6,14 @@ import {drawBattle,loadBattleSprites,battleEvents} from './battle-fx.js';
 import {play,music,fanfare} from './sound.js';
 import {trackFor} from './music.js';
 import {readReflection,appendReflection,renderWeek,renderWeekSummary} from './journal.js';
-import {drawSlot,hitSlot,loadSlotFonts,symbol,LAYOUT,cellCenter} from './slot-view.js';
+import {drawSlot,hitSlot,loadSlotFonts,loadSlotSymbols,symbol,LAYOUT,cellCenter} from './slot-view.js';
 import {SHOWS,startShow,showOn,fanfareOn,showScene,drawShow,drawStage,drawWinCells,drawBonusPanel,goldText,PALETTES} from './celebration.js';
 import {KINDS,createNavi,react,tick,drawNavi,drawBubble} from './lcd-character.js';
 import {LED_PARTS,buildLeds,drawLeds,applyScene} from './cabinet-leds.js';
 import {createParts,drawPartMap} from './cabinet-parts.js';
 import {createBackdrop,stepBackdrop,drawBackdrop,stageChange,loadStageImages} from './lcd-scenes.js';
 import {readBuild,isNewer,versionLabel,formatBuiltAt,fetchLatest,refreshFiles,reloadUrl,cleanUrl} from './updater.js';
-loadSlotFonts();loadBattleSprites();
+loadSlotFonts();loadSlotSymbols();loadBattleSprites();
 // Work out the reel control for each role in idle moments after the page opens, so the first stop of each role does not stutter.
 ['bell','replay','none','cherry','watermelon','big'].forEach((role,i)=>setTimeout(()=>warmSlips(role),1500+i*300));
 

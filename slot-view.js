@@ -88,8 +88,15 @@ const GOLD=(y0,y1)=>grad(0,y0,0,y1,[[0,'#fff6c8'],[.3,'#f2c552'],[.55,'#a8701a']
 // The BIG 7 is wide like the 7s of real machines, filling the reel; the ASTRAL heroine is printed inside it.
 const P7=typeof Path2D==='undefined'?null:new Path2D('M-40-22L42-22L42-8L10 22L-17 22L14-6L-26-6L-29-1L-40-1Z');
 let symArt=null;
+// Illustrated symbols: assets/slot-symbol-sprites.webp (made by scripts/make-slot-symbols.py from the generated assets/slot-symbols.png),
+// 3×2 cells of 400×176 in this order, each drawn into the 100×44 reel cell. The drawn symbols below are the fallback while it loads.
+export const SYMBOL_SHEET={path:'assets/slot-symbol-sprites.webp',w:400,h:176,order:['seven','bar','cherry','bell','watermelon','replay']};
+let symbolSheet=null;
+export function loadSlotSymbols(){if(symbolSheet||typeof Image==='undefined')return;const img=new Image();img.decoding='async';img.onload=()=>{symbolSheet=img;};img.src=SYMBOL_SHEET.path;}
 export function symbol(c,name,x,y,size=1,sy=1){
   ctx=c;ctx.save();ctx.translate(x,y);ctx.scale(size,size*sy);
+  const cell=SYMBOL_SHEET.order.indexOf(name);
+  if(symbolSheet&&cell>=0){const {w,h}=SYMBOL_SHEET;ctx.drawImage(symbolSheet,(cell%3)*w,Math.floor(cell/3)*h,w,h,-50,-22,100,44);ctx.restore();return;}
   if(name==='seven'){
     ctx.save();ctx.transform(1,0,-.22,1,0,0);const seven=P7;
     ctx.lineJoin='round';for(const [col,lw] of [['#ffffff',12],['#14123a',8.5],[GOLD(-25,25),5],['#5a0610',1.2]]){ctx.strokeStyle=col;ctx.lineWidth=lw;ctx.stroke(seven);}
@@ -191,8 +198,8 @@ function ellipse(x,y,rx,ry,fill,stroke,lw=1,rot=0){ctx.beginPath();ctx.ellipse(x
 
 function reels(v){
   const [wx,wy,ww,wh]=LAYOUT.window,{reelY,reelH,pitch,radius:R}=LAYOUT,mid=reelY+reelH/2;
-  // Built once, and once more when the cabinet art (used inside the 7) has loaded.
-  if(!strips||(!strips.art&&v.cabinet)){strips=buildStrips(v.cabinet);if(strips)strips.art=!!v.cabinet;}
+  // Built once, and again when the cabinet art (used inside the drawn 7) or the symbol sheet has loaded.
+  if(!strips||(!strips.art&&v.cabinet)||strips.sheet!==symbolSheet){strips=buildStrips(v.cabinet);if(strips){strips.art=!!v.cabinet;strips.sheet=symbolSheet;}}
   // The black mask of the reel window, with a bevel where it meets each reel opening.
   ctx.fillStyle=grad(0,wy,0,wy+wh,[[0,'#05070c'],[.5,'#10141e'],[1,'#05070c']]);ctx.fillRect(wx,wy,ww,wh);
   LAYOUT.reels.forEach(([x,w],i)=>{
