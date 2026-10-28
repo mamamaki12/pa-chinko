@@ -3,7 +3,7 @@
 // (visible, lit, open), so the program finds, switches and draws elements part by part instead of treating the cabinet as one picture.
 // painted: the element is part of the cabinet art and only its state is drawn over it (an LED lighting up, a glow, a pressed look).
 // Shapes: {circle:[x,y,r]}, {ellipse:[x,y,rx,ry]}, {rect:[x,y,w,h]}, {line:[x1,y1,x2,y2]}, {poly:[[x,y],…]}.
-import {BOARD,START,PLASTIC,ATTACKER,makePins} from './engine.js';
+import {BOARD,START,PLASTIC,ATTACKER,makePins,onStageRim} from './engine.js';
 import {LAYOUT} from './slot-view.js';
 import {LED_PARTS,createLeds} from './cabinet-leds.js';
 
@@ -53,8 +53,8 @@ export function createParts(machine){
     find:target=>pick(target),
     // Changes the state of the targeted parts, e.g. set('attacker',{open:true}), set('nail',{visible:false}).
     set(target,patch){for(const p of pick(target))Object.assign(p,patch);this.version++;return this;},
-    // The visible nails as {id,x,y,r}, the form advanceBall() takes.
-    nails:()=>list.filter(p=>p.kind==='nail'&&p.visible).map(p=>{const [x,y,r]=p.shape.circle;return {id:p.id,x,y,r};}),
+    // The visible nails as {id,x,y,r}, the form advanceBall() takes (plus rim:true for a nail on the stage edge; see engine.js onStageRim).
+    nails:()=>list.filter(p=>p.kind==='nail'&&p.visible).map(p=>{const [x,y,r]=p.shape.circle;return onStageRim(x,y,r)?{id:p.id,x,y,r,rim:true}:{id:p.id,x,y,r};}),
     lit:id=>!!byId.get(id)?.lit,
     shown:id=>byId.get(id)?.visible!==false,
   };
