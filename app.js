@@ -1,3 +1,4 @@
+import {drawStartPocket} from './pachinko-pocket.js';
 import {STRIP,BOARD,launchBall,advanceRail,inStart,ROLE_RANGE,BIG,drawRole,settle,LINES,chooseSlip,warmSlips,randomInt,resolvePachinko,advanceBall,collideDisplay,MAX_HOLDS,addHold,planSpin,BONUS,inAttacker,inButton,PUSH_WAIT,reachStage,pickNotice,BATTLE} from './engine.js';
 import {STAGE_AT,drawNotice,noticeAlpha} from './notice-fx.js';
 import {REACH_COLORS,reachLayout,columnPlace,reachBackdrop,reachBanner,reachLabel} from './reach-fx.js';
@@ -192,8 +193,8 @@ const P=parts.aurora;P.find('hold').forEach((h,i)=>{h.lit=i<drawQueue;if(h.visib
 if(!wordsOn(spinPlan?.notice,drawTime-NOTICE_AT))drawBubble(ctx,navi,clock,{box:[284,272,236],size:14,reduced});
 cabinetArt('aurora');cabinetLeds('aurora',showScene(sh,clock)??battle?.led??(asking?'push':bonus?'bonus':states.pachinko.win>0&&clock<resultUntil?'win':reach?(stage.kind==='normal'?'reach':`reach-${stage.kind}`):drawing?'draw':'idle'));buttonGlow(asking,flash);
 ctx.save();buttonCut();ctx.beginPath();ctx.arc(BOARD.cx,BOARD.cy,BOARD.r,0,7);ctx.rect(x2+8,y1-8,-(x2-x1+16),y2-y1+16);ctx.fillStyle='#0a061033';ctx.fill('evenodd');ctx.restore();
-ctx.save();ctx.lineCap='round';for(const {shape:{line:[gx1,gy1,gx2,gy2]}} of P.find('rail').filter(g=>g.visible)){ctx.shadowColor='#b9e2ff';ctx.shadowBlur=gentle?3:8;ctx.lineWidth=8;ctx.strokeStyle='#d8ecffa0';ctx.beginPath();ctx.moveTo(gx1,gy1);ctx.lineTo(gx2,gy2);ctx.stroke();ctx.shadowBlur=0;ctx.lineWidth=2;ctx.strokeStyle='#ffffff';ctx.beginPath();ctx.moveTo(gx1,gy1-2);ctx.lineTo(gx2,gy2-2);ctx.stroke();}ctx.restore();
-if(P.shown('start')){const [sx,sy,sw,sh]=P.get('start').shape.rect;ctx.save();ctx.shadowColor='#ff74c4';ctx.shadowBlur=gentle?2:10;rr(sx,sy,sw,sh,5,grad(sx,sy,sx+sw,sy+sh,[[0,'#f7eccb'],[.5,'#b88d3c'],[1,'#f2d891']]),'#5b3b17');ctx.restore();rr(sx+7,sy+3,sw-14,sh-8,3,'#1a0b17');text('START',sx+sw/2,sy+32,9,'#fff0f6');}
+ctx.save();ctx.lineCap='round';for(const {shape:{line:[gx1,gy1,gx2,gy2]}} of P.find('rail').filter(g=>g.visible&&!g.painted)){ctx.shadowColor='#b9e2ff';ctx.shadowBlur=gentle?3:8;ctx.lineWidth=8;ctx.strokeStyle='#d8ecffa0';ctx.beginPath();ctx.moveTo(gx1,gy1);ctx.lineTo(gx2,gy2);ctx.stroke();ctx.shadowBlur=0;ctx.lineWidth=2;ctx.strokeStyle='#ffffff';ctx.beginPath();ctx.moveTo(gx1,gy1-2);ctx.lineTo(gx2,gy2-2);ctx.stroke();}ctx.restore();
+if(P.shown('start'))drawStartPocket(ctx);
 // Attacker (大入賞口) on the right of the board: a gold door that tilts open during the jackpot rounds.
 {const at=P.get('attacker');at.open=!!bonus?.open;const [ax1,ay1,aw]=at.shape.rect,ax2=ax1+aw,open=at.open,ay=ay1+4;if(at.visible){ctx.save();if(open){ctx.shadowColor='#ff5fae';ctx.shadowBlur=gentle||reduced?3:12;}rr(ax1-6,ay-2,ax2-ax1+10,14,4,open?'#1a0b17':grad(ax1,ay,ax1,ay+12,[[0,'#f7eccb'],[.5,'#b88d3c'],[1,'#f2d891']]),open?'#ff9fd2':'#5b3b17');ctx.restore();if(open){rr(ax1-6,ay-9,ax2-ax1+10,6,3,grad(ax1,ay-9,ax1,ay-3,[[0,'#f7eccb'],[1,'#b88d3c']]),'#5b3b17');}text('ATTACKER',(ax1+ax2)/2-1,ay+24,7,'#fff0f6');}}
 ctx.save();glassClip();for(const b of balls)drawBall(b);ctx.restore();

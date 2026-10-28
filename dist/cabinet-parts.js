@@ -3,7 +3,7 @@
 // (visible, lit, open), so the program finds, switches and draws elements part by part instead of treating the cabinet as one picture.
 // painted: the element is part of the cabinet art and only its state is drawn over it (an LED lighting up, a glow, a pressed look).
 // Shapes: {circle:[x,y,r]}, {ellipse:[x,y,rx,ry]}, {rect:[x,y,w,h]}, {line:[x1,y1,x2,y2]}, {poly:[[x,y],…]}.
-import {BOARD,ATTACKER,makePins} from './engine.js';
+import {BOARD,START,PLASTIC,ATTACKER,makePins} from './engine.js';
 import {LAYOUT} from './slot-view.js';
 import {LED_PARTS,createLeds} from './cabinet-leds.js';
 
@@ -16,7 +16,8 @@ function pachinkoParts(){const {cx,cy,r,display:d,button:b}=BOARD;return [
   // Nails are the gold nails painted on the board (engine.js NAILS); the ball bounces off the visible ones.
   ...makePins().map((p,i)=>({id:p.id??`nail-${String(i+1).padStart(3,'0')}`,kind:'nail',label:`釘 ${i+1}`,group:'nails',painted:true,shape:{circle:[p.x,p.y,p.r]}})),
   ...BOARD.guides.map((g,i)=>({id:`guide${i+1}`,kind:'rail',label:['液晶上のガイド左','液晶上のガイド右','ヘソの左の壁','ヘソの右の壁'][i]??`ガイド ${i+1}`,shape:{line:g}})),
-  {id:'start',kind:'pocket',label:'START入賞口',shape:{rect:[338,606,44,16]}},
+  ...PLASTIC.map((line,i)=>({id:`plastic${i+1}`,kind:'rail',label:`透明ステージ ${i+1}`,painted:true,shape:{line}})),
+  {id:'start',kind:'pocket',label:'START入賞口',shape:{rect:START.rect}},
   {id:'attacker',kind:'attacker',label:'大入賞口',shape:{rect:[ATTACKER.x1,ATTACKER.y1,ATTACKER.x2-ATTACKER.x1,ATTACKER.y2-ATTACKER.y1]},open:false},
   {id:'button',kind:'button',label:'チャンスボタン',painted:true,shape:{ellipse:[b.x,b.y,b.rx,b.ry]}},
   {id:'handle',kind:'handle',label:'発射ハンドル',painted:true,shape:{circle:[628,826,44]}},
