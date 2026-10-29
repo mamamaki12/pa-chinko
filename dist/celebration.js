@@ -8,7 +8,7 @@
 // prefers-reduced-motion shows the title still, with no flash, fireworks or confetti.
 
 // len: seconds the show lasts; fanfare: seconds the BGM waits for the fanfare.
-export const SHOWS={big:{len:5.5,fanfare:3.6},reg:{len:4.5,fanfare:3.6},jackpot:{len:5,fanfare:3.6},bigEnd:{len:3.2,fanfare:0},regEnd:{len:3.2,fanfare:0},jackpotEnd:{len:3.2,fanfare:0}};
+export const SHOWS={big:{len:5.5,fanfare:3.6},reg:{len:4.5,fanfare:3.6},jackpot:{len:5,fanfare:3.6},bigEnd:{len:3.2,fanfare:0},regEnd:{len:3.2,fanfare:0},jackpotEnd:{len:3.2,fanfare:0},kakuhen:{len:5,fanfare:3.6},kakuhenEnd:{len:3.6,fanfare:0}};
 export const FLASH=.5;
 export function startShow(kind,t,extra={}){return {...extra,kind,at:t};}
 export function showOn(s,t){return !!s&&t>=s.at&&t-s.at<SHOWS[s.kind].len;}
@@ -25,6 +25,8 @@ export function showAlpha(s,t){const a=t-s.at,len=SHOWS[s.kind].len;return Math.
 export const PALETTES={
   astral:{sparks:['#ffe27a','#7fd8ff','#ffffff','#b9a4ff','#ff9ad5'],glow:'#5fb6ff',ink:'#0d1d45',night:['8,14,58','40,16,80'],ray:'255,222,130',gold:['#fffbe6','#ffe27a','#c88a1c','#ffd75e','#fff3c4']},
   aurora:{sparks:['#ffd36a','#ff7cc4','#ffffff','#ffb6dc','#9fe8ff'],glow:'#ff5fae',ink:'#3a0b2c',night:['44,8,48','70,14,40'],ray:'255,200,225',gold:['#fffbe6','#ffe08a','#d0841f','#ffcf6a','#fff0c8']},
+  // 確変 (ST) on AURORA: the aurora night, green, violet and pink with gold.
+  rush:{sparks:['#7dffc8','#b48cff','#ffffff','#ff9ad5','#ffe27a'],glow:'#8a5cff',ink:'#140a3c',night:['8,12,46','34,10,62'],ray:'190,255,230',gold:['#fffbe6','#ffe08a','#d0841f','#ffcf6a','#fff0c8']},
 };
 
 // --- Browser side: drawing. Everything is a function of time, so nothing has to be stepped. ---
@@ -69,6 +71,22 @@ export function drawStage(ctx,box,t,{machine,gentle=true,reduced=false}){if(redu
   sunburst(ctx,x+w/2,y+h*.62,Math.hypot(w,h)*.7,t*(gentle?.18:.3),.22*k,pal.ray,14);
   fireworks(ctx,box,t,{every:gentle?2.2:1.4,sparks:gentle?16:22,size:1,colors:pal.sparks,alpha:.85*k});
   confetti(ctx,box,t,{count:gentle?14:24,colors:pal.sparks,alpha:.8,speed:gentle?.7:1});
+  ctx.restore();}
+
+// 確変 (ST): the LCD turns to an aurora night over the usual picture: a navy tint, three curtains of aurora light (green, violet,
+// pink) waving slowly across the top, twinkling stars and a soft rim. reduced keeps the curtains still; gentle makes them dimmer and slower.
+// Until the generated aurora paintings (pa-chinko-stages, kk-*) arrive, this is drawn over the painted backgrounds.
+export function drawAurora(ctx,box,t,{gentle=true,reduced=false}={}){const pal=PALETTES.rush,[x,y,w,h]=box,k=gentle?.85:1,tt=reduced?0:t*(gentle?.35:.6);
+  ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();
+  const sky=ctx.createLinearGradient(0,y,0,y+h);sky.addColorStop(0,`rgba(${pal.night[0]},.72)`);sky.addColorStop(.6,`rgba(${pal.night[1]},.48)`);sky.addColorStop(1,`rgba(${pal.night[1]},.3)`);ctx.fillStyle=sky;ctx.fillRect(x,y,w,h);
+  ctx.globalCompositeOperation='screen';
+  [['95,240,180',0,.85],['180,140,255',2.1,.6],['255,124,196',4.2,.38]].forEach(([rgb,ph,a])=>{const top=sx=>y+h*(.06+.07*Math.sin(sx*.011+tt+ph)+.03*Math.sin(sx*.031-tt*1.7)),len=sx=>h*(.26+.1*Math.sin(sx*.017-tt*1.2+ph));
+    const g=ctx.createLinearGradient(0,y,0,y+h*.55);g.addColorStop(0,`rgba(${rgb},0)`);g.addColorStop(.25,`rgba(${rgb},${a*k})`);g.addColorStop(1,`rgba(${rgb},0)`);ctx.fillStyle=g;
+    ctx.beginPath();for(let sx=x;sx<=x+w;sx+=8)ctx.lineTo(sx,top(sx));for(let sx=x+w;sx>=x;sx-=8)ctx.lineTo(sx,top(sx)+len(sx));ctx.closePath();ctx.fill();
+    // Fine vertical rays inside the curtain, shimmering slowly.
+    ctx.lineWidth=2;for(let sx=x+3,i=0;sx<x+w;sx+=6,i++){const r=hash(i+ph),flick=reduced?.6:.5+.5*Math.sin(t*(.6+r)+i);ctx.strokeStyle=`rgba(${rgb},${a*k*.45*r*flick})`;ctx.beginPath();ctx.moveTo(sx,top(sx)+2);ctx.lineTo(sx,top(sx)+len(sx)*.85);ctx.stroke();}});
+  for(let i=0;i<26;i++){const tw=reduced?.7:.5+.5*Math.sin(t*(1+hash(i)*2)+i*3);glowDot(ctx,x+w*hash(i+.31),y+h*.55*hash(i+.77),.8+hash(i+.5)*.9,pal.sparks[i%pal.sparks.length],.6*tw*k);}
+  ctx.globalAlpha=1;ctx.shadowColor=pal.glow;ctx.shadowBlur=gentle||reduced?6:14;ctx.lineWidth=2;ctx.strokeStyle='rgba(125,255,200,.55)';ctx.strokeRect(x+3,y+3,w-6,h-6);
   ctx.restore();}
 
 // The show on the LCD. box: [x,y,w,h] of the LCD; at: [cx,cy] where the title sits; lines: [{text,size,dy,font}];

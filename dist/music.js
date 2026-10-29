@@ -26,6 +26,11 @@ export const TRACKS={
     lead:'E5 - G5 - B5 - E6 - | E6 - D6 - C6 - B5 - | A5 - D6 - F#6 - E6 D6 | D#6 - - - B5 - - - | E6 - B5 - G5 - E5 - | G5 - C6 - E6 - G6 - | A5 - C6 - E6 - A6 - | F#6 - - - D#6 - B5 -',
     bass:'rrorrrorrrorrror',drums:{k:'x..x..x.x..x..x.',s:'....x.......x...',h:'xxxxxxxxxxxxxxxx'},fill:{s:'....x...x.xxxxxx'},
     lead_:'strings',arp:'up',pad:'pulse',crash:true},
+  // 確変 (ST): a quick, sparkling B-minor groove for the aurora night, between the calm base track and the reach.
+  'aurora-st':{bpm:144,chords:'Bm G D A Bm G Em F#',
+    lead:'F#5 - B5 - D6 - C#6 B5 | D6 - - - B5 - G5 - | A5 - D6 - F#6 - E6 D6 | C#6 - - - A5 - - - | B5 - D6 - F#6 - E6 F#6 | G6 - - - F#6 - D6 - | E6 - G6 - F#6 - E6 - | C#6 - - - A#5 - C#6 -',
+    bass:'r-o-r-or-r-o-r-o',drums:{k:'x...x...x...x...',s:'....x.......x...',h:'.xxx.xxx.xxx.xxx'},fill:{s:'....x.......x.xx'},
+    lead_:'bell',arp:'up',pad:'pulse'},
   'aurora-bonus':{bpm:160,chords:'D A Bm F#m G D G A',
     lead:'A5 - D6 - - - C#6 D6 | E6 - - - C#6 - A5 - | B5 - D6 - F#6 - E6 D6 | C#6 - - - A5 - - - | B5 - D6 - G6 - F#6 E6 | F#6 - - - D6 - A5 - | B5 - - D6 - - E6 - | E6 - - - C#6 - E6 -',
     bass:'r-o-r-o-r-o-r-o-',drums:{k:'x...x...x...x...',c:'....x.......x...',h:'.x.x.x.x.x.x.x.x',o:'..x...x...x...x.'},fill:{c:'....x.......x.xx'},
@@ -44,7 +49,7 @@ const SONGS=Object.fromEntries(Object.entries(TRACKS).map(([k,t])=>[k,{...t,bars
 export const BARS=8,STEPS=BARS*16;
 export const stepLength=name=>60/TRACKS[name].bpm/4;
 // Which track fits what the machine is showing now.
-export function trackFor({mode,reach=false,battle=false,bonus=false}){return mode==='slot'?(bonus?'astral-bonus':'astral'):bonus?'aurora-bonus':battle?'aurora-battle':reach?'aurora-reach':'aurora';}
+export function trackFor({mode,reach=false,battle=false,bonus=false,st=false}){return mode==='slot'?(bonus?'astral-bonus':'astral'):bonus?'aurora-bonus':battle?'aurora-battle':reach?'aurora-reach':st?'aurora-st':'aurora';}
 
 // Fanfare for the start of a bonus (7-7-7 on ASTRAL, a jackpot on AURORA), about 3.4 s: brass in triplets, "ta-ta-ta TAA,
 // ta-ta-ta-ta TAAA", over a held chord, with timpani hits and a roll, crash cymbals and bells rising at the end. It is written
