@@ -15,9 +15,13 @@ export const POSES={hana:{ready:[0,0],cast:[0,1],charge:[0,2],victory:[0,3],calm
 // The enemies' sheet: wider cells (swords and wings reach far out), the row and feet line of each enemy, the point of its attack pose
 // (cell px) where its shot starts, its shot and the colour of its light.
 export const FOES={path:'assets/battle-foes.webp',w:400,h:362,
-  cloud:{row:0,feet:[351,351,325,345],attack:[79,170],shot:'gust',color:'200,190,255'},
-  ice:{row:1,feet:[354,355,351,353],attack:[40,110],shot:'shards',color:'150,215,255'},
-  dragon:{row:2,feet:[345,345,341,326],attack:[120,155],shot:'stars',color:'190,130,255'}};
+  cloud:{row:0,feet:[351,351,325,345],attack:[79,170],shot:'gust',color:'200,190,255',arena:'arena'},
+  ice:{row:1,feet:[354,355,351,353],attack:[40,110],shot:'shards',color:'150,215,255',arena:'arena'},
+  dragon:{row:2,feet:[345,345,341,326],attack:[120,155],shot:'stars',color:'190,130,255',arena:'arenaNight'}};
+// The battle stage: a generated painting of a marble duel platform above the clouds (sunset, or moonlit for the night princess ノクス).
+// floor: the height in the picture (0 top … 1 bottom) of the platform's front edge, drawn on STAGE.ground so the fighters stand on it;
+// size: the drawn height of the picture in LCD heights.
+export const ARENA={floor:.72,size:1.37,arena:'assets/lcd-stages/stage-arena.webp',arenaNight:'assets/lcd-stages/stage-arena-night.webp'};
 // Board positions: the ground line on the LCD, where each character stands, and how tall the characters are drawn.
 export const STAGE={ground:498,hana:254,foe:466,height:150,mid:360};
 // Points in a cell (sheet px) where an attack starts: the wand tip of Hana's cast / charge / strike poses.
@@ -27,7 +31,7 @@ const clamp=v=>v<0?0:v>1?1:v,ease=v=>v*v*(3-2*v),lerp=(a,b,k)=>a+(b-a)*k,bump=v=
 const hash=i=>{const s=Math.sin(i*127.1+311.7)*43758.5453;return s-Math.floor(s);};
 
 const sheets={};
-export function loadBattleSprites(){if(typeof Image==='undefined')return;for(const [key,path] of [['hana',SHEET.path],['foe',FOES.path]]){if(sheets[key])continue;const img=new Image();img.decoding='async';img.onload=()=>{sheets[key]=img;};img.src=path;}}
+export function loadBattleSprites(){if(typeof Image==='undefined')return;for(const [key,path] of [['hana',SHEET.path],['foe',FOES.path],['arena',ARENA.arena],['arenaNight',ARENA.arenaNight]]){if(sheets[key])continue;const img=new Image();img.decoding='async';img.onload=()=>{sheets[key]=img;};img.src=path;}}
 
 // Seconds into the battle stage (bt) before the button, or since the button was pressed (f); null outside the battle.
 export function battleTime(plan,t){const st=plan?.battle&&plan.stages[1];if(!st||t<st.at)return null;return plan.pressed!=null&&t>=plan.pressed?{f:t-plan.pressed}:{bt:t-st.at};}
@@ -78,10 +82,13 @@ export function battleEvents(plan,t){const at=battleTime(plan,t);if(!at)return [
     if(o==='revive'){add('revive','revive',p+BATTLE.reviveAt);add('rise','rise',p+1.5);add('beam','beam',p+2.1);add('hit','hit',p+2.3);add('won','won',p+2.7);}}
   return out;}
 
-// Backdrop of the battle: the scene darkens to a violet arena with a light on each fighter and a glowing floor.
-function backdrop(ctx,{x,y,w,h,t,age,gentle,reduced,foe}){const fade=reduced?1:clamp(age/.4);ctx.fillStyle=`rgba(18,6,34,${.55*fade})`;ctx.fillRect(x,y,w,h);ctx.save();ctx.globalCompositeOperation='lighter';
-  for(const [cx,col] of [[STAGE.hana,'255,120,190'],[STAGE.foe,foe.color]]){const g=ctx.createRadialGradient(cx,y+h*.55,0,cx,y+h*.55,w*.42);g.addColorStop(0,`rgba(${col},${(gentle?.22:.3)*fade})`);g.addColorStop(1,`rgba(${col},0)`);ctx.fillStyle=g;ctx.fillRect(x,y,w,h);}
-  const fl=ctx.createRadialGradient(STAGE.mid,STAGE.ground,0,STAGE.mid,STAGE.ground,w*.6);fl.addColorStop(0,`rgba(255,215,150,${.28*fade})`);fl.addColorStop(1,'rgba(255,215,150,0)');ctx.fillStyle=fl;ctx.save();ctx.translate(STAGE.mid,STAGE.ground);ctx.scale(1,.18);ctx.translate(-STAGE.mid,-STAGE.ground);ctx.fillRect(x,STAGE.ground-w*.6,w,w*1.2);ctx.restore();
+// Backdrop of the battle: the arena painting fades in (slowly zooming), a little darkened, with a light on each fighter and a glowing
+// floor. Until the painting has loaded the scene just darkens to violet.
+function backdrop(ctx,{x,y,w,h,t,age,gentle,reduced,foe}){const fade=reduced?1:clamp(age/.4),img=sheets[foe.arena];
+  if(img){const z=1+(reduced?0:.04*clamp(age/10)),dh=h*ARENA.size*z,dw=dh*img.width/img.height,top=STAGE.ground-ARENA.floor*dh;ctx.save();ctx.globalAlpha*=fade;ctx.drawImage(img,STAGE.mid-dw/2,top,dw,dh);ctx.restore();}
+  ctx.fillStyle=`rgba(18,6,34,${(img?.32:.55)*fade})`;ctx.fillRect(x,y,w,h);const lit=img?.5:1;ctx.save();ctx.globalCompositeOperation='lighter';
+  for(const [cx,col] of [[STAGE.hana,'255,120,190'],[STAGE.foe,foe.color]]){const g=ctx.createRadialGradient(cx,y+h*.55,0,cx,y+h*.55,w*.42);g.addColorStop(0,`rgba(${col},${(gentle?.22:.3)*fade*lit})`);g.addColorStop(1,`rgba(${col},0)`);ctx.fillStyle=g;ctx.fillRect(x,y,w,h);}
+  const fl=ctx.createRadialGradient(STAGE.mid,STAGE.ground,0,STAGE.mid,STAGE.ground,w*.6);fl.addColorStop(0,`rgba(255,215,150,${.28*fade*lit})`);fl.addColorStop(1,'rgba(255,215,150,0)');ctx.fillStyle=fl;ctx.save();ctx.translate(STAGE.mid,STAGE.ground);ctx.scale(1,.18);ctx.translate(-STAGE.mid,-STAGE.ground);ctx.fillRect(x,STAGE.ground-w*.6,w,w*1.2);ctx.restore();
   if(!reduced)for(let i=0;i<14;i++){const sp=(gentle?60:120)*(.6+hash(i)),px=x+((hash(i+3)*w*1.4-t*sp)%(w*1.4)+w*1.4)%(w*1.4)-w*.2,py=y+hash(i+7)*h*.75;ctx.strokeStyle=`rgba(255,230,250,${(gentle?.08:.14)*fade})`;ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px+40,py-8);ctx.stroke();}
   ctx.restore();}
 
