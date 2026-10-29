@@ -146,16 +146,19 @@ export function reachTrust(kind,color){const share=(o,c)=>(kind?REACH_PICK[o][ki
 // a win ends with Hana's special move, a loss with the enemy leaving. revive % of battle wins first play the loss (identical to a real
 // loss up to reviveAt s, well before a real loss stops at hold.lose), then Hana glows, gets back up and wins (復活). A miss never
 // revives, and nothing happens after the middle number has stopped, so a stopped miss is final.
-export const BATTLE={intro:1.9,cycle:1.6,clash:.6,reviveAt:1,hold:{win:1.9,lose:1.8,revive:3.1},revive:10,enemies:{cloud:'雲のいたずら精 モクモ'}};
+// The enemy is picked after the draw from pick, like the reach colour: the weak モクモ comes mostly on wins, the strong ノクス mostly on
+// misses, so the enemy tells how likely a win is (see enemyTrust) without changing the odds.
+export const BATTLE={intro:1.9,cycle:1.6,clash:.6,reviveAt:1,hold:{win:1.9,lose:1.8,revive:3.1},revive:10,
+  enemies:{cloud:'雲のいたずら精 モクモ',ice:'氷の騎士 グラシエ',dragon:'夜の竜姫 ノクス'},pick:{win:{cloud:50,ice:30,dragon:20},miss:{cloud:15,ice:35,dragon:50}}};
 // Seconds of each stage: a plain reach is one stage; a developing one shortens the normal stage and adds the later ones.
 // The button comes halfway through the last stage, so a battle gets one exchange of attacks (gentle) or two before it.
 function reachStages(kind,gentle){const g=(a,b)=>gentle?a:b;return kind==='normal'?[['normal',g(2.5,4)]]:kind==='sp'?[['normal',g(1.6,2)],['sp',g(3,4.5)]]:kind==='battle'?[['normal',g(1.6,2)],['battle',2*(BATTLE.intro+BATTLE.cycle*g(1,2))]]:[['normal',g(1.6,2)],['sp',g(2,2.5)],['spsp',g(3.5,5.5)]];}
-// force: {kind, revive} from the ?reach= page option, to check how a reach looks. It changes only the presentation, never the result.
+// force: {kind, revive, enemy} from the ?reach= and ?enemy= page options, to check how a reach looks. It changes only the presentation, never the result.
 // reach: whether a miss shows a reach, when it was already decided at the START entry (drawHold); left out, it is drawn here.
 export function planSpin(win,holdsLeft,{gentle=true,rand=randomInt,variety=true,force=null,reach:missReach}={}){const reach=win||(missReach??rand(15)===0);let left=rand(9)+1,right=left,middle=left;if(!win){if(reach){const far=[1,2,3,4,5,6,7,8,9].filter(n=>n!==left&&n!==wrap(left-1)&&n!==wrap(left+1));middle=far[rand(far.length)];}else{right=wrap(left+1+rand(8));middle=rand(9)+1;}}
 if(reach){const o=win?'win':'miss',picked=variety?pick(REACH_PICK[o],rand):'normal',kind=variety&&force?.kind in REACH_KINDS?force.kind:picked,color=variety?pick(REACH_COLOR[o],rand):'pink';let at=2.8;const stages=reachStages(kind,gentle).map(([k,len])=>{const s={kind:k,at,until:at+len};at+=len;return s;}),last=stages[stages.length-1];
   const plan={numbers:[left,middle,right],reach,kind,color,stages,stops:[2,at,2.8],duration:at,push:last.at+(last.until-last.at)/2};
-  if(kind==='battle')plan.battle={enemy:'cloud',outcome:!win?'lose':force?.revive||rand(100)<BATTLE.revive?'revive':'win'};return plan;}
+  if(kind==='battle'){const outcome=!win?'lose':force?.revive||rand(100)<BATTLE.revive?'revive':'win',picked=pick(BATTLE.pick[o],rand);plan.battle={enemy:force?.enemy in BATTLE.enemies?force.enemy:picked,outcome};}return plan;}
 const duration=holdsLeft>=3?2.5:holdsLeft>=1?4:5;return {numbers:[left,middle,right],reach,stops:[duration-1.2,duration,duration-.6],duration};}
 // 保留 (hold): like a real machine, the jackpot draw is made when the ball enters START (入賞時), and the hold lamp takes a colour
 // (色保留) from the tables below: white (no hint), blue, green, red, gold, or rainbow (大当たり確定). The colour is picked after the draw,
@@ -174,6 +177,8 @@ export function drawHold({rand=randomInt,variety=true,force=null}={}){const priz
   const shown=variety&&below>0&&rand(100)<HOLD_CHANGE?HOLD_COLORS[rand(below)]:color;return {prize,win,reach,color,shown};}
 // Share of holds ending in this colour that win.
 export function holdTrust(color){const odds=NOTICE_ODDS.pachinko,share=o=>HOLD_PICK[o][color]/10000*odds[o];return share('win')/(share('win')+share('chance')+share('miss'));}
+// Share of battles against this enemy that win.
+export function enemyTrust(enemy){const w=WIN_ODDS*REACH_PICK.win.battle*BATTLE.pick.win[enemy],m=(1-WIN_ODDS)*MISS_REACH*REACH_PICK.miss.battle*BATTLE.pick.miss[enemy];return w/(w+m);}
 // Share of battles whose loss scene (the enemy starting to leave) turns into a revival.
 export function reviveTrust(){const w=WIN_ODDS*REACH_PICK.win.battle/100*BATTLE.revive/100,m=(1-WIN_ODDS)*MISS_REACH*REACH_PICK.miss.battle/100;return w/(w+m);}
 // The reach stage showing at time t of a draw (null before the reach; the last stage lasts until the button stops the middle number).
