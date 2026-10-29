@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {BOARD,NAILS,makePins,launchBall,advanceRail,inStart,STRIP,REELS,ROLE_TABLE,ROLE_RANGE,MAX_SLIP,drawRole,judge,chooseSlip,payout,settle,LINES,column,lineSymbols,resolvePachinko,advanceBall,randomInt,collideDisplay,MAX_HOLDS,addHold,planSpin,reachStage,reachTrust,REACH_PICK,REACH_COLOR,REACH_KINDS,BATTLE,reviveTrust,BONUS,inAttacker,BIG,REG,SLOT_BONUS,inButton} from '../engine.js';
+import {BOARD,NAILS,makePins,launchBall,advanceRail,inStart,STRIP,REELS,ROLE_TABLE,ROLE_RANGE,MAX_SLIP,drawRole,judge,chooseSlip,payout,settle,LINES,column,lineSymbols,resolvePachinko,advanceBall,randomInt,collideDisplay,MAX_HOLDS,addHold,planSpin,reachStage,reachTrust,enemyTrust,REACH_PICK,REACH_COLOR,REACH_KINDS,BATTLE,reviveTrust,BONUS,inAttacker,BIG,REG,SLOT_BONUS,inButton} from '../engine.js';
 test('配当と外れ、左チェリー',()=>{assert.equal(payout(['seven','seven','seven']),150);assert.equal(payout(['bell','bell','bell']),8);assert.equal(payout(['watermelon','watermelon','watermelon']),10);assert.equal(payout(['cherry','cherry','cherry']),2);assert.equal(payout(['cherry','bell','bar']),2);assert.equal(payout(['replay','replay','replay']),0);assert.equal(judge(['replay','replay','replay']),'replay');assert.equal(payout(['bar','bar','bar']),0);assert.equal(payout(['bell','bar','seven']),0);});
 test('パチンコの99通りに当たりは1つ',()=>{assert.equal(Array.from({length:99},(_,i)=>resolvePachinko(i)).filter(Boolean).length,1);assert.equal(resolvePachinko(0),300);});
 test('釘との衝突で玉が反射する',()=>{const b={x:360,y:195,vx:0,vy:100};advanceBall(b,1/120,[{x:360,y:200}]);assert.ok(b.vy<0);assert.ok(Number.isFinite(b.x));});
@@ -53,6 +53,11 @@ test('説明文の当たる割合は表から計算した値と同じ',async()=>
 test('バトルの勝ち負けは抽選の結果どおりで、復活は当たりのときだけ',()=>{const seen={win:0,lose:0,revive:0},reachy=(win,o)=>{let p;do p=planSpin(win,0,o);while(!p.reach);return p;};for(let i=0;i<4000;i++){const win=i%2===0,p=reachy(win,{force:{kind:'battle'}});assert.equal(p.kind,'battle');assert.ok(p.battle.enemy in BATTLE.enemies);seen[p.battle.outcome]++;
   assert.equal(p.battle.outcome==='lose',!win);if(!win){const [l,m,r]=p.numbers;assert.equal(l,r);const d=Math.abs(m-l);assert.ok(d>1&&d<8);}}
   assert.ok(Math.abs(seen.revive/2000-BATTLE.revive/100)<.03,String(seen.revive));assert.equal(reachy(false,{force:{kind:'battle',revive:true}}).battle.outcome,'lose');assert.equal(planSpin(true,0,{force:{kind:'battle',revive:true}}).battle.outcome,'revive');
-  assert.equal(planSpin(true,0,{variety:false,force:{kind:'battle'}}).kind,'normal');assert.equal(planSpin(true,0,{force:{kind:'normal'}}).battle,undefined);});
+  assert.equal(planSpin(true,0,{variety:false,force:{kind:'battle'}}).kind,'normal');assert.equal(planSpin(true,0,{force:{kind:'normal'}}).battle,undefined);
+  assert.equal(planSpin(true,0,{force:{kind:'battle',enemy:'dragon'}}).battle.enemy,'dragon');});
+test('敵は抽選のあとに選び、弱いモクモほど当たりやすく、強いノクスほど外れやすい',()=>{for(const o of ['win','miss'])assert.equal(Object.values(BATTLE.pick[o]).reduce((a,b)=>a+b),100);
+  assert.deepEqual(Object.keys(BATTLE.pick.win),Object.keys(BATTLE.enemies));assert.ok(enemyTrust('cloud')>enemyTrust('ice')&&enemyTrust('ice')>enemyTrust('dragon'));assert.ok(enemyTrust('dragon')>.3&&enemyTrust('cloud')<.95);
+  const seen={win:{},miss:{}};for(let i=0;i<6000;i++){const win=i%2===0;let p;do p=planSpin(win,0,{force:{kind:'battle'}});while(!p.reach);const t=seen[win?'win':'miss'];t[p.battle.enemy]=(t[p.battle.enemy]??0)+1;}
+  for(const o of ['win','miss'])for(const [e,w] of Object.entries(BATTLE.pick[o]))assert.ok(Math.abs((seen[o][e]??0)/3000-w/100)<.04,`${o} ${e}`);});
 test('復活は外れの決着より前に始まり、外れの見せ方から復活する割合は表から決まる',()=>{assert.ok(BATTLE.reviveAt<BATTLE.hold.lose);assert.ok(BATTLE.hold.revive>BATTLE.hold.win);
   const w=(1/99)*REACH_PICK.win.battle/100*BATTLE.revive/100,m=(98/99)/15*REACH_PICK.miss.battle/100;assert.ok(Math.abs(reviveTrust()-w/(w+m))<1e-12);assert.ok(reviveTrust()>.1&&reviveTrust()<.2);});

@@ -120,7 +120,8 @@ const art={},ledLayers={};for(const [key,src] of [['aurora','assets/aurora.webp'
 // (idle / draw / reach / push / bonus / win …, see cabinet-leds.js) unless the room setting keeps them all on or all off.
 // Page options: ?parts draws the part map, ?leds=<scene> keeps the LEDs on one scene (e.g. ?leds=reach) to check a lamp program.
 // ?reach=battle (or battle-revive) shows that reach kind whenever a reach comes, to check how it looks; the result is drawn as usual.
-const query=new URLSearchParams(location.search),reachForce=(([kind,revive])=>kind?{kind,revive:revive==='revive'}:null)((query.get('reach')??'').split('-')),holdForce=query.get('hold'),parts={aurora:createParts('aurora'),astral:createParts('astral')},ledScene={},showParts=query.has('parts'),ledForce=query.get('leds');let ledSetting='auto',reachVariety=true;
+// ?enemy=cloud / ice / dragon also picks the enemy of the battle.
+const query=new URLSearchParams(location.search),reachForce=(([kind,revive])=>kind?{kind,revive:revive==='revive',enemy:query.get('enemy')}:null)((query.get('reach')??'').split('-')),holdForce=query.get('hold'),parts={aurora:createParts('aurora'),astral:createParts('astral')},ledScene={},showParts=query.has('parts'),ledForce=query.get('leds');let ledSetting='auto',reachVariety=true;
 function cabinetLeds(key,scene){const leds=parts[key].leds,name=ledSetting==='on'?'lit':ledSetting==='off'?'dark':ledForce||scene,id=`${name}/${gentle}`;if(ledScene[key]!==id){applyScene(leds,name,{gentle,reduced});ledScene[key]=id;}drawLeds(ctx,ledLayers[key],leds.frame(clock),{gain:gentle?.3:.5});}
 function partMap(){if(showParts)drawPartMap(ctx,parts[mode==='slot'?'astral':'aurora']);}
 function cabinetArt(key){const img=art[key];if(img){ctx.drawImage(img,0,0,720,960);return;}rr(20,10,680,940,40,'#1b1d2a','#555');text('LOADING',360,480,14,'#99a');}
