@@ -105,6 +105,8 @@ export const SCENES={
     bonus:[['side',{mode:'chase',speed:1.4,min:.4,color:'rainbow'}],['front',{mode:'chase',speed:1.4,min:.4,color:'rainbow'}],['top',{mode:'breathe',speed:.9,min:.55,color:'#ffd36a'}],['board',{mode:'blink',speed:1,min:.5,color:'#ff7cc4'}]],
     finale:[['all',{mode:'chase',speed:1,min:.5,color:'#ffd36a'}]],
     win:[['all',{mode:'blink',speed:1.5,min:.45,color:'#ffd36a'}]],
+    // st: 確変 (ST), the aurora colours (green, violet, pink) flowing slowly round the frame.
+    st:[['side',{mode:'chase',speed:.9,min:.4,color:'#5ff0b4'}],['top',{mode:'breathe',speed:.6,min:.5,color:'#b48cff'}],['board',{mode:'chase',speed:.7,min:.45,color:'#ff7cc4'}],['front',{mode:'breathe',speed:.6,min:.5,color:'#5ff0b4'}]],
     dark:[['all',{mode:'off'}]],
     lit:[['all',{mode:'on'}]],
   },

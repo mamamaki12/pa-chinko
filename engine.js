@@ -155,11 +155,14 @@ export const BATTLE={intro:1.9,cycle:1.6,clash:.6,reviveAt:1,hold:{win:1.9,lose:
 function reachStages(kind,gentle){const g=(a,b)=>gentle?a:b;return kind==='normal'?[['normal',g(2.5,4)]]:kind==='sp'?[['normal',g(1.6,2)],['sp',g(3,4.5)]]:kind==='battle'?[['normal',g(1.6,2)],['battle',2*(BATTLE.intro+BATTLE.cycle*g(1,2))]]:[['normal',g(1.6,2)],['sp',g(2,2.5)],['spsp',g(3.5,5.5)]];}
 // force: {kind, revive, enemy} from the ?reach= and ?enemy= page options, to check how a reach looks. It changes only the presentation, never the result.
 // reach: whether a miss shows a reach, when it was already decided at the START entry (drawHold); left out, it is drawn here.
-export function planSpin(win,holdsLeft,{gentle=true,rand=randomInt,variety=true,force=null,reach:missReach}={}){const reach=win||(missReach??rand(15)===0);let left=rand(9)+1,right=left,middle=left;if(!win){if(reach){const far=[1,2,3,4,5,6,7,8,9].filter(n=>n!==left&&n!==wrap(left-1)&&n!==wrap(left+1));middle=far[rand(far.length)];}else{right=wrap(left+1+rand(8));middle=rand(9)+1;}}
+// kakuhen: for a jackpot, whether it is 確変 (odd numbers, or even ones with promote:true); left out, any number. st: the draw is in ST,
+// where a miss without a reach is short.
+export function planSpin(win,holdsLeft,{gentle=true,rand=randomInt,variety=true,force=null,reach:missReach,kakuhen,st=false}={}){const reach=win||(missReach??rand(15)===0);let left=win&&kakuhen!==undefined?(kakuhen&&rand(100)<KAKUHEN.odd?[1,3,5,7,9][rand(5)]:[2,4,6,8][rand(4)]):rand(9)+1,right=left,middle=left;if(!win){if(reach){const far=[1,2,3,4,5,6,7,8,9].filter(n=>n!==left&&n!==wrap(left-1)&&n!==wrap(left+1));middle=far[rand(far.length)];}else{right=wrap(left+1+rand(8));middle=rand(9)+1;}}
 if(reach){const o=win?'win':'miss',picked=variety?pick(REACH_PICK[o],rand):'normal',kind=variety&&force?.kind in REACH_KINDS?force.kind:picked,color=variety?pick(REACH_COLOR[o],rand):'pink';let at=2.8;const stages=reachStages(kind,gentle).map(([k,len])=>{const s={kind:k,at,until:at+len};at+=len;return s;}),last=stages[stages.length-1];
   const plan={numbers:[left,middle,right],reach,kind,color,stages,stops:[2,at,2.8],duration:at,push:last.at+(last.until-last.at)/2};
-  if(kind==='battle'){const outcome=!win?'lose':force?.revive||rand(100)<BATTLE.revive?'revive':'win',picked=pick(BATTLE.pick[o],rand);plan.battle={enemy:force?.enemy in BATTLE.enemies?force.enemy:picked,outcome};}return plan;}
-const duration=holdsLeft>=3?2.5:holdsLeft>=1?4:5;return {numbers:[left,middle,right],reach,stops:[duration-1.2,duration,duration-.6],duration};}
+  if(kind==='battle'){const outcome=!win?'lose':force?.revive||rand(100)<BATTLE.revive?'revive':'win',picked=pick(BATTLE.pick[o],rand);plan.battle={enemy:force?.enemy in BATTLE.enemies?force.enemy:picked,outcome};}
+  if(win&&kakuhen!==undefined){plan.kakuhen=kakuhen;plan.promote=kakuhen&&left%2===0;}return plan;}
+const duration=st?2:holdsLeft>=3?2.5:holdsLeft>=1?4:5;return {numbers:[left,middle,right],reach,stops:[duration-1.2,duration,duration-.6],duration};}
 // 保留 (hold): like a real machine, the jackpot draw is made when the ball enters START (入賞時), and the hold lamp takes a colour
 // (色保留) from the tables below: white (no hint), blue, green, red, gold, or rainbow (大当たり確定). The colour is picked after the draw,
 // so the odds (1/99) never change; only how often each colour shows differs by outcome, which gives each one its 信頼度 (holdTrust),
@@ -172,9 +175,24 @@ export const HOLD_CHANGE=35;
 // After a miss (with or without a reach), the stopped numbers stay on screen MISS_REST s before the next draw starts.
 export const MISS_REST=1;
 // One hold, drawn at the START entry: the result (prize, win), whether a miss shows a reach, and the colour shown now (shown) and at its draw (color).
-export function drawHold({rand=randomInt,variety=true,force=null}={}){const prize=resolvePachinko(rand(99)),win=prize>0,reach=win||rand(15)===0,outcome=win?'win':reach?'chance':'miss';
+// st: the ball entered during 確変 (ST) or during a jackpot that leads to it, so it is drawn at the ST odds (1/KAKUHEN.odds).
+export function drawHold({rand=randomInt,variety=true,force=null,st=false}={}){const prize=st?(rand(KAKUHEN.odds)===0?300:0):resolvePachinko(rand(99)),win=prize>0,reach=win||rand(15)===0,outcome=win?'win':reach?'chance':'miss';
   const color=!variety?'white':HOLD_COLORS.includes(force)?force:weighted(HOLD_PICK[outcome],rand),below=HOLD_COLORS.indexOf(color);
-  const shown=variety&&below>0&&rand(100)<HOLD_CHANGE?HOLD_COLORS[rand(below)]:color;return {prize,win,reach,color,shown};}
+  const shown=variety&&below>0&&rand(100)<HOLD_CHANGE?HOLD_COLORS[rand(below)]:color;return {prize,win,reach,color,shown,st};}
+// 確変 (ST), like the ST of a real 甘デジ: rate % of jackpots are 確変. After its rounds the machine is in ST for spins draws, drawn at
+// 1/odds instead of 1/99; a jackpot in ST is always 確変 again (so it goes on with about 1-(1-1/odds)^spins = 71% each time), and
+// limit caps the jackpots of one chain (Infinity: no cap, as the user chose). 確変 jackpots line up on an odd number (確変図柄) odd %
+// of the time; the rest line up on an even number and are promoted (昇格) at the end of the rounds. 通常 jackpots are always even.
+// Whether a jackpot is 確変 is decided when its draw starts, so the jackpot odds and the reach/notice/hold tables are unchanged.
+export const KAKUHEN={rate:50,odds:25,spins:30,odd:75,limit:Infinity};
+// A hold entered before ST (drawn at 1/99) that misses gets one more chance when it is drawn in ST, so that every draw in ST wins at 1/odds.
+export const ST_LIFT=Math.round((1/KAKUHEN.odds-1/99)/(1-1/99)*10000);
+export function liftHold(h,{rand=randomInt}={}){return h.win||h.st||rand(10000)>=ST_LIFT?h:{...h,prize:300,win:true,reach:true,st:true};}
+// Whether the jackpot that is the chain-th of its chain (1 = from normal play) is 確変. inSt: it was drawn in ST.
+export function kakuhenAfter({inSt=false,chain=1,rand=randomInt}={}){return chain<KAKUHEN.limit&&(inSt||rand(100)<KAKUHEN.rate);}
+// Share of draws in ST that win, and the chance that one ST ends in a jackpot (継続率).
+export function stOdds(){return 1/KAKUHEN.odds;}
+export function stContinue(){return 1-(1-1/KAKUHEN.odds)**KAKUHEN.spins;}
 // Share of holds ending in this colour that win.
 export function holdTrust(color){const odds=NOTICE_ODDS.pachinko,share=o=>HOLD_PICK[o][color]/10000*odds[o];return share('win')/(share('win')+share('chance')+share('miss'));}
 // Share of battles against this enemy that win.

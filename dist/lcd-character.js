@@ -31,6 +31,8 @@ export const EVENTS={
   battleMiss:{pose:'idle',expr:'normal',dur:1.6,chance:1,prio:1,lines:['またね','いっちゃった。のんびりいこう']},
   bonus:{pose:'point',expr:'surprise',dur:3.5,chance:1,prio:3,lines:['大当たり！ 右打ちで右下をねらってね','そろった！ 強めに打って右下へ']},
   win:{pose:'cheer',expr:'happy',dur:4.5,chance:1,prio:3,lines:['大当たり終了！ {n}玉だよ','おつかれさま、{n}玉！'],next:'afterWin'},
+  kakuhen:{pose:'cheer',expr:'happy',dur:4.5,chance:1,prio:3,lines:['確変だよ！ しばらく当たりやすいよ','オーロラの世界へ、ようこそ！']},
+  kakuhenEnd:{pose:'wave',expr:'happy',dur:4.5,chance:1,prio:3,lines:['確変おしまい。ぜんぶで{n}玉だよ','楽しかったね。ぜんぶで{n}玉！'],next:'afterWin'},
   afterWin:{pose:'idle',expr:'happy',dur:3,chance:1,prio:1,lines:['いい区切り。ここで休むのもアリだよ','うれしい気分のまま、ひと休みしよっか']},
   miss:{pose:'idle',expr:'normal',dur:1.6,chance:.25,prio:1,lines:['はずれ〜','今回はなしだね','ざんねん。のんびりいこう']},
   empty:{pose:'idle',expr:'normal',dur:3,chance:1,prio:2,lines:['玉がなくなったよ。今日はここまでにする？']},
