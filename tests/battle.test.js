@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {planSpin,BATTLE} from '../engine.js';
-import {battleScene,battleEvents,battleTime,SHEET,POSES,STAGE,FOES} from '../battle-fx.js';
+import {battleScene,battleEvents,battleTime,SHEET,POSES,STAGE,FOES,ARENA} from '../battle-fx.js';
 import {BOARD} from '../engine.js';
 // A battle plan with this outcome against this enemy (a miss reaches only on 1/15 of draws and some wins revive, so draw until it fits).
 const plan=(outcome,{asked,pressed,enemy='cloud'}={})=>{let p;do p=planSpin(outcome!=='lose',0,{gentle:false,force:{kind:'battle',revive:outcome==='revive',enemy}});while(!p.reach||p.battle.outcome!==outcome);if(asked||pressed!=null)p.asked=true;if(pressed!=null)p.pressed=p.push+pressed;return p;};
@@ -22,5 +22,7 @@ test('キャラは液晶の中に立ち、絵のマスはシートに収まる',
   for(const [r,c] of Object.values(POSES.hana)){assert.ok(r<SHEET.feet.length&&c<4);assert.ok(SHEET.feet[r][c]>SHEET.h*.8&&SHEET.feet[r][c]<=SHEET.h);}
   assert.equal(FOES.h,SHEET.h);const rows=new Set();for(const enemy of Object.keys(BATTLE.enemies)){const f=FOES[enemy];rows.add(f.row);assert.ok(['gust','shards','stars'].includes(f.shot));const [ax,ay]=f.attack;assert.ok(ax>=0&&ax<FOES.w&&ay>=0&&ay<FOES.h);
     for(const c of Object.values(POSES.foe)){assert.ok(c<4);assert.ok(f.feet[c]>FOES.h*.8&&f.feet[c]<=FOES.h);}}assert.equal(rows.size,Object.keys(BATTLE.enemies).length);});
+test('バトルの舞台の絵は液晶をすき間なく覆い、床の手前の縁にキャラが立つ',()=>{const d=BOARD.display,h=d.y2-d.y1,dh=h*ARENA.size,dw=dh*16/9,top=STAGE.ground-ARENA.floor*dh;
+  assert.ok(top<=d.y1&&top+dh>=d.y2);assert.ok(STAGE.mid-dw/2<=d.x1&&STAGE.mid+dw/2>=d.x2);for(const enemy of Object.keys(BATTLE.enemies))assert.ok(FOES[enemy].arena in ARENA);});
 test('敵ごとに攻撃の弾が違う',()=>{const shots=Object.keys(BATTLE.enemies).map(enemy=>{const p=plan('win',{enemy}),t=p.stages[1].at+BATTLE.intro+.8+.4;return battleScene(p,t).fx.map(e=>e.kind).join();});assert.deepEqual(shots,['gust','shards','stars']);});
 test('動きを減らす設定では、キャラは定位置で弾は飛ばない',()=>{const p=plan('win');for(let t=p.stages[1].at;t<p.push;t+=.1){const s=battleScene(p,t,{reduced:true});assert.equal(s.hana.x,STAGE.hana);assert.equal(s.foe.x,STAGE.foe);assert.equal(s.hana.lift,0);assert.equal(s.foe.lift,0);assert.ok(!s.fx.some(e=>['petals','gust','shards','stars'].includes(e.kind)));}});
