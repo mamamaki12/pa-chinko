@@ -1,17 +1,19 @@
 import {NOTICE_KINDS} from './engine.js';
-import {drawFx} from './lcd-fx.js';
+import {drawFx,drawUi,fxReady} from './lcd-fx.js';
 // 予告 (notice) shows on the LCD at the start of a draw (see pickNotice in engine.js for how they are picked). 群予告: butterflies,
 // birds, petals or stars sweep across the screen in a wave; セリフ予告: a line in a coloured frame; カットイン: a slanted band with big
 // lettering slides through; ステージチェンジ: a light wipe, behind which the background switches to a reach or bonus scene.
 // The colour (blue < green < red < gold) tells how likely a win is. Gentle mode draws fewer, dimmer pieces and a weaker wipe;
 // prefers-reduced-motion shows the notice still, with no wipe. Behind the ステージチェンジ wipe a painted swirl turns (lcd-fx.js): petals for
-// Hana (AURORA), stardust for Sora (ASTRAL).
+// Hana (AURORA), stardust for Sora (ASTRAL). In the カットイン the character (Hana on AURORA, Sora on ASTRAL) slides in with the band, in the
+// painted pose that fits the colour: praying for blue, cheering for green, ready to fight for red and gold.
 
 export const NOTICE_LEN=1.5,STAGE_AT=.35;
 export const NOTICE_TINTS={blue:{main:'#4aa8ff',light:'#e6f4ff',deep:'#1d4fa8'},green:{main:'#3fd87a',light:'#eafff0',deep:'#167a3c'},red:{main:'#ff4a3a',light:'#fff0ec',deep:'#a01a12'},gold:{main:'#ffc83a',light:'#fffbe6',deep:'#b0700c'}};
 // What the セリフ and カットイン say for each colour.
 export const NOTICE_WORDS={blue:'なにか来そう…',green:'チャンスかも！',red:'これは熱い…！',gold:'激アツ!!'};
 export const CUTIN_WORDS={blue:'CHANCE',green:'CHANCE!',red:'激アツ',gold:'超激アツ'};
+export const CUTIN_POSE={blue:'pray',green:'chance',red:'hot',gold:'hot'};
 const clamp=v=>v<0?0:v>1?1:v,ease=v=>v*v*(3-2*v);
 const hash=n=>{const x=Math.sin(n*127.1+311.7)*43758.5453;return x-Math.floor(x);};
 // How visible the notice is at age (seconds since it started): fades in over .15 s and out over the last .3 s.
@@ -40,8 +42,11 @@ export function drawNotice(ctx,n,age,{x,y,w,h,gentle=true,reduced=false,machine=
   else if(n.kind==='cutin'){const inq=reduced?.5:age<.25?ease(age/.25)*.5:age>NOTICE_LEN-.3?.5+ease((age-NOTICE_LEN+.3)/.3)*.5:.5,cx=x+w*(1.5-2*inq),cy=y+h*.5,bh=h*.3;
     ctx.save();ctx.translate(x+w/2,cy);ctx.rotate(-.12);ctx.fillStyle='rgba(10,4,20,.85)';ctx.fillRect(-w,-bh/2,w*2,bh);ctx.fillStyle=tint.main;ctx.fillRect(-w,-bh/2,w*2,4);ctx.fillRect(-w,bh/2-4,w*2,4);
     if(!reduced){ctx.strokeStyle=tint.light+'55';ctx.lineWidth=1.5;for(let i=0;i<14;i++){const ly=(hash(i)-.5)*bh*.8,lx=((hash(i+4)*w*2-age*w*3)%(w*2)+w*2)%(w*2)-w;ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(lx+w*.25,ly);ctx.stroke();}}ctx.restore();
-    ctx.save();ctx.translate(cx,cy);ctx.rotate(-.12);label(ctx,CUTIN_WORDS[n.color],0,0,Math.round(bh*.62),tint,{...opts,font:'italic 900 {s}px "Arial Black","Hiragino Sans","Noto Sans JP",sans-serif'});ctx.restore();}
-  else if(n.kind==='stage'){if(!reduced){drawFx(ctx,machine==='astral'?'fx-star-swirl':'fx-petal-swirl',x+w/2,y+h*.45,w*(.5+.7*ease(clamp(age/NOTICE_LEN))),{rot:age*1.6,alpha:(gentle?.3:.6)*clamp((age-.05)/.3)});const q=clamp(age/(STAGE_AT*2)),sx=x-w*.3+q*w*1.6;const g=ctx.createLinearGradient(sx-w*.3,0,sx+w*.3,0);g.addColorStop(0,'#fff0');g.addColorStop(.5,gentle?'rgba(255,255,255,.45)':'rgba(255,255,255,.9)');g.addColorStop(1,'#fff0');ctx.fillStyle=g;ctx.fillRect(x,y,w,h);}
+    const who=`cutin-${machine==='astral'?'sora':'hana'}-${CUTIN_POSE[n.color]??'chance'}`,art=fxReady(who);
+    if(art){const px=cx+w*.26,hop=reduced?0:Math.sin(age*7)*h*.012,g=ctx.createRadialGradient(px,cy,0,px,cy,h*.55);g.addColorStop(0,tint.main+(gentle?'55':'99'));g.addColorStop(1,tint.main+'00');
+      ctx.fillStyle=g;ctx.fillRect(px-h*.55,cy-h*.55,h*1.1,h*1.1);drawUi(ctx,who,px,cy+hop,h*1.05);}
+    ctx.save();ctx.translate(art?cx-w*.16:cx,art?cy+bh*.06:cy);ctx.rotate(-.12);label(ctx,CUTIN_WORDS[n.color],0,0,Math.round(bh*.62),tint,{...opts,font:'italic 900 {s}px "Arial Black","Hiragino Sans","Noto Sans JP",sans-serif'});ctx.restore();}
+  else if(n.kind==='stage'){if(!reduced){drawFx(ctx,machine==='astral'?'fx-star-swirl':'fx-petal-swirl',x+w/2,y+h*.45,w*(.5+.7*ease(clamp(age/NOTICE_LEN))),{rot:age*1.6,op:'screen',alpha:(gentle?.35:.7)*clamp((age-.05)/.3)});const q=clamp(age/(STAGE_AT*2)),sx=x-w*.3+q*w*1.6;const g=ctx.createLinearGradient(sx-w*.3,0,sx+w*.3,0);g.addColorStop(0,'#fff0');g.addColorStop(.5,gentle?'rgba(255,255,255,.45)':'rgba(255,255,255,.9)');g.addColorStop(1,'#fff0');ctx.fillStyle=g;ctx.fillRect(x,y,w,h);}
     if(reduced||age>STAGE_AT)label(ctx,'STAGE CHANGE',x+w/2,y+h*.18,Math.round(h*.085),tint,{...opts,font:'italic 900 {s}px Georgia,serif'});}
   else flock(ctx,n,box,age,tint,opts);
   ctx.restore();}

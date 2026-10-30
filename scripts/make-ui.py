@@ -1,15 +1,16 @@
 # 数字・リーチ名・PUSH の生成画像（assets/generated/ui-*.webp）から、アプリで使う絵を作る。
 # python3 scripts/make-ui.py
-#   assets/ui/<id>.webp          透明な部品（ロゴ・帯・札・PUSHボタン・輪・文字・手）。透明でない余白を切り、縮める
+#   assets/ui/<id>.webp          透明な部品（ロゴ・帯・札・PUSHボタン・輪・文字・手・カットインのキャラ）。透明でない余白を切り、縮める
 #   assets/lcd-fx/<id>.webp      黒の背景の光（押したときの光・止まったときのきらめき・オーラ・そろったときの線）
 #   assets/pachinko-digit-sprites.webp       今の数字の表（3×3、1マス 288×312）の7を ui-num-7-premium に差し替える
 #   assets/pachinko-digit-glow-sprites.webp  リーチ・当たり用の光る数字（ui-num-set-glow から切り出し、7は ui-num-7-reach）
 #   assets/pachinko-digit-7-win.webp         当たりの7（ui-num-7-win、1マス分）
 from PIL import Image, ImageFilter
 import numpy as np
+import os
 
 G, CELL = 'assets/generated/', (288, 312)
-def load(n): return Image.open(f'{G}{n}.webp').convert('RGBA')
+def load(n): return Image.open(f'{G}{n}.webp' if os.path.exists(f'{G}{n}.webp') else f'{G}{n}.png').convert('RGBA')
 def bbox(im, cut=12):
     a = np.asarray(im)[..., 3]; ys, xs = np.where(a > cut)
     return xs.min(), ys.min(), xs.max() + 1, ys.max() + 1
@@ -23,10 +24,11 @@ def save(im, path):
     im.save(path, quality=90, method=5); print(path, im.size)
 
 # Transparent parts: (id, longest side in px).
-for n, size in [('ui-logo-meteor', 768), ('ui-logo-castle', 768), ('ui-logo-battle', 768), ('ui-logo-reach', 640),
+for n, size in ([('ui-logo-meteor', 768), ('ui-logo-castle', 768), ('ui-logo-battle', 768), ('ui-logo-reach', 640),
                 ('ui-band-meteor', 1024), ('ui-band-castle', 1024), ('ui-band-battle', 1024), ('ui-band-white', 1024), ('ui-plate-label', 512),
                 ('ui-push-button', 256), ('ui-push-button-pink', 256), ('ui-push-button-green', 256), ('ui-push-button-red', 256),
-                ('ui-push-button-gold', 256), ('ui-push-button-rainbow', 256), ('ui-push-ring', 320), ('ui-push-word', 512)]:
+                ('ui-push-button-gold', 256), ('ui-push-button-rainbow', 256), ('ui-push-ring', 320), ('ui-push-word', 512)]
+               + [(f'cutin-{c}-{k}', 768) for c in ('hana', 'sora') for k in ('chance', 'hot', 'pray')]):
     save(fit(crop(load(n)), size, size), f'assets/ui/{n}.webp')
 # The two hand frames share one crop box so they line up.
 hands = [load('ui-push-hand'), load('ui-push-hand-b')]

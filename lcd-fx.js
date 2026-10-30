@@ -7,9 +7,11 @@
 export const FX_IDS=['fx-magic-circle','fx-light-burst','fx-rays','fx-comet','fx-meteor-small','fx-wings','fx-petal-swirl','fx-star-swirl','fx-shockwave','fx-sparkle-set',
   'ui-push-hit','ui-num-stop','ui-num-aura','ui-num-line'];
 // Painted parts on a transparent background (assets/ui/, made by scripts/make-ui.py): the reach logos and bands, the plate under the
-// digits and the PUSH button with its ring, lettering and pressing hand. drawUi() draws them normally instead of adding light.
+// digits, the PUSH button with its ring, lettering and pressing hand, and Hana and Sora for the カットイン notice. drawUi() draws them normally
+// instead of adding light.
 export const UI_IDS=['ui-logo-meteor','ui-logo-castle','ui-logo-battle','ui-logo-reach','ui-band-meteor','ui-band-castle','ui-band-battle','ui-plate-label',
-  'ui-push-button','ui-push-button-pink','ui-push-button-green','ui-push-button-red','ui-push-ring','ui-push-word','ui-push-hand','ui-push-hand-b'];
+  'ui-push-button','ui-push-button-pink','ui-push-button-green','ui-push-button-red','ui-push-ring','ui-push-word','ui-push-hand','ui-push-hand-b',
+  ...['hana','sora'].flatMap(c=>['chance','hot','pray'].map(k=>`cutin-${c}-${k}`))];
 // fx-sparkle-set is 8 sparkles in a row, 128 px each.
 export const SPARKLES=8;
 const images=new Map(),tinted=new Map();
