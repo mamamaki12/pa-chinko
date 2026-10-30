@@ -3,6 +3,7 @@ import {STRIP,BOARD,launchBall,advanceRail,inStart,ROLE_RANGE,SLOT_BONUS,REG_LIN
 import {STAGE_AT,drawNotice,noticeAlpha} from './notice-fx.js';
 import {REACH_COLORS,reachLayout,columnPlace,reachBackdrop,reachBanner,reachLabel} from './reach-fx.js';
 import {drawBattle,loadBattleSprites,battleEvents} from './battle-fx.js';
+import {loadLcdFx} from './lcd-fx.js';
 import {play,music,fanfare} from './sound.js';
 import {trackFor} from './music.js';
 import {readReflection,appendReflection,renderWeek,renderWeekSummary} from './journal.js';
@@ -13,7 +14,7 @@ import {LED_PARTS,buildLeds,drawLeds,applyScene} from './cabinet-leds.js';
 import {createParts,drawPartMap} from './cabinet-parts.js';
 import {createBackdrop,stepBackdrop,drawBackdrop,stageChange,loadStageImages} from './lcd-scenes.js';
 import {readBuild,isNewer,versionLabel,formatBuiltAt,fetchLatest,refreshFiles,reloadUrl,cleanUrl} from './updater.js';
-loadSlotFonts();loadSlotSymbols();loadBattleSprites();
+loadSlotFonts();loadSlotSymbols();loadBattleSprites();loadLcdFx();
 // Work out the reel control for each role in idle moments after the page opens, so the first stop of each role does not stutter.
 ['bell','replay','none','cherry','watermelon','big','reg'].forEach((role,i)=>setTimeout(()=>warmSlips(role),1500+i*300));
 
@@ -226,7 +227,7 @@ function renderSlot(){const s=states.slot,now=performance.now(),stopReady=[0,1,2
 const leverAge=(now-(pressedAt.lever??-1e9))/1000,leverPull=held==='lever'?1:leverAge<.32?Math.sin(Math.min(1,leverAge/.32)*Math.PI):0;
 const box=[156,102,394,196],sh=/^(big|reg)/.test(show?.kind??'')?show:null,on=showOn(sh,clock);lcdArt(...box);if(slotBonus)drawStage(ctx,box,clock,{machine:'astral',gentle,reduced});const navi=navis.slot;naviTick(navi,spinning,!!slotBonus);
 drawNavi(ctx,navi,clock,{x:226,y:290,scale:1.6,gentle,reduced});
-if(slotNotice)drawNotice(ctx,slotNotice,clock-slotNotice.at,{x:box[0],y:box[1],w:box[2],h:box[3],gentle,reduced});
+if(slotNotice)drawNotice(ctx,slotNotice,clock-slotNotice.at,{x:box[0],y:box[1],w:box[2],h:box[3],gentle,reduced,machine:'astral'});
 if(s.win>0&&clock<resultUntil&&!slotBonus&&!on){ctx.save();ctx.shadowColor='#5fb6ff';ctx.shadowBlur=gentle?4:16;ctx.lineWidth=5;ctx.strokeStyle='#0d1d45';ctx.font='bold 34px Georgia';ctx.textAlign='center';ctx.strokeText(`${s.win} MEDALS`,420,262);text(`${s.win} MEDALS`,420,262,34,'#eef6ff','bold Georgia');ctx.restore();}
 else if(replay)text('REPLAY',420,282,16,'#d8ecff','bold Georgia');
 // The BIG / REG panel comes in as the opening show fades out.
