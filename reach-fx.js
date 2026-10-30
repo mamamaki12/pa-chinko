@@ -31,11 +31,11 @@ export function reachBackdrop(ctx,stage,{x,y,w,h,t,gentle,reduced}){if(!stage||s
     for(let i=0;i<40;i++){const a=(.25+.35*hash(i))*(reduced?1:.6+.4*Math.sin(t*2+i));ctx.fillStyle=`rgba(220,235,255,${a*fade})`;ctx.fillRect(x+hash(i+3)*w,y+hash(i+7)*h*.8,1.6,1.6);}
     if(fxReady('fx-sparkle-set'))for(let i=0;i<10;i++)drawFx(ctx,'fx-sparkle-set',x+hash(i+21)*w,y+hash(i+27)*h*.7,10+hash(i+31)*12,{cell:i,rot:reduced?0:t*.4+i,alpha:(reduced?.7:.45+.55*Math.sin(t*3+i*1.7))*fade});
     const fall=Math.atan2(h*.9,-w*.55)-Math.PI;    const n=reduced?0:gentle?4:9;for(let i=0;i<n;i++){const life=1.1+hash(i)*.7,ph=(age*(gentle?.6:1)+hash(i+9)*life)%life,q=ph/life,sx=x+w*(.1+1.1*hash(i+Math.floor((age+hash(i+9)*life)/life)*17))-q*w*.55,sy=y-10+q*h*.9,len=60+hash(i+5)*60,al=Math.sin(Math.PI*q)*(gentle?.6:1)*fade;
-      if(drawFx(ctx,'fx-meteor-small',sx,sy,len*1.15,{rot:fall,ax:.06,alpha:al}))continue;
+      if(drawFx(ctx,'fx-meteor-small',sx,sy,len*1.6,{rot:fall,ax:.06,alpha:al}))continue;
       ctx.strokeStyle=grad(ctx,sx+len,sy-len*.55,sx,sy,`rgba(150,200,255,0)`,`rgba(235,245,255,${al})`);ctx.lineWidth=2;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(sx+len,sy-len*.55);ctx.lineTo(sx,sy);ctx.stroke();
       ctx.fillStyle=`rgba(255,255,255,${al})`;ctx.beginPath();ctx.arc(sx,sy,2.2,0,7);ctx.fill();}
-    // A big comet crosses the upper sky every few seconds (head first, right to left).
-    const every=gentle?4.2:2.6,ph=reduced?.65:(age+.4)%every,q=ph/1.3;if(q<1){const hx=x+w*(1.15-1.5*q),hy=y+h*(.1+.22*q);drawFx(ctx,'fx-comet',hx,hy,w*.95,{rot:Math.atan2(h*.22,-w*1.5)-Math.PI,ax:.07,ay:.57,alpha:(reduced?.8:Math.sin(Math.PI*q))*(gentle?.6:1)*fade});}}
+    // A big comet crosses the upper sky every few seconds (head first, right to left), the first time just after the cut-in banner.
+    const every=gentle?4.2:2.6,ph=reduced?.65:(age-.5)%every,q=ph/1.3;if(q>=0&&q<1){const hx=x+w*(1.15-1.5*q),hy=y+h*(.1+.22*q);drawFx(ctx,'fx-comet',hx,hy,w*.95,{rot:Math.atan2(h*.22,-w*1.5)-Math.PI,ax:.07,ay:.57,alpha:(reduced?.8:Math.sin(Math.PI*q))*(gentle?.6:1)*fade});}}
   else{const cx=x+w/2,cy=y+h*.32;ctx.fillStyle=`rgba(60,30,0,${.35*fade})`;ctx.fillRect(x,y,w,h);ctx.globalCompositeOperation='lighter';
     const g=ctx.createRadialGradient(cx,cy,0,cx,cy,w*.7);g.addColorStop(0,`rgba(255,230,150,${(gentle?.45:.7)*fade})`);g.addColorStop(.5,`rgba(255,170,60,${.25*fade})`);g.addColorStop(1,'rgba(255,170,60,0)');ctx.fillStyle=g;ctx.fillRect(x,y,w,h);
     const turn=reduced?0:t*(gentle?.15:.35);if(!drawFx(ctx,'fx-rays',cx,cy,w*1.6,{rot:turn,op:'screen',alpha:(gentle?.2:.35)*fade}))for(let k=0;k<12;k++){const a=turn+k*Math.PI/6;ctx.fillStyle=`rgba(255,236,170,${(gentle?.08:.14)*fade})`;ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,w,a-.09,a+.09);ctx.closePath();ctx.fill();}
