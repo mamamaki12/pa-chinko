@@ -1,8 +1,12 @@
 import {REACH_KINDS} from './engine.js';
+import {drawFx,fxReady} from './lcd-fx.js';
 // Reach presentation on the AURORA LCD (see planSpin in engine.js for how the kind and colour are picked).
 // (バトルリーチ is drawn by battle-fx.js.) 流星リーチ: the sky turns to night and shooting stars pour across it. 天空城リーチ: golden light from the floating castle,
 // turning rays and rising sparks, with a rainbow rim. Each development opens with a short cut-in banner naming the reach.
 // Gentle mode dims and slows everything and skips the white flash; prefers-reduced-motion shows still versions.
+// The light is painted (lcd-fx.js): stardust swirl, shooting stars, a big comet and sparkles for 流星; god rays, a turning magic circle and
+// golden wings behind the middle figure for 天空城; a light burst and a shockwave ring in the reach colour as a stage opens.
+// Until those pictures load, the same effects are drawn with lines and dots.
 
 // Title / button colours. pink is the plain colour used when reach variety is off.
 export const REACH_COLORS={
@@ -22,21 +26,30 @@ export function columnPlace(i,k,battle=false){const x=262+i*98,y=410;if(battle)r
 
 // Background layer of a developed stage, drawn over the LCD art and under the character and digits.
 export function reachBackdrop(ctx,stage,{x,y,w,h,t,gentle,reduced}){if(!stage||stage.kind==='normal'||stage.kind==='battle')return;const age=t-stage.at,fade=reduced?1:clamp(age/.4);ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();
-  if(stage.kind==='sp'){ctx.fillStyle=`rgba(6,10,40,${.62*fade})`;ctx.fillRect(x,y,w,h);ctx.globalCompositeOperation='lighter';
+  if(stage.kind==='sp'){ctx.fillStyle=`rgba(6,10,40,${.62*fade})`;ctx.fillRect(x,y,w,h);
+    drawFx(ctx,'fx-star-swirl',x+w*.5,y+h*.38,w*1.15,{rot:reduced?0:age*(gentle?.08:.18),op:'screen',alpha:(gentle?.12:.2)*fade*(reduced?1:1+1.5*clamp(1-age/.8))});ctx.globalCompositeOperation='lighter';
     for(let i=0;i<40;i++){const a=(.25+.35*hash(i))*(reduced?1:.6+.4*Math.sin(t*2+i));ctx.fillStyle=`rgba(220,235,255,${a*fade})`;ctx.fillRect(x+hash(i+3)*w,y+hash(i+7)*h*.8,1.6,1.6);}
-    const n=reduced?0:gentle?4:9;for(let i=0;i<n;i++){const life=1.1+hash(i)*.7,ph=(age*(gentle?.6:1)+hash(i+9)*life)%life,q=ph/life,sx=x+w*(.1+1.1*hash(i+Math.floor((age+hash(i+9)*life)/life)*17))-q*w*.55,sy=y-10+q*h*.9,len=60+hash(i+5)*60,al=Math.sin(Math.PI*q)*(gentle?.6:1)*fade;
+    if(fxReady('fx-sparkle-set'))for(let i=0;i<10;i++)drawFx(ctx,'fx-sparkle-set',x+hash(i+21)*w,y+hash(i+27)*h*.7,10+hash(i+31)*12,{cell:i,rot:reduced?0:t*.4+i,alpha:(reduced?.7:.45+.55*Math.sin(t*3+i*1.7))*fade});
+    const fall=Math.atan2(h*.9,-w*.55)-Math.PI;    const n=reduced?0:gentle?4:9;for(let i=0;i<n;i++){const life=1.1+hash(i)*.7,ph=(age*(gentle?.6:1)+hash(i+9)*life)%life,q=ph/life,sx=x+w*(.1+1.1*hash(i+Math.floor((age+hash(i+9)*life)/life)*17))-q*w*.55,sy=y-10+q*h*.9,len=60+hash(i+5)*60,al=Math.sin(Math.PI*q)*(gentle?.6:1)*fade;
+      if(drawFx(ctx,'fx-meteor-small',sx,sy,len*1.15,{rot:fall,ax:.06,alpha:al}))continue;
       ctx.strokeStyle=grad(ctx,sx+len,sy-len*.55,sx,sy,`rgba(150,200,255,0)`,`rgba(235,245,255,${al})`);ctx.lineWidth=2;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(sx+len,sy-len*.55);ctx.lineTo(sx,sy);ctx.stroke();
-      ctx.fillStyle=`rgba(255,255,255,${al})`;ctx.beginPath();ctx.arc(sx,sy,2.2,0,7);ctx.fill();}}
+      ctx.fillStyle=`rgba(255,255,255,${al})`;ctx.beginPath();ctx.arc(sx,sy,2.2,0,7);ctx.fill();}
+    // A big comet crosses the upper sky every few seconds (head first, right to left).
+    const every=gentle?4.2:2.6,ph=reduced?.65:(age+.4)%every,q=ph/1.3;if(q<1){const hx=x+w*(1.15-1.5*q),hy=y+h*(.1+.22*q);drawFx(ctx,'fx-comet',hx,hy,w*.95,{rot:Math.atan2(h*.22,-w*1.5)-Math.PI,ax:.07,ay:.57,alpha:(reduced?.8:Math.sin(Math.PI*q))*(gentle?.6:1)*fade});}}
   else{const cx=x+w/2,cy=y+h*.32;ctx.fillStyle=`rgba(60,30,0,${.35*fade})`;ctx.fillRect(x,y,w,h);ctx.globalCompositeOperation='lighter';
     const g=ctx.createRadialGradient(cx,cy,0,cx,cy,w*.7);g.addColorStop(0,`rgba(255,230,150,${(gentle?.45:.7)*fade})`);g.addColorStop(.5,`rgba(255,170,60,${.25*fade})`);g.addColorStop(1,'rgba(255,170,60,0)');ctx.fillStyle=g;ctx.fillRect(x,y,w,h);
-    const turn=reduced?0:t*(gentle?.15:.35);for(let k=0;k<12;k++){const a=turn+k*Math.PI/6;ctx.fillStyle=`rgba(255,236,170,${(gentle?.08:.14)*fade})`;ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,w,a-.09,a+.09);ctx.closePath();ctx.fill();}
-    if(!reduced)for(let i=0;i<(gentle?14:28);i++){const sp=18+hash(i)*30,py=y+h-((age*sp+hash(i+2)*h)%(h+10)),px=x+hash(i+4)*w+Math.sin(t*1.5+i)*6,r=1.2+hash(i+6)*1.8;ctx.fillStyle=`rgba(255,220,120,${.7*fade})`;ctx.beginPath();ctx.arc(px,py,r,0,7);ctx.fill();}
+    const turn=reduced?0:t*(gentle?.15:.35);if(!drawFx(ctx,'fx-rays',cx,cy,w*1.6,{rot:turn,op:'screen',alpha:(gentle?.2:.35)*fade}))for(let k=0;k<12;k++){const a=turn+k*Math.PI/6;ctx.fillStyle=`rgba(255,236,170,${(gentle?.08:.14)*fade})`;ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,w,a-.09,a+.09);ctx.closePath();ctx.fill();}
+    // Golden wings and a turning magic circle behind the big middle figure.
+    const my=y+h*.6;drawFx(ctx,'fx-wings',x+w/2,my-h*.04,w*.95,{op:'screen',alpha:(gentle?.25:.45)*fade*(reduced?1:.85+.15*Math.sin(t*2))});drawFx(ctx,'fx-magic-circle',x+w/2,my,h*.95,{rot:reduced?0:-t*(gentle?.12:.3),alpha:(gentle?.35:.6)*fade});
+    const sparkle=fxReady('fx-sparkle-set');    if(!reduced)for(let i=0;i<(gentle?14:28);i++){const sp=18+hash(i)*30,py=y+h-((age*sp+hash(i+2)*h)%(h+10)),px=x+hash(i+4)*w+Math.sin(t*1.5+i)*6,r=1.2+hash(i+6)*1.8;if(sparkle){drawFx(ctx,'fx-sparkle-set',px,py,r*6,{cell:i,rot:t+i,alpha:.8*fade});continue;}ctx.fillStyle=`rgba(255,220,120,${.7*fade})`;ctx.beginPath();ctx.arc(px,py,r,0,7);ctx.fill();}
     ctx.globalCompositeOperation='source-over';ctx.lineWidth=4;ctx.strokeStyle=rainbow(ctx,x,y,w,reduced?0:t);ctx.globalAlpha=fade;ctx.beginPath();ctx.roundRect(x+3,y+3,w-6,h-6,14);ctx.stroke();}
   ctx.restore();}
 
 // Cut-in banner at the start of a developed stage: a white flash and the reach name sliding in across the LCD.
 export function reachBanner(ctx,stage,color,{x,y,w,h,t,gentle,reduced}){if(!stage||stage.kind==='normal')return;const age=t-stage.at;if(age<0||age>BANNER)return;const c=REACH_COLORS[color]??REACH_COLORS.pink;ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();
   if(!reduced&&age<.25){ctx.fillStyle=`rgba(255,255,255,${(gentle?.25:.7)*(1-age/.25)})`;ctx.fillRect(x,y,w,h);}
+  // A light burst, and a shockwave ring in the reach colour spreading from the middle.
+  if(!reduced&&age<.7){const q=age/.7;drawFx(ctx,'fx-shockwave',x+w/2,y+h*.5,w*(.25+1.5*ease(q)),{tint:c.label,alpha:(gentle?.45:.9)*(1-q)});if(age<.4)drawFx(ctx,'fx-light-burst',x+w/2,y+h*.5,w*(.5+.5*age/.4),{rot:age*.6,alpha:(gentle?.25:.55)*(1-age/.4)});}
   const inq=reduced?1:ease(clamp(age/.22)),out=reduced?1:1-ease(clamp((age-BANNER+.2)/.2)),by=y+h*.5,bx=x+w/2+(1-inq)*w;ctx.globalAlpha=out;
   ctx.fillStyle='rgba(10,4,20,.82)';ctx.fillRect(x,by-28,w,56);ctx.fillStyle=c.rim;ctx.fillRect(x,by-28,w,3);ctx.fillRect(x,by+25,w,3);
   ctx.font='bold 30px Georgia,"Hiragino Mincho ProN",serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineJoin='round';ctx.lineWidth=6;ctx.strokeStyle='#14040f';const name=REACH_KINDS[stage.kind];ctx.strokeText(name,bx,by+1);
