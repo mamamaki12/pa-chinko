@@ -3,7 +3,7 @@ import {STRIP,BOARD,launchBall,advanceRail,inStart,ROLE_RANGE,SLOT_BONUS,REG_LIN
 import {STAGE_AT,drawNotice,noticeAlpha} from './notice-fx.js';
 import {REACH_COLORS,reachLayout,columnPlace,reachBackdrop,reachBanner,reachLabel} from './reach-fx.js';
 import {drawBattle,loadBattleSprites,battleEvents} from './battle-fx.js';
-import {loadLcdFx} from './lcd-fx.js';
+import {loadLcdFx,drawFx,drawUi,fxReady} from './lcd-fx.js';
 import {play,music,fanfare} from './sound.js';
 import {trackFor} from './music.js';
 import {readReflection,appendReflection,renderWeek,renderWeekSummary} from './journal.js';
@@ -164,6 +164,11 @@ g.lineWidth=11;g.strokeStyle='#14040f';g.strokeText(n,x,y);g.lineWidth=5;g.strok
 g.fillStyle=stops(g.createLinearGradient(0,18,0,90),[[0,'#ffffff'],[.4,'#ffd3ec'],[.55,'#ff6fb8'],[1,'#b81f72']]);g.fillText(n,x,y);
 g.save();g.globalCompositeOperation='source-atop';g.fillStyle=stops(g.createLinearGradient(0,18,0,60),[[0,'#ffffffcc'],[.6,'#ffffff33'],[.61,'#ffffff00']]);g.fillRect(0,0,DIGIT_W,58);g.restore();}));
 {const img=new Image();img.onload=()=>DIGITS.forEach((_,i)=>{DIGITS[i]=sprite(DIGIT_W,DIGIT_H,g=>g.drawImage(img,i%3*288,(i/3|0)*312,288,312,0,0,DIGIT_W,DIGIT_H));});img.src='assets/pachinko-digit-sprites.webp';}
+// Lit figures (assets/pachinko-digit-glow-sprites.webp, same layout, made by scripts/make-ui.py) for the matched digits of a reach and for
+// the digits during a jackpot, and the crowned 7 (assets/pachinko-digit-7-win.webp) laid over a 7 then. Until they load the plain figures stay.
+const DIGITS_GLOW=DIGITS.slice();let win7=null;
+{const img=new Image();img.onload=()=>DIGITS_GLOW.forEach((_,i)=>{DIGITS_GLOW[i]=sprite(DIGIT_W,DIGIT_H,g=>g.drawImage(img,i%3*288,(i/3|0)*312,288,312,0,0,DIGIT_W,DIGIT_H));});img.src='assets/pachinko-digit-glow-sprites.webp';}
+{const img=new Image();img.onload=()=>{win7=sprite(DIGIT_W,DIGIT_H,g=>g.drawImage(img,0,0,DIGIT_W,DIGIT_H));};img.src='assets/pachinko-digit-7-win.webp';}
 const COL_H=124,CELL=96,colCanvas=document.createElement('canvas');colCanvas.width=DIGIT_W*dpr;colCanvas.height=COL_H*dpr;const colCtx=colCanvas.getContext('2d');
 // Scroll position (in cells) of one LCD column at time t of the current draw. Columns accelerate from the previous number, cruise,
 // decelerate evenly and land on the drawn number. During a reach the middle one slows down over SLOW_IN s, once the right number has
@@ -176,11 +181,14 @@ const run=x=>{const a=x<Ta?x*x/(2*Ta):Ta/2+(Math.min(x,tr)-Ta);if(x<=tr)return a
 const prev=screen[i]-1,need=((s.numbers[i]-1-prev)%9+9)%9,v=(need+9*Math.max(1,Math.round((base*K-need)/9)))/K;
 let u,vel;if(t>=stop){u=K;vel=0;}else if(t>=t0){const q=t-t0;u=run(t0)+f0*(q-q*q/(2*D));vel=f0*(1-q/D);}else{u=run(t);vel=rate(t);}
 return {p:prev+v*u,v:v*vel,since:t-stop};}
-function drawColumn(cx,cy,p,v,since,scale=1){const g=colCtx,blur=reduced?0:Math.min(CELL*.85,v*CELL/60),n=blur>2?6:1,settle=reduced||since<0?0:(gentle?.05:.09)*Math.exp(-9*since)*Math.sin(20*since);
+function drawColumn(cx,cy,p,v,since,scale=1,set=DIGITS){const g=colCtx,blur=reduced?0:Math.min(CELL*.85,v*CELL/60),n=blur>2?6:1,settle=reduced||since<0?0:(gentle?.05:.09)*Math.exp(-9*since)*Math.sin(20*since);
 const pos=reduced?Math.round(p):p+settle,k=Math.floor(pos),f=pos-k;g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,DIGIT_W,COL_H);
-for(let j=0;j<n;j++){g.globalAlpha=n>1?1.7/n:1;const o=n>1?-blur/2+blur*j/(n-1):0;for(const d of [-1,0,1]){const y=COL_H/2-DIGIT_H/2+(f-d)*CELL+o;if(y>-DIGIT_H&&y<COL_H)g.drawImage(DIGITS[((k+d)%9+9)%9],0,y,DIGIT_W,DIGIT_H);}}
+for(let j=0;j<n;j++){g.globalAlpha=n>1?1.7/n:1;const o=n>1?-blur/2+blur*j/(n-1):0;for(const d of [-1,0,1]){const y=COL_H/2-DIGIT_H/2+(f-d)*CELL+o;if(y>-DIGIT_H&&y<COL_H)g.drawImage(set[((k+d)%9+9)%9],0,y,DIGIT_W,DIGIT_H);}}
 g.globalAlpha=1;g.globalCompositeOperation='destination-in';g.fillStyle=stops(g.createLinearGradient(0,0,0,COL_H),[[0,'#0000'],[.2,'#000'],[.8,'#000'],[1,'#0000']]);g.fillRect(0,0,DIGIT_W,COL_H);g.globalCompositeOperation='source-over';
-const pop=reduced||since<0||since>.25?1:1+.07*(1-since/.25);ctx.save();ctx.translate(cx,cy);ctx.scale(pop*scale,pop*scale);ctx.drawImage(colCanvas,-DIGIT_W/2,-COL_H/2,DIGIT_W,COL_H);ctx.restore();}
+const pop=reduced||since<0||since>.25?1:1+.07*(1-since/.25);ctx.save();ctx.translate(cx,cy);ctx.scale(pop*scale,pop*scale);ctx.drawImage(colCanvas,-DIGIT_W/2,-COL_H/2,DIGIT_W,COL_H);ctx.restore();
+// A sparkle as the figure lands.
+if(!reduced&&since>=0&&since<.35)drawFx(ctx,'ui-num-stop',cx,cy,DIGIT_W*1.3*scale,{rot:since*2,alpha:(gentle?.5:.9)*(1-since/.35)});}
+function drawWin7(cx,cy,scale=1){if(!win7)return;const k=scale*(reduced?1.2:1.2+.03*Math.sin(clock*4));ctx.drawImage(win7,cx-DIGIT_W*k/2,cy-DIGIT_H*k/2,DIGIT_W*k,DIGIT_H*k);}
 // LCD background (lcd-scenes.js): scenes of the sky kingdom (painted stages × camera shot × time of day, with a weather and a sky event), one deck
 // per machine. They cycle while idle, change at the start of a draw, turn dramatic for a reach and festive for a bonus, and everything
 // speeds up while a draw is spinning, the same for every draw. ?scene=<number> keeps one scene on screen to check it.
@@ -200,16 +208,22 @@ reachBackdrop(ctx,stage,fx);
 const after=battleAfter&&clock-battleAfter.at<BATTLE_FADE?battleAfter:null,battle=drawing&&battleOn()?drawBattle(ctx,spinPlan,drawTime,{...fx,clock}):after?drawBattle(ctx,after.plan,after.t+clock-after.at,{...fx,clock,alpha:1-(clock-after.at)/BATTLE_FADE}):null;
 if(!battle)drawNavi(ctx,navi,clock,{x:236,y:360,scale:.92,gentle,reduced});
 if(reach&&stage.kind!=='spsp'&&!gentle&&!reduced){ctx.save();ctx.shadowColor=REACH_COLORS[spinPlan.color].glow;ctx.shadowBlur=10+Math.sin(clock*2)*4;rr(x1+4,y1+4,x2-x1-8,y2-y1-8,14,null,'#ffc2e688');ctx.restore();}
-const lay=reachLayout(spinPlan,drawTime,drawing);[0,1,2].forEach(i=>{const {x:cx,y:cy,scale}=columnPlace(i,lay,!!spinPlan?.battle);if(!drawing){drawColumn(cx,cy,screen[i]-1,0,spinPlan?clock-(resultUntil-3)+spinPlan.duration-spinPlan.stops[i]:9);return;}const m=i===1&&spinPlan.asked?pushMotion(drawTime):columnMotion(i,drawTime);drawColumn(cx,cy,m.p,m.v,m.since,scale);});
+const lay=reachLayout(spinPlan,drawTime,drawing),lit=!!bonus||!!sh;
+// During a reach a flame-like aura glows behind the middle figure, and the two matched figures light up.
+if(drawing&&reach&&!spinPlan.battle){const {x:ax,y:ay,scale:as}=columnPlace(1,lay);drawFx(ctx,'ui-num-aura',ax,ay,DIGIT_W*1.9*as,{op:'screen',alpha:(gentle?.35:.6)*(reduced?1:.85+.15*Math.sin(clock*3))});}
+[0,1,2].forEach(i=>{const {x:cx,y:cy,scale}=columnPlace(i,lay,!!spinPlan?.battle);if(!drawing){drawColumn(cx,cy,screen[i]-1,0,spinPlan?clock-(resultUntil-3)+spinPlan.duration-spinPlan.stops[i]:9,1,lit?DIGITS_GLOW:DIGITS);if(lit&&screen[i]===7)drawWin7(cx,cy);return;}const m=i===1&&spinPlan.asked?pushMotion(drawTime):columnMotion(i,drawTime);drawColumn(cx,cy,m.p,m.v,m.since,scale,reach&&i!==1?DIGITS_GLOW:DIGITS);});
+// The moment a jackpot lines up, a beam of light runs along the figures.
+if(sh?.kind==='jackpot'&&!reduced){const q=(clock-sh.at)/1.1;if(q>=0&&q<1)drawFx(ctx,'ui-num-line',360,410,344*(.3+.9*q*(2-q)),{alpha:(gentle?.6:1)*(1-q)});}
 if(drawing)drawNotice(ctx,spinPlan.notice,drawTime-NOTICE_AT,{...fx,gentle,reduced});
 drawWinCells(ctx,sh,clock,[0,1,2].map(i=>[216+i*98,362,92,96]),{machine:'aurora',gentle,reduced});
 reachBanner(ctx,stage,spinPlan?.color,fx);
 if(bonus){if(!showOn(sh,clock)){goldText(ctx,`ROUND ${bonus.round} / ${BONUS.rounds}`,360,464,19,clock,{pal:PALETTES.aurora,glow:gentle||reduced?.3:.7});text(bonus.open?`COUNT ${bonus.count} / ${BONUS.count}`:'NEXT ROUND',360,490,11,'#f6e7f2');}rr(x2-108,y2-48,98,30,8,'#2a0d24d0','#ffb6dc');text('右打ち ▶',x2-59,y2-27,17,'#ffffff','bold sans-serif');}
 else if(launching&&+$('#power').value>=70){rr(x2-108,y2-48,98,30,8,'#2a0d24d0','#ffb6dc');text('◀ 左打ち',x2-59,y2-27,17,'#ffffff','bold sans-serif');}
-const asking=pushReady(),label=reach&&reachLabel(stage,spinPlan.color);if(asking)pushPrompt();else if(!bonus) text(reach?label.text:drawing?'':clock<resultUntil?resultText:'A U R O R A',360,482,reach?16:12,reach?label.color:'#f6e7f2',reach?'bold Arial':'Arial');
+const asking=pushReady(),label=reach&&reachLabel(stage,spinPlan.color);if(asking)pushPrompt();else if(!bonus){if(reach)drawUi(ctx,'ui-plate-label',360,481,176);text(reach?label.text:drawing?'':clock<resultUntil?resultText:'A U R O R A',360,482,reach?16:12,reach?label.color:'#f6e7f2',reach?'bold Arial':'Arial');}
 if(st&&!showOn(sh,clock)){ctx.save();ctx.shadowColor=PALETTES.rush.glow;ctx.shadowBlur=gentle||reduced?4:10;rr(x2-106,y1+8,98,42,9,'#140a3cd8','#7dffc8');ctx.restore();goldText(ctx,'確変中',x2-57,y1+23,16,clock,{pal:PALETTES.rush,font:JP,glow:gentle||reduced?.4:.8});text(`ST 残り ${st.left}回`,x2-57,y1+43,11,'#e8fff6','bold sans-serif');}
 drawShow(ctx,sh,clock,box,{machine:/^kakuhen/.test(sh?.kind??'')?'rush':'aurora',at:[360,404],delay:.5,gentle,reduced,lines:sh?.kind==='jackpot'?[{text:'大当たり',size:66,font:JP},{text:'JACKPOT',size:22,dy:48}]:sh?.kind==='kakuhen'?[{text:sh.promote?'確変昇格':'確変突入',size:58,dy:-8,font:JP},{text:`ST ${KAKUHEN.spins}回  1/${KAKUHEN.odds}`,size:20,dy:40}]:sh?.kind==='kakuhenEnd'?[{text:'確変終了',size:30,dy:-34,font:JP},{text:`合計 ${sh?.count??0}玉`,size:40,dy:16,font:JP}]:[{text:'大当たり終了',size:30,dy:-34,font:JP},{text:`${sh?.count??0}玉`,size:50,dy:16,font:JP}]});
 const flash=clock-(pressedAt.push??-9);if(flash<.35&&!reduced){ctx.fillStyle=`rgba(255,240,250,${(gentle?.25:.6)*(1-flash/.35)})`;ctx.fillRect(x1,y1,x2-x1,y2-y1);}
+if(flash<.5&&!reduced)drawFx(ctx,'ui-push-hit',...PUSH_AT,120+300*flash,{alpha:(gentle?.5:1)*(1-flash/.5)});
 const P=parts.aurora;P.find('hold').forEach((h,i)=>{h.lit=i<holds.length;if(!h.visible)return;if(h.lit)holdBall(...h.shape.circle,holds[i].shown);else circle(...h.shape.circle,'#2a1630','#d78fbf');});
 if(drawing&&!asking){const e=spinPlan.entry,k=drawTime-HOLD_SHIFT;holdBall(360,495,7.5,k<0?e.shown:e.color,k>=0&&e.shown!==e.color?k:null);}
 if(!wordsOn(spinPlan?.notice,drawTime-NOTICE_AT))drawBubble(ctx,navi,clock,{box:[284,272,236],size:14,reduced});
@@ -271,7 +285,16 @@ function pressPush(){if(!pushReady())return;const s=spinPlan,t=drawTime;s.hold=s
 const LAND_MIN=.5,LAND_MAX=1.6;
 function pushMotion(t){const s=spinPlan,t0=s.pressed+s.hold;if(s.pressed==null||t<t0)return {p:s.p0+s.v0*(t-s.push),v:s.v0,since:-1};const T=s.D,q=Math.min(t-t0,T),a=(3*s.dist-2*s.v0*T)/(T*T),b=(s.v0*T-2*s.dist)/(T*T*T);return {p:s.from+s.v0*q+a*q*q+b*q*q*q,v:Math.max(0,s.v0+2*a*q+3*b*q*q),since:t-t0-T};}
 // LCD prompt: a button icon, "PUSH!" and a gauge of the time left before it stops by itself.
-function pushPrompt(){const left=Math.max(0,1-(drawTime-spinPlan.push)/PUSH_WAIT),beat=reduced?1:1+.06*Math.sin(clock*(gentle?5:9)),c=REACH_COLORS[spinPlan.color]??REACH_COLORS.pink,[b0,b1,b2]=c.button;ctx.save();ctx.shadowColor=c.glow;ctx.shadowBlur=gentle||reduced?4:14;rr(268,446,184,48,24,'#2a0d24e6',c.rim);ctx.restore();
+// PUSH: the painted jewel button in the reach colour inside a gold ring whose light runs down with the time left, the PUSH! lettering and a
+// gloved hand pressing the button. Until those pictures load, a drawn pill with a ball and a bar stands in.
+const PUSH_BUTTONS={pink:'ui-push-button-pink',blue:'ui-push-button',green:'ui-push-button-green',red:'ui-push-button-red'},PUSH_AT=[302,470];
+function pushPrompt(){const left=Math.max(0,1-(drawTime-spinPlan.push)/PUSH_WAIT),beat=reduced?1:1+.06*Math.sin(clock*(gentle?5:9)),c=REACH_COLORS[spinPlan.color]??REACH_COLORS.pink,[b0,b1,b2]=c.button;
+const btn=PUSH_BUTTONS[spinPlan.color]??PUSH_BUTTONS.pink,[bx,by]=PUSH_AT;if(fxReady(btn)&&fxReady('ui-push-ring')&&fxReady('ui-push-word')){
+  ctx.save();ctx.shadowColor=c.glow;ctx.shadowBlur=gentle||reduced?6:18;drawUi(ctx,'ui-push-ring',bx,by,78);ctx.restore();
+  if(left>0){ctx.save();ctx.strokeStyle=c.rim;ctx.lineWidth=4;ctx.lineCap='round';ctx.shadowColor=c.glow;ctx.shadowBlur=8;ctx.beginPath();ctx.arc(bx,by,33.5,-Math.PI/2,-Math.PI/2+Math.PI*2*left);ctx.stroke();ctx.restore();}
+  drawUi(ctx,btn,bx,by,58*beat);drawUi(ctx,'ui-push-word',394,470,146*beat);
+  const down=!reduced&&Math.floor(clock*(gentle?2.5:4))%2===1;drawUi(ctx,down?'ui-push-hand-b':'ui-push-hand',bx+8,by-(down?14:22),30,{ay:1});return;}
+ctx.save();ctx.shadowColor=c.glow;ctx.shadowBlur=gentle||reduced?4:14;rr(268,446,184,48,24,'#2a0d24e6',c.rim);ctx.restore();
 ctx.save();ctx.translate(296,470);ctx.scale(beat,beat);circle(0,0,16,grad(-6,-8,8,10,[[0,b0],[.45,b1],[1,b2]]),'#fff3c7');circle(-4,-5,4,'#ffffffcc');ctx.restore();
 text('PUSH!',382,468,22,'#ffffff','bold Georgia');rr(322,478,120,6,3,'#ffffff26');if(left>0)rr(322,478,120*left,6,3,c.rim);}
 // The painted chance button lights up while it can be pressed and flashes when pressed.

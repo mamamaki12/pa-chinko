@@ -1,5 +1,5 @@
 import {REACH_KINDS} from './engine.js';
-import {drawFx,fxReady} from './lcd-fx.js';
+import {drawFx,drawUi,fxReady} from './lcd-fx.js';
 // Reach presentation on the AURORA LCD (see planSpin in engine.js for how the kind and colour are picked).
 // (バトルリーチ is drawn by battle-fx.js.) 流星リーチ: the sky turns to night and shooting stars pour across it. 天空城リーチ: golden light from the floating castle,
 // turning rays and rising sparks, with a rainbow rim. Each development opens with a short cut-in banner naming the reach.
@@ -7,6 +7,7 @@ import {drawFx,fxReady} from './lcd-fx.js';
 // The light is painted (lcd-fx.js): stardust swirl, shooting stars, a big comet and sparkles for 流星; god rays, a turning magic circle and
 // golden wings behind the middle figure for 天空城; a light burst and a shockwave ring in the reach colour as a stage opens.
 // Until those pictures load, the same effects are drawn with lines and dots.
+// The cut-in is a painted band with the reach's title logo (流星・天空城・バトル) sliding in; a plain reach opens with a small 「リーチ」 logo.
 
 // Title / button colours. pink is the plain colour used when reach variety is off.
 export const REACH_COLORS={
@@ -46,11 +47,17 @@ export function reachBackdrop(ctx,stage,{x,y,w,h,t,gentle,reduced}){if(!stage||s
   ctx.restore();}
 
 // Cut-in banner at the start of a developed stage: a white flash and the reach name sliding in across the LCD.
-export function reachBanner(ctx,stage,color,{x,y,w,h,t,gentle,reduced}){if(!stage||stage.kind==='normal')return;const age=t-stage.at;if(age<0||age>BANNER)return;const c=REACH_COLORS[color]??REACH_COLORS.pink;ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();
+const LOGOS={sp:'meteor',spsp:'castle',battle:'battle'};
+export function reachBanner(ctx,stage,color,{x,y,w,h,t,gentle,reduced}){if(!stage)return;const age=t-stage.at,c=REACH_COLORS[color]??REACH_COLORS.pink;
+  if(stage.kind==='normal'){if(age<0||age>1.2)return;const q=reduced?1:ease(clamp(age/.2)),out=reduced?1:1-ease(clamp((age-1)/.2));ctx.save();ctx.globalAlpha=out;ctx.shadowColor=c.glow;ctx.shadowBlur=gentle||reduced?6:16;
+    drawUi(ctx,'ui-logo-reach',x+w/2,y+h*.3,w*.5*(reduced?1:.7+.3*q+.12*Math.sin(Math.PI*q)));ctx.restore();return;}
+  if(age<0||age>BANNER)return;ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();
   if(!reduced&&age<.25){ctx.fillStyle=`rgba(255,255,255,${(gentle?.25:.7)*(1-age/.25)})`;ctx.fillRect(x,y,w,h);}
   // A light burst, and a shockwave ring in the reach colour spreading from the middle.
   if(!reduced&&age<.7){const q=age/.7;drawFx(ctx,'fx-shockwave',x+w/2,y+h*.5,w*(.25+1.5*ease(q)),{tint:c.label,alpha:(gentle?.45:.9)*(1-q)});if(age<.4)drawFx(ctx,'fx-light-burst',x+w/2,y+h*.5,w*(.5+.5*age/.4),{rot:age*.6,alpha:(gentle?.25:.55)*(1-age/.4)});}
   const inq=reduced?1:ease(clamp(age/.22)),out=reduced?1:1-ease(clamp((age-BANNER+.2)/.2)),by=y+h*.5,bx=x+w/2+(1-inq)*w;ctx.globalAlpha=out;
+  const logo=LOGOS[stage.kind];if(logo&&fxReady(`ui-band-${logo}`)&&fxReady(`ui-logo-${logo}`)){const lq=reduced?1:ease(clamp((age-.1)/.18)),pop=reduced?1:.6+.4*lq+.15*Math.sin(Math.PI*lq);
+    drawUi(ctx,`ui-band-${logo}`,bx,by,w*1.08);ctx.shadowColor=c.glow;ctx.shadowBlur=gentle||reduced?6:18;drawUi(ctx,`ui-logo-${logo}`,x+w/2,by,w*.86*pop,{alpha:lq});ctx.restore();return;}
   ctx.fillStyle='rgba(10,4,20,.82)';ctx.fillRect(x,by-28,w,56);ctx.fillStyle=c.rim;ctx.fillRect(x,by-28,w,3);ctx.fillRect(x,by+25,w,3);
   ctx.font='bold 30px Georgia,"Hiragino Mincho ProN",serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineJoin='round';ctx.lineWidth=6;ctx.strokeStyle='#14040f';const name=REACH_KINDS[stage.kind];ctx.strokeText(name,bx,by+1);
   ctx.shadowColor=c.glow;ctx.shadowBlur=gentle||reduced?4:14;ctx.fillStyle=stage.kind==='spsp'?grad(ctx,0,by-16,0,by+16,'#fff6d6','#ffb83a'):c.label;ctx.fillText(name,bx,by+1);ctx.restore();}
