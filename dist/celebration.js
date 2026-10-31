@@ -26,6 +26,8 @@ export const PALETTES={
   astral:{sparks:['#ffe27a','#7fd8ff','#ffffff','#b9a4ff','#ff9ad5'],glow:'#5fb6ff',ink:'#0d1d45',night:['8,14,58','40,16,80'],ray:'255,222,130',gold:['#fffbe6','#ffe27a','#c88a1c','#ffd75e','#fff3c4']},
   aurora:{sparks:['#ffd36a','#ff7cc4','#ffffff','#ffb6dc','#9fe8ff'],glow:'#ff5fae',ink:'#3a0b2c',night:['44,8,48','70,14,40'],ray:'255,200,225',gold:['#fffbe6','#ffe08a','#d0841f','#ffcf6a','#fff0c8']},
   // 確変 (ST) on AURORA: the aurora night, green, violet and pink with gold.
+  // The 確変突入・確変昇格 title: letters of aurora light (white, mint, violet, pink) instead of gold.
+  prism:{sparks:['#7dffc8','#b48cff','#ffffff','#ff9ad5','#ffe27a'],glow:'#7a5cff',ink:'#120838',night:['8,12,46','34,10,62'],ray:'190,255,230',gold:['#ffffff','#b9ffe6','#8f6bff','#ff8fd0','#fff6c8']},
   rush:{sparks:['#7dffc8','#b48cff','#ffffff','#ff9ad5','#ffe27a'],glow:'#8a5cff',ink:'#140a3c',night:['8,12,46','34,10,62'],ray:'190,255,230',gold:['#fffbe6','#ffe08a','#d0841f','#ffcf6a','#fff0c8']},
 };
 
@@ -91,7 +93,7 @@ export function drawAurora(ctx,box,t,{gentle=true,reduced=false}={}){const pal=P
 
 // The show on the LCD. box: [x,y,w,h] of the LCD; at: [cx,cy] where the title sits; lines: [{text,size,dy,font}];
 // symbols(ctx,age): draws extra pieces that pop in with the title (the three 7s on ASTRAL); delay: seconds before the title comes in.
-export function drawShow(ctx,s,t,box,{machine,at,lines,symbols,delay=.08,gentle=true,reduced=false}){if(!showOn(s,t))return;
+export function drawShow(ctx,s,t,box,{machine,at,lines,symbols,under,delay=.08,gentle=true,reduced=false}){if(!showOn(s,t))return;
   const pal=PALETTES[machine],[x,y,w,h]=box,age=t-s.at,a=showAlpha(s,t),entry=!s.kind.endsWith('End'),k=gentle?.6:1,[cx,cy]=at;
   ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();
   if(!reduced){
@@ -102,9 +104,11 @@ export function drawShow(ctx,s,t,box,{machine,at,lines,symbols,delay=.08,gentle=
     fireworks(ctx,box,age,{every:entry?(gentle?.7:.42):.8,from:entry?.25:.1,until:SHOWS[s.kind].len-1.4,sparks:gentle?16:24,size:entry?1.35:1,colors:pal.sparks,alpha:k*a});
     confetti(ctx,box,age,{count:entry?(gentle?22:40):(gentle?14:24),colors:pal.sparks,alpha:a,speed:gentle?.8:1.15});
   }
+  // under: extra light drawn between the background and the title (bonus-fx.js drawTitleFx).
+  under?.(ctx,age);
   // Title and the extra pieces, zooming in together.
   const sc=titleScale(age-(entry?delay:0),reduced);if(sc>0){ctx.save();ctx.globalAlpha=a;ctx.translate(cx,cy);ctx.scale(sc,sc);ctx.translate(-cx,-cy);
-    symbols?.(ctx,age);for(const l of lines)goldText(ctx,l.text,cx,cy+(l.dy??0),l.size,t,{pal,font:l.font,glow:gentle?.6:1});ctx.restore();}
+    symbols?.(ctx,age);for(const l of lines)goldText(ctx,l.text,cx,cy+(l.dy??0),l.size,t,{pal:PALETTES[l.pal]??pal,font:l.font,glow:(gentle?.6:1)*(l.glow??1)});ctx.restore();}
   const f=flashAlpha(s,t,{gentle,reduced});if(f>0){ctx.fillStyle=`rgba(255,252,240,${f})`;ctx.fillRect(x,y,w,h);}
   ctx.restore();}
 
