@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {BOARD,START,PLASTIC,NAILS,STAGE_SPILL,advanceBall,inStart,collideDisplay,collidePlastic} from '../engine.js';
+import {BOARD,START,PLASTIC,NAILS,STAGE_SPILL,NAIL_FRICTION,advanceBall,inStart,collideDisplay,collidePlastic} from '../engine.js';
 test('液晶の斜めの下端は透明ステージを塞がない',()=>{
   for(const x of [190,205,235,485,515,530]){const b={x,y:500,vx:30,vy:50};collideDisplay(b);assert.deepEqual(b,{x,y:500,vx:30,vy:50});}
   const b={x:210,y:470,vx:0,vy:100};collideDisplay(b);assert.ok(b.y>470);assert.ok(b.x<210);
@@ -50,4 +50,14 @@ test('縁の粒も、上から落ちてきた玉には当たる',()=>{
 });
 test('釘の間に乗った玉は、止まって見えるほど待たずにこぼれ落ちる',()=>{
   const b={x:172,y:318,vx:0,vy:0};let t=0;for(;t<2&&b.y<322;t+=1/120)advanceBall(b,1/120,NAILS,()=>1);assert.ok(t<.25,`${t.toFixed(2)}秒`);
+});
+test('液晶の左を落ちてきた玉は、道釘に当たると勢いが落ち、列の上を滑り抜けない',()=>{
+  const row=NAILS.filter(n=>n.x>=137&&n.x<=322&&Math.abs(n.y-(n.x<226?508+(n.x-137)*45/89:553+(n.x-226)*35/72))<1.5);
+  for(const x of [150,170,180,190]){const b={x,y:420,vx:0,vy:0};let hit=null,fast=0;
+    for(let t=0;t<4&&b.y<640;t+=1/60){advanceBall(b,1/60,NAILS,()=>1);if(hit===null&&row.some(n=>Math.hypot(b.x-n.x,b.y-n.y)<8))hit=t;if(hit!==null&&t-hit<1)fast=Math.max(fast,Math.hypot(b.vx,b.vy));}
+    assert.ok(hit!==null,`${x}: 道釘に届かない`);assert.ok(fast<340,`${x}: 当たったあとも ${fast.toFixed(0)} の速さ`);}
+});
+test('釘の摩擦は強く当たったときだけ。ゆっくり触れている玉は止めない',()=>{
+  assert.ok(NAIL_FRICTION.grip>0&&NAIL_FRICTION.hard>0);
+  const pin={x:100,y:100,r:1.5},soft={x:97,y:94.5,vx:40,vy:20};advanceBall(soft,1/240,[pin]);assert.ok(soft.vx>30,String(soft.vx));
 });
