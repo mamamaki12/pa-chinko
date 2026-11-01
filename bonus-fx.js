@@ -1,9 +1,10 @@
-import {drawFx,drawUi} from './lcd-fx.js';
+import {drawFx,drawUi,fxReady} from './lcd-fx.js';
 import {goldText,titleScale,PALETTES} from './celebration.js';
 // The LCD while the jackpot rounds are being played (右打ち), and the 確変 (ST) plate. Like a real machine the round screen keeps moving:
 // slow light rays and rising sparkles behind the numbers, a big ROUND title that bursts in at each round (FINAL ROUND for the last),
 // ten jewels that light up one by one as balls go into the attacker, a 右打ち plate with flowing arrows and a light sweep, and the
-// balls won so far. The 確変 plate gets an aurora frame, twinkling stars and a counter that pops when it goes down.
+// balls won so far. Between rounds a velvet curtain closes over the LCD and opens on the next round. The painted parts (bn-*, made by
+// scripts/make-bonus.py) are used once loaded; until then the same layout is drawn in code. The 確変 plate gets an aurora frame, twinkling stars and a counter that pops when it goes down.
 // Everything is a function of the time, the bonus ({round, count, open, paid, at: round start, hitAt: last ball in}) and st
 // ({left, at: last change}). Gentle mode dims and slows; prefers-reduced-motion keeps everything still. Nothing here depends on
 // a draw: the jackpot is already decided.
@@ -16,7 +17,7 @@ export function drawRoundBack(ctx,[x,y,w,h],b,t,{gentle=true,reduced=false}){con
   drawFx(ctx,'fx-rays',x+w/2,y+h*.6,w*1.5,{rot:reduced?0:t*(gentle?.12:.22),op:'screen',alpha:(b.open?.3:.18)*k,tint:'#ffd6ec'});
   if(!reduced){for(let i=0;i<12;i++){const sp=.12+.1*hash(i),q=(t*sp+hash(i+9))%1,px=x+w*(.05+.9*hash(i+3))+Math.sin(t*1.3+i)*8,py=y+h*(1.05-q*1.1);
       drawFx(ctx,'fx-sparkle-set',px,py,10+14*hash(i+5),{cell:i,alpha:k*Math.sin(q*Math.PI)});}
-    const age=t-b.at;if(age>=0&&age<1){drawFx(ctx,'fx-light-burst',x+w/2,y+h*.62,w*(.4+.9*age),{rot:age*.5,op:'screen',alpha:(gentle?.45:.8)*(1-age)});
+    const age=t-b.at;if(age>=0&&age<1){drawFx(ctx,fxReady('bn-fx-round-open')?'bn-fx-round-open':'fx-light-burst',x+w/2,y+h*.62,w*(.4+.9*age),{rot:age*.5,op:'screen',alpha:(gentle?.45:.8)*(1-age)});
       drawFx(ctx,'fx-shockwave',x+w/2,y+h*.62,w*(.2+1.4*age),{tint:'#ff9fd2',alpha:(gentle?.5:.9)*(1-age)});}}
   ctx.restore();}
 
@@ -27,7 +28,10 @@ function jewel(ctx,cx,cy,r,lit,pop){ctx.save();ctx.translate(cx,cy);ctx.scale(po
   ctx.strokeStyle='#f2d891';ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(0,0,r+.6,0,Math.PI*2);ctx.stroke();ctx.restore();}
 
 // The 右打ち plate at its usual place (box: x, y, w, h), with arrows flowing to the right and a light sweep.
-export function drawRightPlate(ctx,[px,py,pw,ph],t,{gentle=true,reduced=false,text='右打ち',left=false}){const beat=reduced?0:.5+.5*Math.sin(t*(gentle?3:5));
+export function drawRightPlate(ctx,[px,py,pw,ph],t,{gentle=true,reduced=false,text='右打ち',left=false}){const beat=reduced?0:.5+.5*Math.sin(t*(gentle?3:5)),art=left?'bn-logo-left':'bn-logo-right';
+  if(fxReady(art)){const cx=px+pw/2,cy=py+ph/2;ctx.save();ctx.shadowColor=left?'#7fd8ff':'#ff5fae';ctx.shadowBlur=(gentle?4:8)+beat*(gentle?4:8);drawUi(ctx,art,cx,cy,(pw+12)*(1+.03*beat));ctx.restore();
+    if(!reduced){const q=(t/2.2)%1;if(q<.45){const k=q/.45,fx=left?px+pw+30-k*(pw+60):px-30+k*(pw+60);drawFx(ctx,'bn-fx-right-flash',fx,cy,70,{rot:left?Math.PI:0,op:'screen',alpha:(gentle?.55:.9)*Math.sin(k*Math.PI)});}}
+    return;}
   ctx.save();ctx.shadowColor='#ff5fae';ctx.shadowBlur=(gentle?5:9)+beat*(gentle?4:8);const g=ctx.createLinearGradient(px,py,px,py+ph);g.addColorStop(0,'#5a1450');g.addColorStop(.55,'#2a0a2c');g.addColorStop(1,'#14040f');
   ctx.fillStyle=g;ctx.beginPath();ctx.roundRect(px,py,pw,ph,ph/2);ctx.fill();ctx.shadowBlur=0;
   const rim=ctx.createLinearGradient(px,0,px+pw,0);rim.addColorStop(0,'#fff3c4');rim.addColorStop(.5,'#d0841f');rim.addColorStop(1,'#ffe08a');ctx.strokeStyle=rim;ctx.lineWidth=1.8;ctx.stroke();
@@ -38,21 +42,49 @@ export function drawRightPlate(ctx,[px,py,pw,ph],t,{gentle=true,reduced=false,te
   ctx.restore();}
 
 // The round title sits a little left of the middle, clear of the 右打ち plate; the jewels start right of the hold lamps.
-const CX=340,JX=350,JS=11;
+const CX=340,JX=350,JS=11,AJX=352,AJS=13;
+// The painted title settles at the top middle, between the character and the balls won.
+const TX=366,TY=283;
+const ease=v=>v*v*(3-2*v);
+// The painted round title: the round's crest with its number and the ROUND lettering, or FINAL ROUND, at (x, y) and scale s.
+function roundTitle(ctx,x,y,s,round,last,alpha=1){ctx.save();ctx.globalAlpha*=alpha;ctx.translate(x,y);ctx.scale(s,s);
+  if(last){drawUi(ctx,'bn-medal-round-4',-112,0,92);drawUi(ctx,'bn-num-round-4',-112,-2,58*NUM_W['bn-num-round-4']);drawUi(ctx,'bn-logo-final',40,0,230);}
+  else{drawUi(ctx,`bn-medal-round-${round}`,-80,0,104);drawUi(ctx,`bn-num-round-${round}`,-80,-2,62*NUM_W[`bn-num-round-${round}`]);drawUi(ctx,'bn-logo-round',52,0,176);}
+  ctx.restore();}
+// Width over height of the round numbers 1-4, so each can be drawn at the same height.
+const NUM_W={'bn-num-round-1':146/256,'bn-num-round-2':189/256,'bn-num-round-3':196/256,'bn-num-round-4':213/256};
+function curtains(ctx,[x1,y1,x2,y2],q,next,t,gentle){const W=x2-x1,H=y2-y1,cw=W/2+8;ctx.save();ctx.beginPath();ctx.rect(x1,y1,W,H);ctx.clip();
+  drawFx(ctx,'bn-curtain-left',x1-cw+q*cw,y1+H/2,cw,{ax:0,height:H+16,op:'source-over'});drawFx(ctx,'bn-curtain-right',x2+cw-q*cw,y1+H/2,cw,{ax:1,height:H+16,op:'source-over'});
+  drawUi(ctx,'bn-curtain-top',(x1+x2)/2,y1-6-(1-q)*70,W+30,{ay:0});
+  if(q>.6){const a=(q-.6)/.4;roundTitle(ctx,(x1+x2)/2+8,y1+H*.42,.62,next.round,next.last,a);ctx.save();ctx.globalAlpha*=a;goldText(ctx,'NEXT',(x1+x2)/2,y1+H*.7,22,t,{pal:PALETTES.aurora,glow:gentle?.5:.9});ctx.restore();}
+  ctx.restore();}
 // Over the numbers: the round title, the jewels (or NEXT ROUND between rounds), the 右打ち plate and the balls won.
-export function drawRoundHud(ctx,[x1,y1,x2,y2],b,t,{rounds,count,gentle=true,reduced=false}){const age=t-b.at,last=b.round>=rounds,pal=last?PALETTES.rush:PALETTES.aurora;
+export function drawRoundHud(ctx,[x1,y1,x2,y2],b,t,{rounds,count,gap=2,gentle=true,reduced=false}){const age=t-b.at,last=b.round>=rounds,pal=last?PALETTES.rush:PALETTES.aurora;
   if(!reduced&&age>=0&&age<1.1)drawFx(ctx,'ui-num-line',CX,463,340,{alpha:(gentle?.5:.85)*Math.sin(clamp(age/1.1)*Math.PI)});
-  drawUi(ctx,'ui-plate-label',CX,466,last?200:180,{alpha:.95});
-  const sc=b.open?titleScale(age,reduced):1;ctx.save();ctx.translate(CX,464);ctx.scale(sc,sc);
-  if(last)goldText(ctx,'FINAL ROUND',0,0,19,t,{pal,glow:gentle?.5:.9});
-  else{const w=goldText(ctx,'ROUND',-14,0,17,t,{pal,glow:gentle?.4:.8});goldText(ctx,String(b.round),-14+w/2+12,-1,25,t,{pal,glow:gentle?.6:1});goldText(ctx,`/ ${rounds}`,-14+w/2+30,2,13,t,{pal,glow:.3});}
-  ctx.restore();
-  if(b.open){const hit=t-(b.hitAt??-9);for(let i=0;i<count;i++){const cx=JX+(i-(count-1)/2)*JS,lit=i<b.count,pop=lit&&i===b.count-1&&!reduced?1+.7*Math.exp(-9*hit):1;jewel(ctx,cx,491,4,lit,pop);}
-    if(!reduced&&hit<.35&&b.count>0)drawFx(ctx,'ui-num-stop',JX+(b.count-1-(count-1)/2)*JS,491,46*(1-hit*1.5),{alpha:(gentle?.6:1)*(1-hit/.35)});}
-  else{ctx.save();ctx.globalAlpha=reduced?1:.65+.35*Math.sin(t*Math.PI*1.6);goldText(ctx,'NEXT ROUND',CX,491,12,t,{pal:PALETTES.aurora,glow:.5});ctx.restore();}
+  if(fxReady('bn-logo-round')&&fxReady(`bn-medal-round-${b.round}`)){
+    // Painted: the title bursts in big over the numbers, then settles small at the top.
+    const p=reduced||!b.open?1:ease(clamp((age-.8)/.4)),big=b.open&&!reduced&&age<1.2?titleScale(age,reduced):1;
+    roundTitle(ctx,360+(TX-360)*p,392+(TY-392)*p,(1-p)*.95*big+p*(last?.41:.46),b.round,last);
+    if(b.open){const hit=t-(b.hitAt??-9);for(let i=0;i<count;i++){const cx=AJX+(i-(count-1)/2)*AJS,lit=i<b.count,pop=lit&&i===b.count-1&&!reduced?1+.6*Math.exp(-9*hit):1;
+        drawUi(ctx,lit?(i===count-1?'bn-count-last':'bn-count-full'):'bn-count-empty',cx,495,(i===count-1&&lit?18:14)*pop);}
+      if(!reduced&&hit<.4&&b.count>0)drawFx(ctx,'bn-fx-catch',AJX+(b.count-1-(count-1)/2)*AJS,495,70*(.5+hit),{op:'screen',alpha:(gentle?.7:1)*(1-hit/.4)});}
+    else if(reduced||!fxReady('bn-curtain-left')){ctx.save();ctx.globalAlpha=reduced?1:.65+.35*Math.sin(t*Math.PI*1.6);goldText(ctx,'NEXT ROUND',AJX,494,12,t,{pal:PALETTES.aurora,glow:.5});ctx.restore();}
+  }else{
+    drawUi(ctx,'ui-plate-label',CX,466,last?200:180,{alpha:.95});
+    const sc=b.open?titleScale(age,reduced):1;ctx.save();ctx.translate(CX,464);ctx.scale(sc,sc);
+    if(last)goldText(ctx,'FINAL ROUND',0,0,19,t,{pal,glow:gentle?.5:.9});
+    else{const w=goldText(ctx,'ROUND',-14,0,17,t,{pal,glow:gentle?.4:.8});goldText(ctx,String(b.round),-14+w/2+12,-1,25,t,{pal,glow:gentle?.6:1});goldText(ctx,`/ ${rounds}`,-14+w/2+30,2,13,t,{pal,glow:.3});}
+    ctx.restore();
+    if(b.open){const hit=t-(b.hitAt??-9);for(let i=0;i<count;i++){const cx=JX+(i-(count-1)/2)*JS,lit=i<b.count,pop=lit&&i===b.count-1&&!reduced?1+.7*Math.exp(-9*hit):1;jewel(ctx,cx,491,4,lit,pop);}
+      if(!reduced&&hit<.35&&b.count>0)drawFx(ctx,'ui-num-stop',JX+(b.count-1-(count-1)/2)*JS,491,46*(1-hit*1.5),{alpha:(gentle?.6:1)*(1-hit/.35)});}
+    else{ctx.save();ctx.globalAlpha=reduced?1:.65+.35*Math.sin(t*Math.PI*1.6);goldText(ctx,'NEXT ROUND',CX,491,12,t,{pal:PALETTES.aurora,glow:.5});ctx.restore();}
+  }
   drawRightPlate(ctx,[x2-112,y2-50,104,32],t,{gentle,reduced});
   ctx.save();ctx.fillStyle='#1a0717c8';ctx.strokeStyle='#f2d89199';ctx.lineWidth=1;ctx.beginPath();ctx.roundRect(x2-104,y1+8,96,24,12);ctx.fill();ctx.stroke();ctx.restore();
-  goldText(ctx,`獲得 ${b.paid}玉`,x2-56,y1+21,13,t,{pal:PALETTES.aurora,font:JP,glow:.4});}
+  goldText(ctx,`獲得 ${b.paid}玉`,x2-56,y1+21,13,t,{pal:PALETTES.aurora,font:JP,glow:.4});
+  // Between rounds the curtain closes over everything for most of the gap and opens again as the next round starts.
+  if(!b.open&&!reduced&&fxReady('bn-curtain-left')){const g=gap-(b.until-t),q=g<gap/2?ease(clamp(g/.5)):1-ease(clamp((g-(gap-.45))/.45));
+    if(q>0)curtains(ctx,[x1,y1,x2,y2],q,{round:b.round+1,last:b.round+1>=rounds},t,gentle);}}
 
 // The 確変 (ST) plate in the top right: an aurora frame, stars twinkling inside, 確変中 in gold and the draws left, which pop when they go down.
 export function drawStPlate(ctx,[px,py,pw,ph],st,t,{gentle=true,reduced=false}){const pal=PALETTES.rush,age=t-(st.at??-9);

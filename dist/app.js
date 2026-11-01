@@ -218,7 +218,7 @@ if(sh?.kind==='jackpot'&&!reduced){const q=(clock-sh.at)/1.1;if(q>=0&&q<1)drawFx
 if(drawing)drawNotice(ctx,spinPlan.notice,drawTime-NOTICE_AT,{...fx,gentle,reduced});
 drawWinCells(ctx,sh,clock,[0,1,2].map(i=>[216+i*98,362,92,96]),{machine:'aurora',gentle,reduced});
 reachBanner(ctx,stage,spinPlan?.color,fx);
-if(bonus){if(!showOn(sh,clock))drawRoundHud(ctx,[x1,y1,x2,y2],bonus,clock,{rounds:BONUS.rounds,count:BONUS.count,gentle,reduced});else drawRightPlate(ctx,[x2-112,y2-50,104,32],clock,{gentle,reduced});}
+if(bonus){if(!showOn(sh,clock))drawRoundHud(ctx,[x1,y1,x2,y2],bonus,clock,{rounds:BONUS.rounds,count:BONUS.count,gap:BONUS.gap,gentle,reduced});else drawRightPlate(ctx,[x2-112,y2-50,104,32],clock,{gentle,reduced});}
 else if(launching&&+$('#power').value>=70)drawRightPlate(ctx,[x2-112,y2-50,104,32],clock,{gentle,reduced,text:'左打ち',left:true});
 const asking=pushReady(),label=reach&&reachLabel(stage,spinPlan.color);if(asking)pushPrompt();else if(!bonus){if(reach)drawUi(ctx,'ui-plate-label',360,481,176);text(reach?label.text:drawing?'':clock<resultUntil?resultText:'A U R O R A',360,482,reach?16:12,reach?label.color:'#f6e7f2',reach?'bold Arial':'Arial');}
 if(st&&!showOn(sh,clock))drawStPlate(ctx,[x2-108,y1+6,100,46],st,clock,{gentle,reduced});

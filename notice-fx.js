@@ -14,6 +14,8 @@ export const NOTICE_TINTS={blue:{main:'#4aa8ff',light:'#e6f4ff',deep:'#1d4fa8'},
 export const NOTICE_WORDS={blue:'なにか来そう…',green:'チャンスかも！',red:'これは熱い…！',gold:'激アツ!!'};
 export const CUTIN_WORDS={blue:'CHANCE',green:'CHANCE!',red:'激アツ',gold:'超激アツ'};
 export const CUTIN_POSE={blue:'pray',green:'chance',red:'hot',gold:'hot'};
+// The painted lettering of the カットイン for each colour (lcd-fx.js); until it loads, CUTIN_WORDS is drawn instead.
+export const CUTIN_LOGO={blue:'bn-logo-chance-blue',green:'bn-logo-chance-green',red:'bn-logo-hot-red',gold:'bn-logo-hot-gold'};
 const clamp=v=>v<0?0:v>1?1:v,ease=v=>v*v*(3-2*v);
 const hash=n=>{const x=Math.sin(n*127.1+311.7)*43758.5453;return x-Math.floor(x);};
 // How visible the notice is at age (seconds since it started): fades in over .15 s and out over the last .3 s.
@@ -45,8 +47,10 @@ export function drawNotice(ctx,n,age,{x,y,w,h,gentle=true,reduced=false,machine=
     const who=`cutin-${machine==='astral'?'sora':'hana'}-${CUTIN_POSE[n.color]??'chance'}`,art=fxReady(who);
     if(art){const px=cx+w*.26,hop=reduced?0:Math.sin(age*7)*h*.012,g=ctx.createRadialGradient(px,cy,0,px,cy,h*.55);g.addColorStop(0,tint.main+(gentle?'55':'99'));g.addColorStop(1,tint.main+'00');
       ctx.fillStyle=g;ctx.fillRect(px-h*.55,cy-h*.55,h*1.1,h*1.1);drawUi(ctx,who,px,cy+hop,h*1.05);}
-    ctx.save();ctx.translate(art?cx-w*.16:cx,art?cy+bh*.06:cy);ctx.rotate(-.12);label(ctx,CUTIN_WORDS[n.color],0,0,Math.round(bh*.62),tint,{...opts,font:'italic 900 {s}px "Arial Black","Hiragino Sans","Noto Sans JP",sans-serif'});ctx.restore();}
+    const logo=CUTIN_LOGO[n.color]??CUTIN_LOGO.blue;ctx.save();ctx.translate(art?cx-w*.16:cx,art?cy+bh*.06:cy);ctx.rotate(-.12);
+    if(fxReady(logo)){const pop=reduced?1:1+.18*Math.exp(-8*Math.max(0,age-.2));ctx.shadowColor=tint.main;ctx.shadowBlur=gentle?6:14;drawUi(ctx,logo,0,0,w*(art?.6:.78)*pop);}
+    else label(ctx,CUTIN_WORDS[n.color],0,0,Math.round(bh*.62),tint,{...opts,font:'italic 900 {s}px "Arial Black","Hiragino Sans","Noto Sans JP",sans-serif'});ctx.restore();}
   else if(n.kind==='stage'){if(!reduced){drawFx(ctx,machine==='astral'?'fx-star-swirl':'fx-petal-swirl',x+w/2,y+h*.45,w*(.5+.7*ease(clamp(age/NOTICE_LEN))),{rot:age*1.6,op:'screen',alpha:(gentle?.35:.7)*clamp((age-.05)/.3)});const q=clamp(age/(STAGE_AT*2)),sx=x-w*.3+q*w*1.6;const g=ctx.createLinearGradient(sx-w*.3,0,sx+w*.3,0);g.addColorStop(0,'#fff0');g.addColorStop(.5,gentle?'rgba(255,255,255,.45)':'rgba(255,255,255,.9)');g.addColorStop(1,'#fff0');ctx.fillStyle=g;ctx.fillRect(x,y,w,h);}
-    if(reduced||age>STAGE_AT)label(ctx,'STAGE CHANGE',x+w/2,y+h*.18,Math.round(h*.085),tint,{...opts,font:'italic 900 {s}px Georgia,serif'});}
+    if(reduced||age>STAGE_AT){if(fxReady('bn-logo-stage-change'))drawUi(ctx,'bn-logo-stage-change',x+w/2,y+h*.18,w*.62*(reduced?1:1+.15*Math.exp(-8*(age-STAGE_AT))));else label(ctx,'STAGE CHANGE',x+w/2,y+h*.18,Math.round(h*.085),tint,{...opts,font:'italic 900 {s}px Georgia,serif'});}}
   else flock(ctx,n,box,age,tint,opts);
   ctx.restore();}
