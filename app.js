@@ -14,7 +14,7 @@ import {KINDS,createNavi,react,tick,drawNavi,drawBubble} from './lcd-character.j
 import {LED_PARTS,buildLeds,drawLeds,applyScene} from './cabinet-leds.js';
 import {createParts,drawPartMap} from './cabinet-parts.js';
 import {createBackdrop,stepBackdrop,drawBackdrop,stageChange,loadStageImages} from './lcd-scenes.js';
-import {readBuild,isNewer,versionLabel,formatBuiltAt,fetchLatest,refreshFiles,reloadUrl,cleanUrl} from './updater.js';
+import {readBuild,isNewer,versionLabel,formatBuiltAt,fetchLatest,prepareUpdate,reloadUrl,cleanUrl} from './updater.js';
 loadSlotFonts();loadSlotSymbols();loadBattleSprites();loadLcdFx();
 // Work out the reel control for each role in idle moments after the page opens, so the first stop of each role does not stutter.
 ['bell','replay','none','cherry','watermelon','big','reg'].forEach((role,i)=>setTimeout(()=>warmSlips(role),1500+i*300));
@@ -72,7 +72,8 @@ const build=readBuild();let latest=null,checkedAt=0,updateArmed=false;{const c=c
 async function checkUpdate(force=false){if(!force&&Date.now()-checkedAt<6e5)return;checkedAt=Date.now();$('#version-now').textContent=versionLabel(build);if(force)$('#version-status').textContent='最新版を確認しています…';const l=await fetchLatest();if(l)latest=l;const fresh=isNewer(build,latest);$('#settings').classList.toggle('has-update',fresh);$('#update-app').classList.toggle('ready',fresh);$('#update-app').textContent=fresh?'今すぐ更新':'最新版に更新';
   $('#version-status').textContent=fresh?`新しい版があります（${formatBuiltAt(latest.builtAt)||latest.build} 公開）`:l?(build.build==='dev'?`公開中の版：${versionLabel(l)}`:'最新版です'):'公開中の版を確認できませんでした（オフラインかもしれません）';}
 $('#update-app').onclick=async()=>{if(active&&!saved&&elapsed>=60&&!updateArmed){updateArmed=true;$('#version-status').textContent=`今回の遊技時間（${Math.floor(elapsed/60)}分）はまだ記録されていません。残すときは先に「記録して終了」、このまま更新するときはもう一度押してください。`;return;}
-  const b=$('#update-app');b.disabled=true;b.textContent='更新中…';$('#version-status').textContent='新しいファイルを読み込んでいます…';const l=await fetchLatest();await refreshFiles(l?.files);location.replace(reloadUrl(location.href,l?.build));};
+  const b=$('#update-app');b.disabled=true;b.textContent='更新中…';$('#version-status').textContent='新しいファイルを読み込んでいます…';const l=await prepareUpdate();
+  if(!l){b.disabled=false;b.textContent=isNewer(build,latest)?'今すぐ更新':'最新版に更新';$('#version-status').textContent='公開中の版を確認できなかったので、更新しませんでした。インターネットにつながっているときに、もう一度押してください。';return;}location.replace(reloadUrl(location.href,l.build));};
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 $('#sound').onclick=()=>{sound=!sound;$('#sound').setAttribute('aria-pressed',String(sound));$('#sound span').textContent=`サウンド ${sound?'ON':'OFF'}`;tone('on');};$('#power').oninput=e=>$('#power-value').value=`${e.target.value}%`;
 $('#launch').onclick=()=>{if(paused)return;begin();launching=!launching;cue(launching?'launch':'launchStop');update();say(launching?'発射中。もう一度押すと停止します。':'発射を停止しました。');};
