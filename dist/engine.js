@@ -81,8 +81,8 @@ export function inStart(b){return b.startEntered===true||(b.prevY===undefined&&b
 function crossStart(b,x,y){if(y>START.y||b.y<=START.y||b.vy<=0)return;const t=(START.y-y)/(b.y-y),at=x+(b.x-x)*t;if(at>START.x1+BOARD.ball&&at<START.x2-BOARD.ball)b.startEntered=true;}
 // 実機のステージは手前に張り出した棚で、転がる玉の多くは中央の溝に届く前に手前へこぼれる。平面の盤ではそれを
 // 「ステージに乗っている間、1秒あたり STAGE_SPILL の割合で手前に落ちる（以後この玉はステージを通り抜ける）」で表す。
-// 3 で START入賞は実機並みの約5〜8%。ステージが無いと中央の落とし口が真下のヘソへ玉を運び、入賞が60〜75%になる。
-export const STAGE_SPILL=3;
+// 0.25 で START入賞は実機並みの約5%（釘で玉が減速するようになってから。減速が無かったころは 3 だった）。ステージが無いと中央の落とし口が真下のヘソへ玉を運び、入賞が60〜75%になる。
+export const STAGE_SPILL=.25;
 // One-sided top surfaces: balls below the apron are never pulled onto it.
 export function collidePlastic(b,oldX=b.x,oldY=b.y,dt=0,rand=Math.random){
   b.stage=false;if(b.front)return;
@@ -101,7 +101,11 @@ export function collidePlastic(b,oldX=b.x,oldY=b.y,dt=0,rand=Math.random){
 // STILL.time 秒のあいだ STILL.move より動かなかった玉は、そのとき触れている釘（b.pass）を STILL.slip 秒だけ通り抜けて、狭い間からこぼれ落ちる（実機の玉の揺れの代わり）。
 // 玉を細くする方法だと、細いまま道釘の粒の間のくぼみにはまって抜けられなくなるので、触れている釘だけを外す。待ち時間が短いので、止まって見えない。
 const STILL={move:4,time:.15,slip:.3};
-function ballStep(b,dt,pins,rand){const oldX=b.x,oldY=b.y;let impact=0;const {cx,cy,r,gravity,ball,guide}=BOARD;b.vy+=gravity*dt;b.x+=b.vx*dt;b.y+=b.vy*dt;const dx=b.x-cx,dy=b.y-cy,d0=Math.hypot(dx,dy);if(d0>r){const nx=dx/d0,ny=dy/d0;const dot=b.vx*nx+b.vy*ny;b.x=cx+nx*(r-1);b.y=cy+ny*(r-1);if(dot>0){b.vx-=1.75*dot*nx;b.vy-=1.75*dot*ny;}}const body=ball;for(const p of pins){if(p.rim&&b.stage||b.slip>0&&b.pass?.includes(p))continue;const px=b.x-p.x,py=b.y-p.y,hit=body+(p.r??NAIL_R);if(px>hit||px<-hit||py>hit||py<-hit)continue;const d=Math.hypot(px,py);if(d<hit&&d>0){const nx=px/d,ny=py/d,dot=b.vx*nx+b.vy*ny;b.x=p.x+nx*hit;b.y=p.y+ny*hit;if(dot<0){impact=Math.max(impact,-dot);b.vx-=1.5*dot*nx;b.vy-=1.5*dot*ny;}b.vx+=nx*3;}}for(const [x1,y1,x2,y2,min=guide] of BOARD.guides){const ex=x2-x1,ey=y2-y1,t=Math.max(0,Math.min(1,((b.x-x1)*ex+(b.y-y1)*ey)/(ex*ex+ey*ey))),px=b.x-(x1+ex*t),py=b.y-(y1+ey*t),d=Math.hypot(px,py);if(d<min&&d>0){const nx=px/d,ny=py/d,dot=b.vx*nx+b.vy*ny;b.x+=nx*(min-d);b.y+=ny*(min-d);if(dot<0){b.vx-=1.3*dot*nx;b.vy-=1.3*dot*ny;}}}collidePlastic(b,oldX,oldY,dt,rand);collideDisplay(b);crossStart(b,oldX,oldY);b.slip=Math.max(0,(b.slip??0)-dt);const s=b.still??={x:b.x,y:b.y,t:0};if(Math.hypot(b.x-s.x,b.y-s.y)>STILL.move){s.x=b.x;s.y=b.y;s.t=0;}else if((s.t+=dt)>STILL.time){s.t=0;b.slip=STILL.slip;b.pass=pins.filter(p=>Math.hypot(b.x-p.x,b.y-p.y)<ball+(p.r??NAIL_R)+1);}return impact;}
+// 釘とのこすれ：強く当たった玉（釘へ向かう速さが hard より大きい）は、跳ね返る力の grip 倍だけ釘に沿う向きの速さも失う（摩擦）。
+// 釘に触れている間は、さらに1秒あたり roll の割合で速さが落ちる。これが無いと、道釘の列が滑り台のようになり、
+// 上から落ちてきた玉が勢いのまま列の上を滑って、実機よりずっと速く通り過ぎる。
+export const NAIL_FRICTION={grip:.4,hard:60,roll:1};
+function ballStep(b,dt,pins,rand){const oldX=b.x,oldY=b.y;let impact=0;const {cx,cy,r,gravity,ball,guide}=BOARD;b.vy+=gravity*dt;b.x+=b.vx*dt;b.y+=b.vy*dt;const dx=b.x-cx,dy=b.y-cy,d0=Math.hypot(dx,dy);if(d0>r){const nx=dx/d0,ny=dy/d0;const dot=b.vx*nx+b.vy*ny;b.x=cx+nx*(r-1);b.y=cy+ny*(r-1);if(dot>0){b.vx-=1.75*dot*nx;b.vy-=1.75*dot*ny;}}const body=ball;let touch=false;for(const p of pins){if(p.rim&&b.stage||b.slip>0&&b.pass?.includes(p))continue;const px=b.x-p.x,py=b.y-p.y,hit=body+(p.r??NAIL_R);if(px>hit||px<-hit||py>hit||py<-hit)continue;const d=Math.hypot(px,py);if(d<hit&&d>0){const nx=px/d,ny=py/d,dot=b.vx*nx+b.vy*ny;b.x=p.x+nx*hit;b.y=p.y+ny*hit;if(dot<0){impact=Math.max(impact,-dot);b.vx-=1.5*dot*nx;b.vy-=1.5*dot*ny;const vt=-b.vx*ny+b.vy*nx,cut=-dot>NAIL_FRICTION.hard?Math.min(Math.abs(vt),NAIL_FRICTION.grip*1.5*-dot)*Math.sign(vt):0;b.vx+=cut*ny;b.vy-=cut*nx;}b.vx+=nx*3;touch=true;}}if(touch){const k=Math.exp(-NAIL_FRICTION.roll*dt);b.vx*=k;b.vy*=k;}for(const [x1,y1,x2,y2,min=guide] of BOARD.guides){const ex=x2-x1,ey=y2-y1,t=Math.max(0,Math.min(1,((b.x-x1)*ex+(b.y-y1)*ey)/(ex*ex+ey*ey))),px=b.x-(x1+ex*t),py=b.y-(y1+ey*t),d=Math.hypot(px,py);if(d<min&&d>0){const nx=px/d,ny=py/d,dot=b.vx*nx+b.vy*ny;b.x+=nx*(min-d);b.y+=ny*(min-d);if(dot<0){b.vx-=1.3*dot*nx;b.vy-=1.3*dot*ny;}}}collidePlastic(b,oldX,oldY,dt,rand);collideDisplay(b);crossStart(b,oldX,oldY);b.slip=Math.max(0,(b.slip??0)-dt);const s=b.still??={x:b.x,y:b.y,t:0};if(Math.hypot(b.x-s.x,b.y-s.y)>STILL.move){s.x=b.x;s.y=b.y;s.t=0;}else if((s.t+=dt)>STILL.time){s.t=0;b.slip=STILL.slip;b.pass=pins.filter(p=>Math.hypot(b.x-p.x,b.y-p.y)<ball+(p.r??NAIL_R)+1);}return impact;}
 
 // Limit both time and travel per substep so fast balls cannot skip thin pins/rails or the mouth.
 export function advanceBall(b,dt,pins,rand=Math.random){
