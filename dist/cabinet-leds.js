@@ -124,7 +124,8 @@ export const SCENES={
   },
 };
 export function applyScene(leds,name,{gentle=false,reduced=false}={}){
-  const steps=SCENES[leds.machine][name]??SCENES[leds.machine].idle;
+  // name can come from the address (?leds=), so only the machine's own scenes are used (?leds=constructor would stop the game).
+  const scenes=SCENES[leds.machine],steps=Object.hasOwn(scenes,name??'')?scenes[name]:scenes.idle;
   for(const [target,s] of steps){let st={...s};
     if(reduced&&st.mode!=='off')st={...st,mode:'on',level:(st.level??1)*(st.mode==='on'?1:.85)};
     else if(gentle){st.speed=(st.speed??1)*.5;if(st.mode==='blink')st.mode='breathe';}

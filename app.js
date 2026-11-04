@@ -1,6 +1,6 @@
 import {drawStartPocket} from './pachinko-pocket.js';
-import {STRIP,BOARD,launchBall,advanceRail,inStart,ROLE_RANGE,SLOT_BONUS,REG_LINE,drawRole,settle,LINES,chooseSlip,warmSlips,randomInt,resolvePachinko,advanceBall,collideDisplay,MAX_HOLDS,drawHold,MISS_REST,planSpin,KAKUHEN,liftHold,kakuhenAfter,BONUS,inAttacker,inButton,PUSH_WAIT,reachStage,pickNotice,BATTLE} from './engine.js';
-import {STAGE_AT,drawNotice,noticeAlpha} from './notice-fx.js';
+import {STRIP,BOARD,launchBall,advanceRail,inStart,ROLE_RANGE,SLOT_BONUS,REG_LINE,drawRole,settle,LINES,chooseSlip,warmSlips,randomInt,resolvePachinko,advanceBall,collideDisplay,MAX_HOLDS,drawHold,MISS_REST,planSpin,KAKUHEN,liftHold,kakuhenAfter,BONUS,inAttacker,inButton,PUSH_WAIT,reachStage,pickNotice,BATTLE,NOTICE_KINDS} from './engine.js';
+import {STAGE_AT,drawNotice,noticeAlpha,NOTICE_TINTS} from './notice-fx.js';
 import {REACH_COLORS,reachLayout,columnPlace,reachBackdrop,reachBanner,reachLabel} from './reach-fx.js';
 import {drawBattle,loadBattleSprites,battleEvents} from './battle-fx.js';
 import {loadLcdFx,drawFx,drawUi,fxReady} from './lcd-fx.js';
@@ -97,7 +97,8 @@ function nearestPin(b){let best=0,d=Infinity;boardPins().forEach((p,i)=>{const e
 // and the character looks surprised; the ステージチェンジ switches the background behind its wipe (gold to a bonus scene).
 const NOTICE_AT=.2;let slotNotice=null;
 // ?notice=<kind>-<colour> (e.g. ?notice=cutin-red) shows that notice on every draw, to check how it looks.
-function notice(outcome){const [kind,color]=(query.get('notice')??'').split('-');return kind?{kind,color:color||'blue'}:pickNotice(outcome,{variety:reachVariety});}
+// Only known names are used, so an odd address (such as ?notice=birds-constructor) cannot stop the game.
+function notice(outcome){const [kind,color]=(query.get('notice')??'').split('-');return Object.hasOwn(NOTICE_KINDS,kind)?{kind,color:Object.hasOwn(NOTICE_TINTS,color??'')?color:'blue'}:pickNotice(outcome,{variety:reachVariety});}
 // While a セリフ予告 is up, the character's own line waits so the two do not overlap.
 function wordsOn(n,age){return n?.kind==='words'&&noticeAlpha(age,reduced)>0;}
 function noticeTick(n,age,machine){if(!n||age<0)return;if(!n.shown){n.shown=true;tone('notice',n.color);if(mode===(machine==='slot'?'slot':'pachinko'))cue('notice');}
