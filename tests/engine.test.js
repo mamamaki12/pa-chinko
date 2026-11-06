@@ -61,3 +61,4 @@ test('敵は抽選のあとに選び、弱いモクモほど当たりやすく�
   for(const o of ['win','miss'])for(const [e,w] of Object.entries(BATTLE.pick[o]))assert.ok(Math.abs((seen[o][e]??0)/3000-w/100)<.04,`${o} ${e}`);});
 test('復活は外れの決着より前に始まり、外れの見せ方から復活する割合は表から決まる',()=>{assert.ok(BATTLE.reviveAt<BATTLE.hold.lose);assert.ok(BATTLE.hold.revive>BATTLE.hold.win);
   const w=(1/99)*REACH_PICK.win.battle/100*BATTLE.revive/100,m=(98/99)/15*REACH_PICK.miss.battle/100;assert.ok(Math.abs(reviveTrust()-w/(w+m))<1e-12);assert.ok(reviveTrust()>.1&&reviveTrust()<.2);});
+test('ページの指定（?reach=・?enemy=）が名前でなければ、ふだんどおりに選ぶ',()=>{for(const kind of ['constructor','toString','__proto__','x']){const p=planSpin(true,0,{force:{kind}});assert.ok(Object.hasOwn(REACH_KINDS,p.kind),kind);}for(const enemy of ['constructor','toString','__proto__','x']){const p=planSpin(true,0,{force:{kind:'battle',enemy}});assert.equal(p.kind,'battle');assert.ok(Object.hasOwn(BATTLE.enemies,p.battle.enemy),enemy);}});
