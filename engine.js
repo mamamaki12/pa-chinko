@@ -158,13 +158,14 @@ export const BATTLE={intro:1.9,cycle:1.6,clash:.6,reviveAt:1,hold:{win:1.9,lose:
 // The button comes halfway through the last stage, so a battle gets one exchange of attacks (gentle) or two before it.
 function reachStages(kind,gentle){const g=(a,b)=>gentle?a:b;return kind==='normal'?[['normal',g(2.5,4)]]:kind==='sp'?[['normal',g(1.6,2)],['sp',g(3,4.5)]]:kind==='battle'?[['normal',g(1.6,2)],['battle',2*(BATTLE.intro+BATTLE.cycle*g(1,2))]]:[['normal',g(1.6,2)],['sp',g(2,2.5)],['spsp',g(3.5,5.5)]];}
 // force: {kind, revive, enemy} from the ?reach= and ?enemy= page options, to check how a reach looks. It changes only the presentation, never the result.
+// Only names of REACH_KINDS / BATTLE.enemies themselves are taken (not inherited ones such as ?reach=constructor).
 // reach: whether a miss shows a reach, when it was already decided at the START entry (drawHold); left out, it is drawn here.
 // kakuhen: for a jackpot, whether it is 確変 (odd numbers, or even ones with promote:true); left out, any number. st: the draw is in ST,
 // where a miss without a reach is short.
 export function planSpin(win,holdsLeft,{gentle=true,rand=randomInt,variety=true,force=null,reach:missReach,kakuhen,st=false}={}){const reach=win||(missReach??rand(15)===0);let left=win&&kakuhen!==undefined?(kakuhen&&rand(100)<KAKUHEN.odd?[1,3,5,7,9][rand(5)]:[2,4,6,8][rand(4)]):rand(9)+1,right=left,middle=left;if(!win){if(reach){const far=[1,2,3,4,5,6,7,8,9].filter(n=>n!==left&&n!==wrap(left-1)&&n!==wrap(left+1));middle=far[rand(far.length)];}else{right=wrap(left+1+rand(8));middle=rand(9)+1;}}
-if(reach){const o=win?'win':'miss',picked=variety?pick(REACH_PICK[o],rand):'normal',kind=variety&&force?.kind in REACH_KINDS?force.kind:picked,color=variety?pick(REACH_COLOR[o],rand):'pink';let at=2.8;const stages=reachStages(kind,gentle).map(([k,len])=>{const s={kind:k,at,until:at+len};at+=len;return s;}),last=stages[stages.length-1];
+if(reach){const o=win?'win':'miss',picked=variety?pick(REACH_PICK[o],rand):'normal',kind=variety&&Object.hasOwn(REACH_KINDS,force?.kind??'')?force.kind:picked,color=variety?pick(REACH_COLOR[o],rand):'pink';let at=2.8;const stages=reachStages(kind,gentle).map(([k,len])=>{const s={kind:k,at,until:at+len};at+=len;return s;}),last=stages[stages.length-1];
   const plan={numbers:[left,middle,right],reach,kind,color,stages,stops:[2,at,2.8],duration:at,push:last.at+(last.until-last.at)/2};
-  if(kind==='battle'){const outcome=!win?'lose':force?.revive||rand(100)<BATTLE.revive?'revive':'win',picked=pick(BATTLE.pick[o],rand);plan.battle={enemy:force?.enemy in BATTLE.enemies?force.enemy:picked,outcome};}
+  if(kind==='battle'){const outcome=!win?'lose':force?.revive||rand(100)<BATTLE.revive?'revive':'win',picked=pick(BATTLE.pick[o],rand);plan.battle={enemy:Object.hasOwn(BATTLE.enemies,force?.enemy??'')?force.enemy:picked,outcome};}
   if(win&&kakuhen!==undefined){plan.kakuhen=kakuhen;plan.promote=kakuhen&&left%2===0;}return plan;}
 const duration=st?2:holdsLeft>=3?2.5:holdsLeft>=1?4:5;return {numbers:[left,middle,right],reach,stops:[duration-1.2,duration,duration-.6],duration};}
 // 保留 (hold): like a real machine, the jackpot draw is made when the ball enters START (入賞時), and the hold lamp takes a colour

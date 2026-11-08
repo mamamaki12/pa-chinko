@@ -15,3 +15,4 @@ test('どの場面でも全部品の状態が決まり、控えめでは点滅�
 const still=applyScene(createLeds(machine),name,{reduced:true});for(const p of LED_PARTS[machine])assert.ok(['on','off'].includes(still.get(p.id).mode));}
 const leds=applyScene(createLeds('aurora'),'dark');assert.ok(leds.frame(3).every(l=>l.level===0));});
 test('虹色は決まった色の中から選ばれる',()=>{const leds=createLeds('astral').set('all',{color:'rainbow'}),colors=new Set();for(let t=0;t<10;t+=.1)for(const l of leds.frame(t))colors.add(l.color);assert.ok(colors.size>1&&colors.size<=12);for(const c of colors)assert.match(c,/^#[0-9a-f]{6}$/);});
+test('ページの指定（?leds=）が場面の名前でなければ、ふだんの光り方にする',()=>{for(const name of ['constructor','toString','__proto__','x',undefined]){const leds=applyScene(createLeds('aurora'),name),idle=applyScene(createLeds('aurora'),'idle');assert.deepEqual(leds.frame(1),idle.frame(1),String(name));}});

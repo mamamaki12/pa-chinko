@@ -83,6 +83,8 @@ const sounds={
   medal(t,count=1){bell(784,t,.06,.3);bell(1046.5,t+.1,.05,.35);const n=Math.min(8,Math.max(2,Math.ceil(count/10)));for(let i=0;i<n;i++)ping(t+.25+i*.09+Math.random()*.02,1700+Math.random()*700,.035);},
 };
 // Plays a named sound at the given volume (0–1). Unknown names are ignored.
+// Whether the browser lets the sound play (false before the first sound, or while the browser keeps the audio stopped).
+export function audioRunning(){return ctx?.state==='running';}
 export function play(name,volume,arg){const fn=sounds[name];if(!fn)return;init();void ctx.resume();master.gain.setTargetAtTime(volume*.9,now(),.02);fn(now()+.005,arg);}
 
 // Background music (music.js). Call music(track,volume) every frame while it should play: it starts the track, switches at the next
