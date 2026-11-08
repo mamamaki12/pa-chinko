@@ -5,7 +5,7 @@
 // callers keep drawing their own shapes.
 
 export const FX_IDS=['fx-magic-circle','fx-light-burst','fx-rays','fx-comet','fx-meteor-small','fx-wings','fx-petal-swirl','fx-star-swirl','fx-shockwave','fx-sparkle-set',
-  'ui-push-hit','ui-num-stop','ui-num-aura','ui-num-line','bn-fx-round-open','bn-fx-catch','bn-fx-right-flash'];
+  'ui-push-hit','ui-num-stop','ui-num-aura','ui-num-line','bn-fx-round-open','bn-fx-catch','bn-fx-right-flash','fx-butterfly-open','fx-butterfly-half'];
 // Painted parts on a transparent background (assets/ui/, made by scripts/make-ui.py): the reach logos and bands, the plate under the
 // digits, the PUSH button with its ring, lettering and pressing hand, and Hana and Sora for the カットイン notice. drawUi() draws them normally
 // instead of adding light.
