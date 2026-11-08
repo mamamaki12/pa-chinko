@@ -22,3 +22,7 @@ sp = load('fx-sparkle-set'); strip = Image.new('RGB', (8*128, 128))
 for k, (cx, cy) in enumerate([(454,243),(616,244),(780,254),(942,246),(1105,248),(1266,251),(1430,259),(1591,248)]):
     strip.paste(sp.crop((cx-128, cy-128, cx+128, cy+128)).resize((128, 128), Image.LANCZOS), (k*128, 0))
 strip.save(f'{out}/fx-sparkle-set.webp', quality=88, method=6); print('fx-sparkle-set', strip.size)
+# 光の蝶（#76）：左が羽を開いたコマ、右が半分閉じたコマ。同じ範囲で切るので胴体の位置がそろう（群予告の蝶、notice-fx.js）。
+bf = load('fx-butterfly')
+for k, n in enumerate(['fx-butterfly-open', 'fx-butterfly-half']):
+    save(bf.crop((k*887 + 40, 100, k*887 + 847, 730)), n, (256, 200))

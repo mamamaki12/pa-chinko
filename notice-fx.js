@@ -17,22 +17,26 @@ export const CUTIN_POSE={blue:'pray',green:'chance',red:'hot',gold:'hot'};
 // The painted lettering of the カットイン for each colour (lcd-fx.js); until it loads, CUTIN_WORDS is drawn instead.
 export const CUTIN_LOGO={blue:'bn-logo-chance-blue',green:'bn-logo-chance-green',red:'bn-logo-hot-red',gold:'bn-logo-hot-gold'};
 const clamp=v=>v<0?0:v>1?1:v,ease=v=>v*v*(3-2*v);
+// The colour the white-gold butterfly is multiplied by: the notice colour, lightened so the wings stay bright.
+const mixTint=tint=>{const c=parseInt(tint.main.slice(1),16),m=k=>Math.round(((c>>k)&255)*.7+255*.3).toString(16).padStart(2,'0');return '#'+m(16)+m(8)+m(0);};
 const hash=n=>{const x=Math.sin(n*127.1+311.7)*43758.5453;return x-Math.floor(x);};
 // How visible the notice is at age (seconds since it started): fades in over .15 s and out over the last .3 s.
 export function noticeAlpha(age,reduced=false){if(age<0||age>=NOTICE_LEN)return 0;return reduced?1:Math.min(1,age/.15,(NOTICE_LEN-age)/.3);}
 export function noticeName(n){return n?NOTICE_KINDS[n.kind]:'';}
 
 function piece(ctx,kind,s,t,i,tint){ctx.beginPath();
+  // The painted butterfly of light (#76) in the notice colour, flapping by swapping its open and half-closed wings.
+  if(kind==='butterflies'&&fxReady('fx-butterfly-open')&&fxReady('fx-butterfly-half')){drawFx(ctx,Math.sin(t*14+i)>0?'fx-butterfly-open':'fx-butterfly-half',0,0,s*2.2,{rot:.25,alpha:.85,tint:mixTint(tint)});return;}
   if(kind==='butterflies'){const f=.25+.75*Math.abs(Math.sin(t*14+i));for(const side of [-1,1]){ctx.save();ctx.scale(side*f,1);ctx.fillStyle=tint.main;ctx.beginPath();ctx.ellipse(s*.45,-s*.2,s*.45,s*.32,-.5,0,7);ctx.ellipse(s*.35,s*.25,s*.3,s*.22,.5,0,7);ctx.fill();ctx.fillStyle=tint.light+'cc';ctx.beginPath();ctx.ellipse(s*.4,-s*.22,s*.18,s*.12,-.5,0,7);ctx.fill();ctx.restore();}ctx.fillStyle='#2a1a30';ctx.fillRect(-s*.06,-s*.35,s*.12,s*.7);}
   else if(kind==='birds'){const f=Math.sin(t*12+i*1.3)*s*.4;ctx.lineCap='round';ctx.lineJoin='round';ctx.moveTo(-s,-f);ctx.quadraticCurveTo(-s*.4,-s*.35,0,0);ctx.quadraticCurveTo(s*.4,-s*.35,s,-f);
     ctx.strokeStyle='#140a24';ctx.lineWidth=Math.max(3,s*.3);ctx.stroke();ctx.strokeStyle=tint.main;ctx.lineWidth=Math.max(1.6,s*.16);ctx.stroke();}
   else if(kind==='petals'){ctx.rotate(t*4+i);ctx.scale(1,Math.max(.2,Math.abs(Math.cos(t*5+i))));ctx.fillStyle=tint.main;ctx.ellipse(0,0,s*.6,s*.32,0,0,7);ctx.fill();ctx.fillStyle=tint.light+'cc';ctx.beginPath();ctx.ellipse(s*.15,0,s*.35,s*.18,0,0,7);ctx.fill();}
   else{ctx.rotate(t*3+i);ctx.fillStyle=tint.light;for(let k=0;k<10;k++){const a=k*Math.PI/5,r=k%2?s*.4:s;ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r);}ctx.closePath();ctx.fill();}}
 // 群予告: n pieces fly from left to right in a wavy band, each with a soft glow of the notice colour.
-function flock(ctx,n,{x,y,w,h},age,tint,{gentle,reduced}){const many=n.kind==='petals'?1.6:1,count=Math.round((reduced?8:gentle?14:24)*many),size=Math.min(w,h)*(n.kind==='petals'?.06:.075);
+function flock(ctx,n,{x,y,w,h},age,tint,{gentle,reduced}){const painted=n.kind==='butterflies'&&fxReady('fx-butterfly-open');const many=n.kind==='petals'?1.6:1,count=Math.round((reduced?8:gentle?14:24)*many),size=Math.min(w,h)*(n.kind==='petals'?.06:.075);
   for(let i=0;i<count;i++){const lag=hash(i+3)*.45,q=reduced?.15+.7*hash(i+5):clamp((age-lag)/(NOTICE_LEN-.5));if(!reduced&&(q<=0||q>=1))continue;
     const px=x-size*2+q*(w+size*4)+(hash(i+7)-.5)*w*.15,py=y+h*(.2+.55*hash(i+11))+Math.sin(q*9+i)*h*.06,s=size*(.7+.6*hash(i+13));
-    ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha*=gentle?.35:.6;const g=ctx.createRadialGradient(px,py,0,px,py,s*2.2);g.addColorStop(0,tint.main);g.addColorStop(1,tint.main+'00');ctx.fillStyle=g;ctx.fillRect(px-s*2.2,py-s*2.2,s*4.4,s*4.4);ctx.restore();
+    ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha*=(gentle?.35:.6)*(painted?.4:1);const g=ctx.createRadialGradient(px,py,0,px,py,s*2.2);g.addColorStop(0,tint.main);g.addColorStop(1,tint.main+'00');ctx.fillStyle=g;ctx.fillRect(px-s*2.2,py-s*2.2,s*4.4,s*4.4);ctx.restore();
     ctx.save();ctx.translate(px,py);piece(ctx,n.kind,s,reduced?0:age,i,tint);ctx.restore();}}
 function label(ctx,text,x,y,size,tint,{gentle,font='900 {s}px "Hiragino Sans","Noto Sans JP",sans-serif'}={}){ctx.font=font.replace('{s}',size);ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineJoin='round';
   ctx.lineWidth=size*.22;ctx.strokeStyle='#14040f';ctx.strokeText(text,x,y);ctx.shadowColor=tint.main;ctx.shadowBlur=gentle?4:14;const g=ctx.createLinearGradient(0,y-size/2,0,y+size/2);g.addColorStop(0,tint.light);g.addColorStop(.55,tint.main);g.addColorStop(1,tint.deep);ctx.fillStyle=g;ctx.fillText(text,x,y);ctx.shadowBlur=0;}

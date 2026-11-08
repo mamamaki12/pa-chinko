@@ -18,3 +18,5 @@ test('手前の物（#72）: 桜の並木は桜の枝、庭園と世界樹はつ
     if(f==='fg-sakura-branch'&&s.stage.id!=='sakura')assert.ok(s.time.dark<.5,s.name);}
   const share=painted.filter(s=>sceneForeground(s)).length/painted.length;assert.ok(share>.2&&share<.7,String(share));
   assert.equal(sceneForeground(SCENES.find(s=>!s.shot)??null),null);});
+test('光の蝶（#76）の2コマは assets/lcd-fx/ と dist/ にあり、読み込む部品に入っている',async()=>{const {FX_IDS}=await import('../lcd-fx.js');
+  for(const id of ['fx-butterfly-open','fx-butterfly-half']){assert.ok(FX_IDS.includes(id),id);for(const dir of ['assets','dist/assets'])assert.ok(existsSync(new URL(`../${dir}/lcd-fx/${id}.webp`,import.meta.url)),`${dir}/lcd-fx/${id}.webp`);}});
