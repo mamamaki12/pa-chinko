@@ -20,3 +20,13 @@ for pair, width in [(('obj-whale', 'obj-whale-b'), 640), (('obj-birds', 'obj-bir
     frames = [load(n) for n in pair]; bbs = [box(a) for a in frames]
     bb = (min(b[0] for b in bbs), min(b[1] for b in bbs), max(b[2] for b in bbs), max(b[3] for b in bbs))
     for n, a in zip(pair, frames): save(a, bb, n, width)
+# 手前に重ねる物（fg-*）。画面の縁から続く絵なので、縁の側は切り詰めず、反対側の透明な余白だけを切る。
+FG = {'fg-cloud-bank': (768, 'none'), 'fg-sakura-branch': (640, 'top-right'), 'fg-crystal': (512, 'bottom-left'), 'fg-vine': (768, 'top')}
+for n, (width, edge) in FG.items():
+    a = load(n); x0, y0, x1, y1 = box(a); h, w = a.shape[:2]
+    if 'top' in edge: y0 = 0
+    if 'bottom' in edge: y1 = h
+    if 'left' in edge: x0 = 0
+    if 'right' in edge: x1 = w
+    if edge == 'top': x0, x1 = 0, w
+    save(a, (x0, y0, x1, y1), n, width)
