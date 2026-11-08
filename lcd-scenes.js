@@ -399,7 +399,12 @@ export function stageReady(stage){return !stage.image||typeof Image==='undefined
 // pictures in assets/generated/): far-away islands, a nearer floating island and now and then a visitor (the sky whale, a flying ship or a
 // dragon) crossing from right to left. The white birds and the paper lanterns of the 鳥の群れ / 灯籠 skies are these pictures too.
 // Which of them a scene has is fixed by the scene's number, so it never depends on a draw. Halls and caves (no open sky) have none.
-export const OBJECT_IDS=['obj-isle-a','obj-isle-b','obj-isle-c','obj-whale','obj-whale-b','obj-ship','obj-birds','obj-birds-b','obj-lantern','obj-dragon','fg-cloud-bank','fg-sakura-branch','fg-crystal','fg-vine'];
+export const OBJECT_IDS=['obj-isle-a','obj-isle-b','obj-isle-c','obj-whale','obj-whale-b','obj-ship','obj-birds','obj-birds-b','obj-lantern','obj-dragon','fg-cloud-bank','fg-sakura-branch','fg-crystal','fg-vine',
+  // Pictures that repeat side by side (#75, made by scripts/make-lcd-tiles.py): a sea of clouds and glittering water along the bottom,
+  // and the aurora and the starry sky (light on black, added with 'lighter') for the 'aurora' sky event and the stars of the night times.
+  'tile-cloudsea','tile-water','tile-aurora','tile-stars'];
+// A row of a repeating picture across the width w, dw×dh each, shifted by off (it scrolls as off changes), the copies overlapping by a pixel.
+function tileRow(g,img,off,y,dw,dh,w){for(let x=((off%dw)+dw)%dw-dw;x<w;x+=dw)g.drawImage(img,Math.floor(x*DPR)/DPR,y,dw+1/DPR,dh);}
 // Things close to the camera (#72), drawn over the scene and under the figures: a cherry branch in the top-right corner, hanging vines
 // along the top, violet crystals in the bottom-left corner, each swaying a little; and a soft bank of white clouds drifting along the
 // bottom of every painted scene. Some stages always have theirs (the cherry avenue its branch, the garden and the world tree vines, the
@@ -505,6 +510,7 @@ function sky(g,id,w,h,t,glow,dark){g.save();g.globalCompositeOperation='lighter'
   if(id==='rays'){g.translate(w*.5,-30);g.rotate(Math.sin(t*.2)*.35);for(let k=-2;k<=2;k++){g.fillStyle=linear(g,0,0,0,h*1.2,[[0,glow+'44'],[1,glow+'00']]);g.beginPath();g.moveTo(0,0);g.lineTo(k*70-22,h*1.3);g.lineTo(k*70+22,h*1.3);g.closePath();g.fill();}}
   else if(id==='meteor'){for(let j=0;j<2;j++){const T=t+j*1.7,sk=T%3.4;if(sk>.9)continue;const q=sk/.9,n=Math.floor(T/3.4)+j*7,sx=w*(.15+.6*hash(n))+q*160,sy=12+h*.1*hash(n+3)+q*70,a=Math.sin(Math.PI*q);
     g.strokeStyle=linear(g,sx-90,sy-40,sx,sy,[[0,'#fff0'],[1,`rgba(255,250,255,${a})`]]);g.lineWidth=2.2;g.lineCap='round';g.beginPath();g.moveTo(sx-90,sy-40);g.lineTo(sx,sy);g.stroke();g.globalAlpha=a;const s=glowSprite('star','#cfe0ff');g.drawImage(s,sx-8,sy-8,16,16);g.globalAlpha=1;}}
+  else if(id==='aurora'&&objectImage('tile-aurora')){const au=objectImage('tile-aurora'),dh=h*.6;g.globalAlpha=.65;tileRow(g,au,-t*8,-h*.04,dh*au.width/au.height,dh,w);}
   else if(id==='aurora'){for(let k=0;k<3;k++){const base=h*(.12+.1*k),hue=k===1?'150,120,255':'90,255,180';g.fillStyle=linear(g,0,base-10,0,base+60,[[0,`rgba(${hue},0)`],[.3,`rgba(${hue},.32)`],[1,`rgba(${hue},0)`]]);g.beginPath();
     for(let x=0;x<=w+8;x+=8)g.lineTo(x,base+Math.sin(x*.012+t*.45+k*2)*14+Math.sin(x*.031-t*.3+k)*6);for(let x=w+8;x>=0;x-=8)g.lineTo(x,base+70+Math.sin(x*.01+t*.35+k)*18);g.closePath();g.fill();}}
   else if(id==='moon'){const mx=w*(.8-.04*Math.sin(t*.05)),my=h*.2,r=Math.min(w,h)*.1;g.fillStyle=radial(g,mx,my,r*4,[[0,'rgba(255,248,220,.5)'],[.3,'rgba(220,230,255,.18)'],[1,'rgba(200,220,255,0)']]);g.fillRect(mx-r*4,my-r*4,r*8,r*8);
@@ -539,8 +545,12 @@ function paintScene(g,img,sc,u,w,h,t,count){const {time:P,stage}=sc;g.globalComp
     g.globalCompositeOperation='lighter';g.fillStyle=radial(g,P.sun[0]*w,P.sun[1]*h,Math.max(w,h)*.7,[[0,al(P.glow,stage.image?.12:.25)],[1,al(P.glow,0)]]);g.fillRect(0,0,w,h);g.globalCompositeOperation='source-over';}
   else{const W=Math.round(w*OVER),H=Math.round(h*OVER),z=1+.06*u,dx=(u-.5)*(W-w)*.6;g.save();g.translate(w/2,h/2);g.scale(z,z);g.translate(-W/2-dx,-H/2);g.drawImage(plate(stage,P,W,H,img),0,0,W,H);stage.live(g,W,H,t,P,img);g.restore();
     g.globalCompositeOperation='lighter';g.fillStyle=radial(g,P.sun[0]*w,P.sun[1]*h,Math.max(w,h)*.8,[[0,al(P.glow,.16)],[1,al(P.glow,0)]]);g.fillRect(0,0,w,h);g.globalCompositeOperation='source-over';g.drawImage(sprite(`vignette${w}x${h}`,w,h,c=>{c.fillStyle=radial(c,w/2,h/2,Math.max(w,h)*.72,[[0,'#00000000'],[.6,'#00000000'],[1,'#00000066']]);c.fillRect(0,0,w,h);}),0,0,w,h);}
-  if(P.stars&&sc.shot)stars(g,w,h,t,P.stars);sky(g,sc.sky.id,w,h,t,P.glow,P.dark);weather(g,sc.weather,w,h,t,count);
-  if(sc.shot){foreground(g,sc,w,h,t);const bank=graded('fg-cloud-bank',P);for(let i=0;i<2;i++){const cw=bank?w*(1.1+.25*i):180*2.1,span=w+cw,px=span-((t*(46+i*20)+i*260)%span)-cw*.5,py=h-20-i*14;g.globalAlpha=(bank?.55:.4)*(1-P.dark*.65);
+  const sky_=objectImage('tile-stars');if(P.stars&&sc.shot){if(sky_){g.save();g.globalCompositeOperation='lighter';g.globalAlpha=P.stars*.75;const dh=h*.85;tileRow(g,sky_,-t*3,0,dh*sky_.width/sky_.height,dh,w);g.restore();
+    const tw=glowSprite('star','#cfe0ff');g.save();g.globalCompositeOperation='lighter';for(let i=0;i<8;i++){const a=Math.max(0,Math.sin(t*(1.2+hash(i+9)*1.5)+i*2));g.globalAlpha=P.stars*a;const z=6+hash(i+5)*6;g.drawImage(tw,hash(i+600)*w-z/2,hash(i+700)*h*.5-z/2,z,z);}g.restore();}else stars(g,w,h,t,P.stars);}sky(g,sc.sky.id,w,h,t,P.glow,P.dark);weather(g,sc.weather,w,h,t,count);
+  if(sc.shot){foreground(g,sc,w,h,t);const lake=sc.stage.id==='lake',sea=lake?graded('tile-water',P):sc.stage.skies===HALL?null:graded('tile-cloudsea',P);
+    // The sea of clouds (the mirror lake: its water) scrolling slowly along the bottom, under one drifting cloud bank.
+    if(sea){const dh=h*(lake?.3:.36),dw=dh*sea.width/sea.height;g.globalAlpha=(lake?.4:.7)*(1-P.dark*.45);tileRow(g,sea,-t*(lake?7:12),h-dh*(lake?1:.92),dw,dh,w);g.globalAlpha=1;}
+    const bank=graded('fg-cloud-bank',P);for(let i=sea?1:0;i<2;i++){const cw=bank?w*(1.1+.25*i):180*2.1,span=w+cw,px=span-((t*(46+i*20)+i*260)%span)-cw*.5,py=h-20-i*14;g.globalAlpha=(bank?.55:.4)*(1-P.dark*.65);
     if(bank){const ch=cw*bank.height/bank.width;g.drawImage(bank,px-cw/2,py-ch*.55,cw,ch);}else g.drawImage(CLOUD(),px-cw/2,py-70,cw,147);}g.globalAlpha=1;}}
 const layers=[];function layer(i,w,h){const c=layers[i]??=canvas(w,h);if(c.width!==Math.ceil(w*DPR)||c.height!==Math.ceil(h*DPR)){c.width=Math.ceil(w*DPR);c.height=Math.ceil(h*DPR);}const g=c.getContext('2d');g.setTransform(DPR,0,0,DPR,0,0);return [c,g];}
 // Draws the backdrop b into the box at x,y. level: how busy the state is (idle .8 … bonus 1.4), which sets the number of particles.
