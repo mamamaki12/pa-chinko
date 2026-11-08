@@ -392,8 +392,31 @@ for(const s of DRAWN){s.id='drawn-'+s.id;s.name+='（描画）';}
 export function stageOn(stage){return !!stage.painted||DRAWN_ON;}
 // Browser side: the images of the image stages, loaded after the main art (loadStageImages) and used once ready.
 const IMAGES=new Map();
-export function loadStageImages(){for(const st of STAGES)if(st.image&&!IMAGES.has(st.id)){const img=new Image();img.decoding='async';img.onload=()=>{img.ready=true;};img.src=st.image;IMAGES.set(st.id,img);}}
+export function loadStageImages(){for(const st of STAGES)if(st.image&&!IMAGES.has(st.id)){const img=new Image();img.decoding='async';img.onload=()=>{img.ready=true;};img.src=st.image;IMAGES.set(st.id,img);}
+  for(const id of OBJECT_IDS)if(!OBJECTS.has(id)){const img=new Image();img.decoding='async';img.onload=()=>{img.ready=true;};img.src=`assets/lcd-objects/${id}.webp`;OBJECTS.set(id,img);}}
 export function stageReady(stage){return !stage.image||typeof Image==='undefined'||!!IMAGES.get(stage.id)?.ready;}
+// Things drifting through the sky of the painted scenes (#70, assets/lcd-objects/, made by scripts/make-lcd-objects.py from the generated
+// pictures in assets/generated/): far-away islands, a nearer floating island and now and then a visitor (the sky whale, a flying ship or a
+// dragon) crossing from right to left. The white birds and the paper lanterns of the 鳥の群れ / 灯籠 skies are these pictures too.
+// Which of them a scene has is fixed by the scene's number, so it never depends on a draw. Halls and caves (no open sky) have none.
+export const OBJECT_IDS=['obj-isle-a','obj-isle-b','obj-isle-c','obj-whale','obj-whale-b','obj-ship','obj-birds','obj-birds-b','obj-lantern','obj-dragon'];
+const OBJECTS=new Map();
+function objectImage(id){const img=OBJECTS.get(id);return img?.ready?img:null;}
+// far: the row of distant islands; isle: one nearer island; visitor: what crosses the sky, once every period seconds.
+export const VISITORS={whale:{ids:['obj-whale','obj-whale-b'],size:.42,speed:18,y:.12},ship:{ids:['obj-ship'],size:.2,speed:24,y:.1},dragon:{ids:['obj-dragon'],size:.38,speed:34,y:.06}};
+export function sceneDrifters(sc){if(!sc?.shot||sc.stage.skies===HALL)return null;const n=sc.no,r=hash(n*7+2),visitor=['whale','ship','dragon'][Math.floor(hash(n*7+3)*3)];
+  return {far:hash(n*7+1)<.6,isle:r<.35?'obj-isle-a':r<.7?'obj-isle-b':null,visitor:sc.stage.id==='whale'&&visitor==='whale'?'ship':visitor,period:14+Math.floor(hash(n*7+4)*8),seed:n};}
+// Where a visitor is at time t (its left edge x and the share of its crossing), or null between crossings.
+export function visitorAt(d,w,t){const v=VISITORS[d.visitor],dw=w*v.size,cross=(w+dw)/v.speed,ph=(t+hash(d.seed*7+5)*d.period)%d.period;return ph<cross?{x:w-ph*v.speed,dw,q:ph/cross}:null;}
+// part 'scenery' (the islands, under the colour grade of the time of day) or 'visitor' (drawn after it, so the glowing whale or dragon still shows at night).
+function drifters(g,sc,w,h,t,part){const d=sceneDrifters(sc);if(!d)return;const P=sc.time;g.save();g.globalCompositeOperation='source-over';
+  const wrap=(speed,dw,off)=>{const span=w+dw;return span-((t*speed+off*span)%span)-dw;};
+  if(part==='scenery'&&d.far){const img=objectImage('obj-isle-c');if(img){const dw=w*.55,dh=dw*img.height/img.width;g.globalAlpha=.55*(1-P.dark*.3);g.drawImage(img,wrap(4,dw,hash(d.seed+11)),h*(.16+.1*hash(d.seed+12)),dw,dh);}}
+  if(part==='scenery'&&d.isle){const img=objectImage(d.isle);if(img){const dw=w*(d.isle==='obj-isle-a'?.16:.19),dh=dw*img.height/img.width;g.globalAlpha=.95;g.drawImage(img,wrap(9,dw,hash(d.seed+13)),h*(.12+.14*hash(d.seed+14))+Math.sin(t*.5+d.seed)*3,dw,dh);}}
+  const at=part==='visitor'&&visitorAt(d,w,t),v=VISITORS[d.visitor],dim=1-.3*P.dark;if(at){const [a,b]=v.ids.map(objectImage);if(a){const dh=at.dw*a.height/a.width,y=h*(v.y+.1*hash(d.seed+15))+Math.sin(t*.8)*4;g.globalAlpha=dim;g.drawImage(a,at.x,y,at.dw,dh);
+    // The whale swims with its two pictures (fins up and down) slowly cross-fading.
+    if(b){g.globalAlpha=dim*(.5+.5*Math.sin(t*1.6));g.drawImage(b,at.x,y,at.dw,dh);}}}
+  g.restore();}
 
 export function stageList(){return STAGES.map(s=>({id:s.id,name:s.name}));}
 export const VARIANTS=2;
@@ -472,8 +495,12 @@ function sky(g,id,w,h,t,glow,dark){g.save();g.globalCompositeOperation='lighter'
     g.globalCompositeOperation='source-over';g.fillStyle=radial(g,mx-r*.3,my-r*.3,r*1.3,[[0,'#fffdf2'],[1,'#e8dcb8']]);g.beginPath();g.arc(mx,my,r,0,7);g.fill();g.fillStyle='#d6c8a033';for(const [dx,dy,cr] of [[-.3,.1,.22],[.25,-.2,.16],[.1,.35,.12]]){g.beginPath();g.arc(mx+dx*r,my+dy*r,cr*r,0,7);g.fill();}}
   else if(id==='rainbow'){const a=.14+.06*Math.sin(t*.3),cx=w*.55,cy=h*1.15,R=w*.62;['#ff4040','#ff9a30','#ffe040','#50e060','#40a8ff','#5a5cff','#b050ff'].forEach((c,i)=>{g.strokeStyle=c;g.globalAlpha=a;g.lineWidth=5;g.beginPath();g.arc(cx,cy,R-i*5,Math.PI*1.05,Math.PI*1.95);g.stroke();});}
   else if(id==='lanterns'){const s=glowSprite('lantern','#ffb050');for(let i=0;i<10;i++){const v=8+hash(i+40)*8,cycle=(h+40)/v,ph=(t+hash(i+41)*cycle)%cycle,py=h+20-ph*v,px=w*hash(i+42)+Math.sin(t*.6+i)*6,sz=8+hash(i+43)*6,fl=.75+.25*Math.sin(t*5+i*3);
-    g.globalAlpha=fl;g.drawImage(s,px-sz*1.5,py-sz*1.5,sz*3,sz*3);g.globalCompositeOperation='source-over';g.fillStyle=linear(g,0,py-sz*.6,0,py+sz*.6,[[0,'#ffe0a0'],[1,'#ff8a30']]);g.beginPath();g.roundRect(px-sz*.35,py-sz*.5,sz*.7,sz,sz*.15);g.fill();g.globalCompositeOperation='lighter';}}
-  else if(id==='birds'){g.globalCompositeOperation='source-over';const per=9,k=Math.floor(t/per),q=(t%per)/per,dir=hash(k)>.5?1:-1,y0=h*(.12+.25*hash(k+1));g.strokeStyle=dark>.2?'#1a1830cc':'#2a3048bb';g.lineWidth=1.6;g.lineCap='round';
+    g.globalAlpha=fl;g.drawImage(s,px-sz*1.5,py-sz*1.5,sz*3,sz*3);g.globalCompositeOperation='source-over';const lan=objectImage('obj-lantern');
+    if(lan){const lw=sz*1.5;g.globalAlpha=1;g.drawImage(lan,px-lw/2,py-lw*.66,lw,lw*lan.height/lan.width);}else{g.fillStyle=linear(g,0,py-sz*.6,0,py+sz*.6,[[0,'#ffe0a0'],[1,'#ff8a30']]);g.beginPath();g.roundRect(px-sz*.35,py-sz*.5,sz*.7,sz,sz*.15);g.fill();}g.globalCompositeOperation='lighter';}}
+  else if(id==='birds'){g.globalCompositeOperation='source-over';const per=9,k=Math.floor(t/per),q=(t%per)/per,dir=hash(k)>.5?1:-1,y0=h*(.12+.25*hash(k+1));
+    // The painted flock (two pictures, wings up and down, swapped to flap), turned round when it flies to the right.
+    const flock=objectImage(Math.floor(t*5)%2?'obj-birds-b':'obj-birds')??null;if(flock&&objectImage('obj-birds')){const fw=w*.3,fh=fw*flock.height/flock.width,fx=dir>0?-fw+q*(w+fw*2):w+fw-q*(w+fw*2);g.globalAlpha=dark>.2?.85:1;g.translate(fx,y0-fh/2+Math.sin(t*1.5)*2);g.scale(-dir,1);g.drawImage(flock,-fw/2,0,fw,fh);g.restore();return;}
+    g.strokeStyle=dark>.2?'#1a1830cc':'#2a3048bb';g.lineWidth=1.6;g.lineCap='round';
     for(let i=0;i<7;i++){const row=Math.ceil(i/2),side=i%2?1:-1,bx=(dir>0?-60+q*(w+120):w+60-q*(w+120))-dir*row*16,by=y0+side*row*9+Math.sin(t*1.5+i)*2,f=Math.sin(t*9+i*1.3)*4;g.beginPath();g.moveTo(bx-6,by-f);g.quadraticCurveTo(bx-3,by-2,bx,by);g.quadraticCurveTo(bx+3,by-2,bx+6,by-f);g.stroke();}}
   else if(id==='fireworks'){const every=1.7;for(let k=Math.floor(t/every)-1;k<=Math.floor(t/every);k++){const p=t-k*every;if(p<0||p>1.4)continue;const cx=w*(.15+.7*hash(k)),cy=h*(.15+.3*hash(k+5)),col=SPARKS[Math.floor(hash(k+9)*SPARKS.length)],R=(30+30*hash(k+2))*(1-Math.exp(-3.5*p)),a=1-p/1.4,s=glowSprite('spark'+col,col);
     for(let i=0;i<18;i++){const an=i/18*Math.PI*2;g.globalAlpha=a;g.drawImage(s,cx+Math.cos(an)*R-4,cy+Math.sin(an)*R+p*p*12-4,8,8);}}}
@@ -491,8 +518,8 @@ function plate(stage,P,W,H,img){return sprite(`plate|${stage.id}|${P.id}|${W}x${
 // One scene into a w×h canvas: the stage under a slow camera (zoom and pan over u), its colour grade for the picture stages,
 // the stars, the sky event and the particles on top.
 function paintScene(g,img,sc,u,w,h,t,count){const {time:P,stage}=sc;g.globalCompositeOperation='source-over';g.globalAlpha=1;g.fillStyle='#0b1022';g.fillRect(0,0,w,h);
-  if(sc.shot){const pic=stage.image?IMAGES.get(stage.id):img;if(pic?.ready!==false&&pic?.width)shot(g,pic,w,h,sc.shot,u);for(let i=0;i<5;i++){const k=.7+(i%3)*.3,cw=180*k,span=w+cw,px=span-((t*(14+i*7)+i*137)%span)-cw*.5,py=18+i*26+Math.sin(t*.3+i)*5;g.globalAlpha=(.32+.06*(i%3))*(1-P.dark*.65);g.drawImage(CLOUD(),px-cw/2,py-35*k,cw,70*k);}g.globalAlpha=1;
-    if(P.mul){g.globalCompositeOperation='multiply';g.fillStyle=linear(g,0,0,0,h,[[0,P.mul[0]],[1,P.mul[1]]]);g.fillRect(0,0,w,h);}
+  if(sc.shot){const pic=stage.image?IMAGES.get(stage.id):img;if(pic?.ready!==false&&pic?.width)shot(g,pic,w,h,sc.shot,u);drifters(g,sc,w,h,t,'scenery');for(let i=0;i<5;i++){const k=.7+(i%3)*.3,cw=180*k,span=w+cw,px=span-((t*(14+i*7)+i*137)%span)-cw*.5,py=18+i*26+Math.sin(t*.3+i)*5;g.globalAlpha=(.32+.06*(i%3))*(1-P.dark*.65);g.drawImage(CLOUD(),px-cw/2,py-35*k,cw,70*k);}g.globalAlpha=1;
+    if(P.mul){g.globalCompositeOperation='multiply';g.fillStyle=linear(g,0,0,0,h,[[0,P.mul[0]],[1,P.mul[1]]]);g.fillRect(0,0,w,h);}drifters(g,sc,w,h,t,'visitor');
     g.globalCompositeOperation='lighter';g.fillStyle=radial(g,P.sun[0]*w,P.sun[1]*h,Math.max(w,h)*.7,[[0,al(P.glow,stage.image?.12:.25)],[1,al(P.glow,0)]]);g.fillRect(0,0,w,h);g.globalCompositeOperation='source-over';}
   else{const W=Math.round(w*OVER),H=Math.round(h*OVER),z=1+.06*u,dx=(u-.5)*(W-w)*.6;g.save();g.translate(w/2,h/2);g.scale(z,z);g.translate(-W/2-dx,-H/2);g.drawImage(plate(stage,P,W,H,img),0,0,W,H);stage.live(g,W,H,t,P,img);g.restore();
     g.globalCompositeOperation='lighter';g.fillStyle=radial(g,P.sun[0]*w,P.sun[1]*h,Math.max(w,h)*.8,[[0,al(P.glow,.16)],[1,al(P.glow,0)]]);g.fillRect(0,0,w,h);g.globalCompositeOperation='source-over';g.drawImage(sprite(`vignette${w}x${h}`,w,h,c=>{c.fillStyle=radial(c,w/2,h/2,Math.max(w,h)*.72,[[0,'#00000000'],[.6,'#00000000'],[1,'#00000066']]);c.fillRect(0,0,w,h);}),0,0,w,h);}
