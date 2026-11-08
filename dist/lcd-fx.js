@@ -16,10 +16,12 @@ export const UI_IDS=['ui-logo-meteor','ui-logo-castle','ui-logo-battle','ui-logo
   'bn-logo-round','bn-logo-final','bn-medal-round-1','bn-medal-round-2','bn-medal-round-3','bn-medal-round-4','bn-num-round-1','bn-num-round-2','bn-num-round-3','bn-num-round-4',
   'bn-curtain-left','bn-curtain-right','bn-curtain-top','bn-logo-right','bn-logo-left','bn-count-empty','bn-count-full','bn-count-last',
   'bn-logo-chance-blue','bn-logo-chance-green','bn-logo-hot-red','bn-logo-hot-gold','bn-logo-stage-change'];
+// The 流星 / 天空城 reach scenes (reach-fx.js, made by scripts/make-reach-scenes.py): opaque 16:9 paintings in assets/lcd-stages/.
+export const SCENE_IDS=['reach-meteor-1','reach-meteor-2','reach-meteor-3','reach-castle-1','reach-castle-2','reach-castle-3','reach-castle-4'];
 // fx-sparkle-set is 8 sparkles in a row, 128 px each.
 export const SPARKLES=8;
 const images=new Map(),tinted=new Map();
-export function loadLcdFx(){if(typeof Image==='undefined')return;for(const [dir,ids] of [['lcd-fx',FX_IDS],['ui',UI_IDS]])for(const id of ids){if(images.has(id))continue;const img=new Image();img.decoding='async';img.onload=()=>{img.ready=true;};img.src=`assets/${dir}/${id}.webp`;images.set(id,img);}}
+export function loadLcdFx(){if(typeof Image==='undefined')return;for(const [dir,ids] of [['lcd-fx',FX_IDS],['ui',UI_IDS],['lcd-stages',SCENE_IDS]])for(const id of ids){if(images.has(id))continue;const img=new Image();img.decoding='async';img.onload=()=>{img.ready=true;};img.src=`assets/${dir}/${id}.webp`;images.set(id,img);}}
 export function fxReady(id){return !!images.get(id)?.ready;}
 function source(id,tint){const img=images.get(id);if(!tint||typeof document==='undefined')return img;const key=id+tint;let c=tinted.get(key);
   if(!c){c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;const g=c.getContext('2d');g.drawImage(img,0,0);g.globalCompositeOperation='multiply';g.fillStyle=tint;g.fillRect(0,0,c.width,c.height);tinted.set(key,c);}

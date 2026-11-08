@@ -6,6 +6,9 @@ import {drawFx,drawUi,fxReady} from './lcd-fx.js';
 // Gentle mode dims and slows everything and skips the white flash; prefers-reduced-motion shows still versions.
 // The light is painted (lcd-fx.js): stardust swirl, shooting stars, a big comet and sparkles for 流星; god rays, a turning magic circle and
 // golden wings behind the middle figure for 天空城; a light burst and a shockwave ring in the reach colour as a stage opens.
+// Behind them is a painted scene (assets/lcd-stages/reach-*.webp): 流星 goes from a starry night to a meteor shower to a giant comet, 天空城
+// from the closed castle gate to its glowing runes, the half-open gate and the gate wide open in white-gold light. The pictures cross-fade
+// as the stage goes on, the same way for a win and a miss, while the camera slowly moves in on the castle (still in reduced motion).
 // Until those pictures load, the same effects are drawn with lines and dots.
 // The cut-in is a painted band with the reach's title logo (流星・天空城・バトル) sliding in; a plain reach opens with a small 「リーチ」 logo.
 
@@ -25,9 +28,24 @@ export function reachLayout(plan,t,drawing){const dev=plan?.reach&&plan.stages[1
 // Centre and scale of LCD column i for layout amount k. In a battle all three digits shrink into the top-left corner, clear of the fight.
 export function columnPlace(i,k,battle=false){const x=262+i*98,y=410;if(battle)return {x:x+(214+i*30-x)*k,y:y+(284-y)*k,scale:1-.68*k};if(i===1)return {x,y:y-8*k,scale:1+.25*k};return {x:x+(i?48:-48)*k,y:y-110*k,scale:1-.5*k};}
 
+// Painted scenes of each developed stage, and when (as a share of the stage) each one starts to fade in over the one before.
+export const REACH_SCENES={sp:{ids:['reach-meteor-1','reach-meteor-2','reach-meteor-3'],at:[0,.3,.62]},spsp:{ids:['reach-castle-1','reach-castle-2','reach-castle-3','reach-castle-4'],at:[0,.22,.45,.68]}};
+// The scene pictures to draw at time t, bottom first, with how much of each shows (the first one fully covered by a later one is left out).
+export function reachSceneLayers(stage,t,{gentle=false}={}){const set=REACH_SCENES[stage?.kind];if(!set||t<stage.at)return [];const len=stage.until-stage.at,mix=gentle?.9:.5;
+  const layers=set.ids.map((id,i)=>({id,alpha:i?clamp((t-stage.at-set.at[i]*len)/mix):1})).filter(l=>l.alpha>0);let k=0;layers.forEach((l,i)=>{if(l.alpha>=1)k=i;});return layers.slice(k);}
+function drawScene(ctx,stage,{x,y,w,h,t,gentle,reduced},fade){const layers=reachSceneLayers(stage,t,{gentle});if(!layers.length||!fxReady(layers[0].id))return false;
+  // Height-filling 16:9 picture, the castle (right of centre in the paintings) kept a little right of the big middle figure so its gate shows, slowly zooming in.
+  const q=clamp((t-stage.at)/(stage.until-stage.at)),zoom=reduced?1:1+(gentle?.05:.1)*ease(q),dh=h*zoom,dw=dh*16/9,fx=.56,fy=.4;
+  const left=Math.min(x,Math.max(x+w-dw,x+w/2-fx*dw)),top=Math.min(y,Math.max(y+h-dh,y+h*fy-fy*dh));
+  for(const l of layers)if(fxReady(l.id))drawUi(ctx,l.id,left,top,dw,{ax:0,ay:0,height:dh,alpha:l.alpha*fade});
+  // Darker towards the bottom so the figures stay easy to read, and dimmer overall in gentle mode.
+  ctx.fillStyle=grad(ctx,0,y+h*.4,0,y+h,'rgba(4,6,20,0)',`rgba(4,6,20,${.5*fade})`);ctx.fillRect(x,y+h*.4,w,h*.6);if(gentle){ctx.fillStyle=`rgba(0,0,0,${.2*fade})`;ctx.fillRect(x,y,w,h);}
+  return true;}
+
 // Background layer of a developed stage, drawn over the LCD art and under the character and digits.
 export function reachBackdrop(ctx,stage,{x,y,w,h,t,gentle,reduced}){if(!stage||stage.kind==='normal'||stage.kind==='battle')return;const age=t-stage.at,fade=reduced?1:clamp(age/.4);ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();
-  if(stage.kind==='sp'){ctx.fillStyle=`rgba(6,10,40,${.62*fade})`;ctx.fillRect(x,y,w,h);
+  const scene=drawScene(ctx,stage,{x,y,w,h,t,gentle,reduced},fade);
+  if(stage.kind==='sp'){if(!scene){ctx.fillStyle=`rgba(6,10,40,${.62*fade})`;ctx.fillRect(x,y,w,h);}
     drawFx(ctx,'fx-star-swirl',x+w*.5,y+h*.38,w*1.15,{rot:reduced?0:age*(gentle?.08:.18),op:'screen',alpha:(gentle?.12:.2)*fade*(reduced?1:1+1.5*clamp(1-age/.8))});ctx.globalCompositeOperation='lighter';
     for(let i=0;i<40;i++){const a=(.25+.35*hash(i))*(reduced?1:.6+.4*Math.sin(t*2+i));ctx.fillStyle=`rgba(220,235,255,${a*fade})`;ctx.fillRect(x+hash(i+3)*w,y+hash(i+7)*h*.8,1.6,1.6);}
     if(fxReady('fx-sparkle-set'))for(let i=0;i<10;i++)drawFx(ctx,'fx-sparkle-set',x+hash(i+21)*w,y+hash(i+27)*h*.7,10+hash(i+31)*12,{cell:i,rot:reduced?0:t*.4+i,alpha:(reduced?.7:.45+.55*Math.sin(t*3+i*1.7))*fade});
@@ -37,11 +55,12 @@ export function reachBackdrop(ctx,stage,{x,y,w,h,t,gentle,reduced}){if(!stage||s
       ctx.fillStyle=`rgba(255,255,255,${al})`;ctx.beginPath();ctx.arc(sx,sy,2.2,0,7);ctx.fill();}
     // A big comet crosses the upper sky every few seconds (head first, right to left), the first time just after the cut-in banner.
     const every=gentle?4.2:2.6,ph=reduced?.65:(age-.5)%every,q=ph/1.3;if(q>=0&&q<1){const hx=x+w*(1.15-1.5*q),hy=y+h*(.1+.22*q);drawFx(ctx,'fx-comet',hx,hy,w*.95,{rot:Math.atan2(h*.22,-w*1.5)-Math.PI,ax:.07,ay:.57,alpha:(reduced?.8:Math.sin(Math.PI*q))*(gentle?.6:1)*fade});}}
-  else{const cx=x+w/2,cy=y+h*.32;ctx.fillStyle=`rgba(60,30,0,${.35*fade})`;ctx.fillRect(x,y,w,h);ctx.globalCompositeOperation='lighter';
-    const g=ctx.createRadialGradient(cx,cy,0,cx,cy,w*.7);g.addColorStop(0,`rgba(255,230,150,${(gentle?.45:.7)*fade})`);g.addColorStop(.5,`rgba(255,170,60,${.25*fade})`);g.addColorStop(1,'rgba(255,170,60,0)');ctx.fillStyle=g;ctx.fillRect(x,y,w,h);
-    const turn=reduced?0:t*(gentle?.15:.35);if(!drawFx(ctx,'fx-rays',cx,cy,w*1.6,{rot:turn,op:'screen',alpha:(gentle?.2:.35)*fade}))for(let k=0;k<12;k++){const a=turn+k*Math.PI/6;ctx.fillStyle=`rgba(255,236,170,${(gentle?.08:.14)*fade})`;ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,w,a-.09,a+.09);ctx.closePath();ctx.fill();}
+  else{const cx=x+w/2,cy=y+h*.32;if(!scene){ctx.fillStyle=`rgba(60,30,0,${.35*fade})`;ctx.fillRect(x,y,w,h);}ctx.globalCompositeOperation='lighter';
+    // The painted scene has its own glow, halo and wings, so over it only the turning rays, a fainter magic circle and the rising sparks are added.
+    if(!scene){const g=ctx.createRadialGradient(cx,cy,0,cx,cy,w*.7);g.addColorStop(0,`rgba(255,230,150,${(gentle?.45:.7)*fade})`);g.addColorStop(.5,`rgba(255,170,60,${.25*fade})`);g.addColorStop(1,'rgba(255,170,60,0)');ctx.fillStyle=g;ctx.fillRect(x,y,w,h);}
+    const turn=reduced?0:t*(gentle?.15:.35);if(!drawFx(ctx,'fx-rays',cx,cy,w*1.6,{rot:turn,op:'screen',alpha:(gentle?.2:.35)*(scene?.4:1)*fade}))for(let k=0;k<12;k++){const a=turn+k*Math.PI/6;ctx.fillStyle=`rgba(255,236,170,${(gentle?.08:.14)*fade})`;ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,w,a-.09,a+.09);ctx.closePath();ctx.fill();}
     // Golden wings and a turning magic circle behind the big middle figure.
-    const my=y+h*.6;drawFx(ctx,'fx-wings',x+w/2,my-h*.04,w*.95,{op:'screen',alpha:(gentle?.25:.45)*fade*(reduced?1:.85+.15*Math.sin(t*2))});drawFx(ctx,'fx-magic-circle',x+w/2,my,h*.95,{rot:reduced?0:-t*(gentle?.12:.3),alpha:(gentle?.35:.6)*fade});
+    const my=y+h*.6;if(!scene)drawFx(ctx,'fx-wings',x+w/2,my-h*.04,w*.95,{op:'screen',alpha:(gentle?.25:.45)*fade*(reduced?1:.85+.15*Math.sin(t*2))});drawFx(ctx,'fx-magic-circle',x+w/2,my,h*.95,{rot:reduced?0:-t*(gentle?.12:.3),alpha:(gentle?.35:.6)*(scene?.5:1)*fade});
     const sparkle=fxReady('fx-sparkle-set');    if(!reduced)for(let i=0;i<(gentle?14:28);i++){const sp=18+hash(i)*30,py=y+h-((age*sp+hash(i+2)*h)%(h+10)),px=x+hash(i+4)*w+Math.sin(t*1.5+i)*6,r=1.2+hash(i+6)*1.8;if(sparkle){drawFx(ctx,'fx-sparkle-set',px,py,r*6,{cell:i,rot:t+i,alpha:.8*fade});continue;}ctx.fillStyle=`rgba(255,220,120,${.7*fade})`;ctx.beginPath();ctx.arc(px,py,r,0,7);ctx.fill();}
     ctx.globalCompositeOperation='source-over';ctx.lineWidth=4;ctx.strokeStyle=rainbow(ctx,x,y,w,reduced?0:t);ctx.globalAlpha=fade;ctx.beginPath();ctx.roundRect(x+3,y+3,w-6,h-6,14);ctx.stroke();}
   ctx.restore();}
