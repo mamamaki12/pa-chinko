@@ -399,7 +399,23 @@ export function stageReady(stage){return !stage.image||typeof Image==='undefined
 // pictures in assets/generated/): far-away islands, a nearer floating island and now and then a visitor (the sky whale, a flying ship or a
 // dragon) crossing from right to left. The white birds and the paper lanterns of the 鳥の群れ / 灯籠 skies are these pictures too.
 // Which of them a scene has is fixed by the scene's number, so it never depends on a draw. Halls and caves (no open sky) have none.
-export const OBJECT_IDS=['obj-isle-a','obj-isle-b','obj-isle-c','obj-whale','obj-whale-b','obj-ship','obj-birds','obj-birds-b','obj-lantern','obj-dragon'];
+export const OBJECT_IDS=['obj-isle-a','obj-isle-b','obj-isle-c','obj-whale','obj-whale-b','obj-ship','obj-birds','obj-birds-b','obj-lantern','obj-dragon','fg-cloud-bank','fg-sakura-branch','fg-crystal','fg-vine'];
+// Things close to the camera (#72), drawn over the scene and under the figures: a cherry branch in the top-right corner, hanging vines
+// along the top, violet crystals in the bottom-left corner, each swaying a little; and a soft bank of white clouds drifting along the
+// bottom of every painted scene. Some stages always have theirs (the cherry avenue its branch, the garden and the world tree vines, the
+// cave crystals); other open-sky scenes get a branch on a warm time or crystals on a night one now and then, fixed by the scene's number.
+const STAGE_FG={sakura:'fg-sakura-branch',garden:'fg-vine',worldtree:'fg-vine',throne:'fg-vine',crystalcave:'fg-crystal',aurora:'fg-crystal'};
+export function sceneForeground(sc){if(!sc?.shot)return null;const fixed=STAGE_FG[sc.stage.id];if(fixed)return fixed;const r=hash(sc.no*7+6);
+  if(sc.stage.skies===HALL||r>=.3)return null;return sc.time.dark>=.5?'fg-crystal':['day','dawn','rose','gold','sunset'].includes(sc.time.id)?'fg-sakura-branch':null;}
+// A copy of a foreground picture in the colours of the time of day (like the painted scenes), made once per time.
+function graded(id,P){const img=objectImage(id);if(!img||!P.mul||typeof document==='undefined')return img;return sprite(`fg|${id}|${P.id}`,img.width/DPR,img.height/DPR,g=>{g.drawImage(img,0,0,img.width/DPR,img.height/DPR);
+  g.globalCompositeOperation='multiply';g.fillStyle=linear(g,0,0,0,img.height/DPR,[[0,P.mul[0]],[1,P.mul[1]]]);g.fillRect(0,0,img.width,img.height);g.globalCompositeOperation='destination-in';g.drawImage(img,0,0,img.width/DPR,img.height/DPR);});}
+// The crystals glow by themselves, so they keep their own colours at night.
+function foreground(g,sc,w,h,t){const P=sc.time,id=sceneForeground(sc),img=id&&(id==='fg-crystal'?objectImage(id):graded(id,P));if(!img)return;const iw=img.width,ih=img.height;g.save();
+  if(id==='fg-sakura-branch'){const dw=w*.62,dh=dw*ih/iw;g.translate(w,0);g.rotate(Math.sin(t*.7)*.025);g.drawImage(img,-dw,-dh*.06,dw,dh);}
+  else if(id==='fg-vine'){const dw=w*1.08,dh=dw*ih/iw;g.translate(w/2,-dh*.12);g.rotate(Math.sin(t*.5)*.012);g.drawImage(img,-dw/2,0,dw,dh*(1+.02*Math.sin(t*.9)));}
+  else{const dw=w*.4,dh=dw*ih/iw;g.translate(-w*.04,h+dh*.08);g.rotate(Math.sin(t*.4)*.01);g.globalAlpha=.92;g.drawImage(img,0,-dh,dw,dh);}
+  g.restore();}
 const OBJECTS=new Map();
 function objectImage(id){const img=OBJECTS.get(id);return img?.ready?img:null;}
 // far: the row of distant islands; isle: one nearer island; visitor: what crosses the sky, once every period seconds.
@@ -524,7 +540,8 @@ function paintScene(g,img,sc,u,w,h,t,count){const {time:P,stage}=sc;g.globalComp
   else{const W=Math.round(w*OVER),H=Math.round(h*OVER),z=1+.06*u,dx=(u-.5)*(W-w)*.6;g.save();g.translate(w/2,h/2);g.scale(z,z);g.translate(-W/2-dx,-H/2);g.drawImage(plate(stage,P,W,H,img),0,0,W,H);stage.live(g,W,H,t,P,img);g.restore();
     g.globalCompositeOperation='lighter';g.fillStyle=radial(g,P.sun[0]*w,P.sun[1]*h,Math.max(w,h)*.8,[[0,al(P.glow,.16)],[1,al(P.glow,0)]]);g.fillRect(0,0,w,h);g.globalCompositeOperation='source-over';g.drawImage(sprite(`vignette${w}x${h}`,w,h,c=>{c.fillStyle=radial(c,w/2,h/2,Math.max(w,h)*.72,[[0,'#00000000'],[.6,'#00000000'],[1,'#00000066']]);c.fillRect(0,0,w,h);}),0,0,w,h);}
   if(P.stars&&sc.shot)stars(g,w,h,t,P.stars);sky(g,sc.sky.id,w,h,t,P.glow,P.dark);weather(g,sc.weather,w,h,t,count);
-  if(sc.shot){for(let i=0;i<2;i++){const cw=180*2.1,span=w+cw,px=span-((t*(46+i*20)+i*260)%span)-cw*.5,py=h-20-i*14;g.globalAlpha=.4*(1-P.dark*.65);g.drawImage(CLOUD(),px-cw/2,py-70,cw,147);}g.globalAlpha=1;}}
+  if(sc.shot){foreground(g,sc,w,h,t);const bank=graded('fg-cloud-bank',P);for(let i=0;i<2;i++){const cw=bank?w*(1.1+.25*i):180*2.1,span=w+cw,px=span-((t*(46+i*20)+i*260)%span)-cw*.5,py=h-20-i*14;g.globalAlpha=(bank?.55:.4)*(1-P.dark*.65);
+    if(bank){const ch=cw*bank.height/bank.width;g.drawImage(bank,px-cw/2,py-ch*.55,cw,ch);}else g.drawImage(CLOUD(),px-cw/2,py-70,cw,147);}g.globalAlpha=1;}}
 const layers=[];function layer(i,w,h){const c=layers[i]??=canvas(w,h);if(c.width!==Math.ceil(w*DPR)||c.height!==Math.ceil(h*DPR)){c.width=Math.ceil(w*DPR);c.height=Math.ceil(h*DPR);}const g=c.getContext('2d');g.setTransform(DPR,0,0,DPR,0,0);return [c,g];}
 // Draws the backdrop b into the box at x,y. level: how busy the state is (idle .8 … bonus 1.4), which sets the number of particles.
 export function drawBackdrop(ctx,img,b,{x,y,w,h,t,level=1,gentle=true,reduced=false,dpr=1}){if(DPR!==dpr){DPR=dpr;sprites.clear();}const v=backdropView(b,t),count=reduced?.6:level*(gentle?.75:1),time=reduced?0:t;
