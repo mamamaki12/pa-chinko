@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {BOARD,START,PLASTIC,NAILS,STAGE_SPILL,NAIL_FRICTION,advanceBall,inStart,collideDisplay,collidePlastic} from '../engine.js';
+import {BOARD,START,PLASTIC,NAILS,STAGE_SPILL,START_FEED,NAIL_FRICTION,advanceBall,inStart,collideDisplay,collidePlastic} from '../engine.js';
 test('液晶の斜めの下端は透明ステージを塞がない',()=>{
   for(const x of [190,205,235,485,515,530]){const b={x,y:500,vx:30,vy:50};collideDisplay(b);assert.deepEqual(b,{x,y:500,vx:30,vy:50});}
   const b={x:210,y:470,vx:0,vy:100};collideDisplay(b);assert.ok(b.y>470);assert.ok(b.x<210);
@@ -60,4 +60,12 @@ test('液晶の左を落ちてきた玉は、道釘に当たると勢いが落�
 test('釘の摩擦は強く当たったときだけ。ゆっくり触れている玉は止めない',()=>{
   assert.ok(NAIL_FRICTION.grip>0&&NAIL_FRICTION.hard>0);
   const pin={x:100,y:100,r:1.5},soft={x:97,y:94.5,vx:40,vy:20};advanceBall(soft,1/240,[pin]);assert.ok(soft.vx>30,String(soft.vx));
+});
+
+test('ヘソの肩に下向きに来た玉は START_FEED の割合だけ入り、判定は1玉につき1回',()=>{
+  const cheek=()=>({x:START.x1-6,y:START.y-2,vx:20,vy:40});
+  const hit={...cheek()};advanceBall(hit,1/240,[],()=>START_FEED/2);assert.ok(inStart(hit));
+  const miss={...cheek()};advanceBall(miss,1/240,[],()=>.99);assert.ok(!inStart(miss));advanceBall(miss,1/240,[],()=>0);assert.ok(!inStart(miss),'2回目は判定しない');
+  const up={...cheek(),vy:-40};advanceBall(up,1/240,[],()=>0);assert.ok(!inStart(up),'上向きは入らない');
+  const far={x:START.x1-30,y:START.y-2,vx:0,vy:40};advanceBall(far,1/240,[],()=>0);assert.ok(!inStart(far),'肩より外は入らない');
 });
