@@ -87,6 +87,8 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdat
 $('#sound').onclick=()=>{sound=!sound;$('#sound').setAttribute('aria-pressed',String(sound));$('#sound .lbl span').textContent=`サウンド ${sound?'ON':'OFF'}`;tone('on');
   // Some browsers keep the audio stopped (for example after the phone was locked); say how to get it going.
   if(sound)setTimeout(()=>{if(sound&&!audioRunning())say('音が出ないときは、もう一度「サウンド」を押すか、端末の音量と消音（マナーモード）を確かめてください。');},800);};$('#power').oninput=e=>$('#power-value').value=`${e.target.value}%`;
+// スライダーの左側（選んだところまで）を塗る。CSS の --fill で描く。
+const fillRange=r=>r.style.setProperty('--fill',`${(r.value-r.min)/(r.max-r.min)*100}%`);$$('input[type=range]').forEach(r=>{fillRange(r);r.addEventListener('input',()=>fillRange(r));});
 $('#launch').onclick=()=>{if(paused)return;begin();launching=!launching;cue(launching?'launch':'launchStop');update();say(launching?'発射中。もう一度押すと停止します。':'発射を停止しました。');};
 function canBet(){return !paused&&!spinning&&!paying&&!betPlaced&&!replay&&states.slot.credit>=3;}
 // MAX BET takes 3 virtual medals and lights the bet lamps. The lever bets automatically when nothing is bet yet.
