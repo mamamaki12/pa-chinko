@@ -103,3 +103,20 @@ header{padding:0 8px}
 .header-right button{padding:7px 6px;font-size:9.5px}
 }
 @media(prefers-reduced-motion:reduce){#spin::before,#spin::after{transition:none}}
+
+/* スマホ・タッチ画面では、文字のボタンをアイコン（見れば分かるもの）か、アイコン＋短い文字にする。元の文字は見えないが読み上げられる形で残す。パソコンは今のまま。 */
+.ic,.short{display:none}
+@media(max-width:640px),(pointer:coarse){
+.icon-only,.icon-short{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px}
+.icon-only{min-width:44px;padding-left:10px;padding-right:10px}
+.icon-only .lbl,.icon-short .lbl,.header-right #settings .lbl{display:block;position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
+.ic{display:block;flex:none;width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ic .fill{fill:currentColor;stroke:none}
+.short{display:inline;white-space:nowrap}
+[aria-pressed=true]>.ic-off,[aria-pressed=false]>.ic-on{display:none}
+.header-right .icon-only{padding-top:0;padding-bottom:0}
+.session-box #break{width:44px;flex:none;padding:0}
+#spin{justify-content:flex-start}
+#spin .spin-replay,#spin.is-replay .spin-normal{display:none}
+#spin.is-replay .spin-replay{display:inline}
+}
