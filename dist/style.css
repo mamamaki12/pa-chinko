@@ -45,3 +45,29 @@ main{padding:8px 6px 0}
 .stage-top{padding:7px 10px}
 .canvas-caption{display:none}
 }
+
+/* スマホで遊んでいる間も持ち玉・クレジットと払出が見えるように、台の上の帯の右に出す（パソコンは右の欄にあるので出さない）。 */
+.stage-top>.stage-time{font-size:7px}
+.stage-count{display:none;font-size:9px;letter-spacing:.5px;color:#9aa6a4;white-space:nowrap}
+.stage-count strong{font-size:12px;font-weight:500;color:#edece5;margin-left:4px;font-variant-numeric:tabular-nums}
+.stage-count .sep{color:#4a5657;margin:0 7px}
+#stage-win{color:var(--gold)}
+@media(max-width:640px){.stage-count{display:inline}}
+
+/* パチスロの操作ボタン。パソコンでは台の絵のボタンだけで操作し、スマホ・タッチ画面では台の下に大きなボタンを出す（台の絵のボタンと同じ動き）。 */
+.machine-controls.slot-controls{display:none}
+@media(max-width:640px),(pointer:coarse){
+.machine-controls.slot-controls{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:stretch}
+.slot-controls>button{min-height:52px;padding:10px 12px;font-size:13px;font-weight:600;letter-spacing:1px;border-radius:8px}
+#maxbet{background:#171d1f;border:1px solid #9c855f;color:var(--gold);box-shadow:0 3px 0 #050809}
+#spin{box-shadow:0 3px 0 #6d5a39}
+.slot-controls .stop-group{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.slot-controls .stop-group button{width:auto;height:auto;min-height:60px;border-radius:8px;border:1px solid #9c855f;background:linear-gradient(#2a2720,#191b18);color:#edece5;font-size:15px;font-weight:600;letter-spacing:1px;box-shadow:0 3px 0 #050809,inset 0 1px #ffffff14}
+.slot-controls .stop-group button:disabled{opacity:1;border-color:var(--line);background:#141819;color:#5d6767;box-shadow:none}
+.slot-controls button.pressed:not(:disabled),.slot-controls button:active:not(:disabled){transform:translateY(3px);box-shadow:inset 0 2px 6px #000a;border-color:#e6ca9a}
+.slot-controls .stop-group button.pressed:not(:disabled),.slot-controls .stop-group button:active:not(:disabled){background:linear-gradient(#4a3d26,#2c261b);color:#f4dfb4}
+#maxbet.pressed:not(:disabled),#maxbet:active:not(:disabled){background:#2a2a22}
+#spin.pressed:not(:disabled),#spin:active:not(:disabled){background:#c19f67}
+}
+/* スマホのパチスロは操作ボタンが増えるぶん台を少し小さくして、レバーと停止ボタンまで最初の画面に収める。 */
+@media(max-width:640px){.slot-mode .cabinet-wrap[class]{width:min(100%,max(260px,calc((100vh - 330px)*.75)));width:min(100%,max(260px,calc((100svh - 330px)*.75)))}}
