@@ -198,3 +198,31 @@ dialog label.check input{flex:none;width:20px;height:20px;margin:0}
 dialog label input[type=range]{flex:1 1 0;width:auto}
 /* 横向きのスマホなど高さが低い画面では、下の帯を薄くする。 */
 @media(max-height:500px){.dialog-foot{padding-bottom:10px}.dialog-foot .primary{min-height:44px}}
+/* 横向きのスマホ（高さが低い画面）では、台を左、遊ぶボタンと持ち玉を右に並べ、台・ボタン・持ち玉が1画面に同時に入るようにする。 */
+@media(orientation:landscape) and (max-height:500px){
+.stage{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto auto;align-items:start;max-height:100vh;max-height:100svh}
+.stage>.stage-top{grid-column:1/-1;grid-row:1;flex-wrap:nowrap}
+.stage-top .stage-no{display:none}
+.stage-top>.stage-time,.stage-count{display:inline}
+.stage .cabinet-wrap[class]{grid-column:1;grid-row:2/-1;width:calc((100vh - 46px)*.75);width:calc((100svh - 46px)*.75);min-width:0;max-width:none;margin:0;padding:4px 0 6px 8px}
+.stage .canvas-caption{display:none}
+.stage>.machine-controls{grid-column:2;grid-row:2;align-self:end;margin:8px 12px 0}
+.stage>.status{grid-column:2;grid-row:3;margin:10px 12px 12px;text-align:left}
+#pachinko-controls{flex-wrap:wrap;border-top:0;padding-top:0;gap:10px 12px}
+#pachinko-controls .power-label{flex:none}
+#pachinko-controls #power{flex:1 1 140px;min-width:0}
+#pachinko-controls #launch{flex:1 1 100%;min-height:56px}
+}
+/* 幅も狭い横向き（iPhone SE など）は、台を選ぶ欄を台の上に2列で置き、台の横に遊ぶボタンの幅を残す。 */
+@media(orientation:landscape) and (max-height:500px) and (max-width:760px){
+.workspace{display:flex;flex-direction:column;gap:14px}
+.sidebar{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sidebar>.eyebrow,.small-note{display:none}
+.machine-card{margin:0}
+.stage,.detail{width:100%}
+.session-box,.week-box{grid-column:1/-1;margin:0;display:flex;align-items:center;gap:12px;padding:10px 13px}
+.session-box time,.week-box strong{margin:0;white-space:nowrap}
+.session-box .progress,.week-box .progress{display:none}
+.session-box p,.week-box p{margin:0}
+.session-box button{width:auto;margin:0 0 0 auto;white-space:nowrap}
+}
