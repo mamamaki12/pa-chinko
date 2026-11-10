@@ -120,3 +120,44 @@ header{padding:0 8px}
 #spin .spin-replay,#spin.is-replay .spin-normal{display:none}
 #spin.is-replay .spin-replay{display:inline}
 }
+
+/* 小さすぎた文字を読める大きさにする（2026-11-10）。説明の文は 12px 以上、見出し・補足は 10px 以上。パソコンでも今より小さくしない。 */
+.eyebrow,.detail-title .eyebrow,.sidebar>.eyebrow{font-size:11px;letter-spacing:1px}
+dialog .eyebrow{font-size:10px}
+.label-row,.session-box .label-row,.week-box .label-row{font-size:11px;letter-spacing:.5px}
+.session-box p,.week-box p{font-size:10px}
+.canvas-caption{font-size:10px;letter-spacing:1px;line-height:1;margin-top:-3px}
+.machine-card small{font-size:10px}
+.machine-card em{font-size:10px}
+.brand small{font-size:10px}
+.free{font-size:10px}
+.stage-top,.stage-top>span:last-child,.stage-top>.stage-time,.stage-top .stage-no{font-size:10px}
+.stage-top b{font-size:10px}
+.stage-count{font-size:10px}
+.model{font-size:10px}
+.stats small{font-size:12px;letter-spacing:0}
+h3,.instructions h3{font-size:12px;letter-spacing:1px}
+li,.instructions li{font-size:12px;line-height:1.6}
+li b{font-size:10px}
+.description,.detail .description{font-size:12px}
+details p{font-size:12px}
+summary{font-size:12px}
+.status{font-size:12px;line-height:1.5}
+.urge-ends{font-size:10px}
+footer small{font-size:10px;color:#8e9898}
+footer p,footer>p{font-size:12px}
+.detail-title>span:last-child{font-size:11px;color:#8e9898}
+#week-summary li,#week-summary b{font-size:12px}
+.history-row{font-size:12px}
+.dialog-note{font-size:12px!important}
+@media(max-width:640px){
+.label-row,.session-box .label-row,.week-box .label-row{font-size:11px}
+.session-box p,.week-box p{font-size:10px}
+.heading .eyebrow{font-size:10px}
+.instructions li{font-size:12px}
+footer p{font-size:12px}
+.status{font-size:12px}
+}
+/* 320px 幅の小さいスマホでは、台の上の帯が2行にならないように字間とすき間を詰める。 */
+@media(max-width:360px){.stage-top{padding:7px 8px;gap:6px}.stage-top>span{white-space:nowrap}.stage-top>.stage-time,.stage-count{letter-spacing:0}.stage-time time{margin-left:3px;letter-spacing:0}.stage-count .sep{margin:0 4px}.stage-count strong{margin-left:2px;font-size:11px}.stage-top i{margin-right:4px}}
+@media(max-width:360px){.stage-time-label{display:none}.stage-time time{margin-left:0}}
