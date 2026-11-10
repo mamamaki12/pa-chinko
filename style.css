@@ -161,3 +161,40 @@ footer p{font-size:12px}
 /* 320px 幅の小さいスマホでは、台の上の帯が2行にならないように字間とすき間を詰める。 */
 @media(max-width:360px){.stage-top{padding:7px 8px;gap:6px}.stage-top>span{white-space:nowrap}.stage-top>.stage-time,.stage-count{letter-spacing:0}.stage-time time{margin-left:3px;letter-spacing:0}.stage-count .sep{margin:0 4px}.stage-count strong{margin-left:2px;font-size:11px}.stage-top i{margin-right:4px}}
 @media(max-width:360px){.stage-time-label{display:none}.stage-time time{margin-left:0}}
+
+/* 押す場所を 44px 以上にする その2（2026-11-10）：パソコンの見出しのボタン、発射強度・音量のスライダー、設定の中の選ぶ欄。 */
+.header-right button,.session-box button,footer button,#update-app{min-height:44px}
+/* スライダーは押せる高さを 44px にし、つまみも 44px 四方で受ける（見えるつまみは 26px の丸）。左側は選んだところまで金色に塗る（--fill は app.js が入れる）。 */
+input[type=range]{-webkit-appearance:none;appearance:none;height:44px;margin:0;padding:0;background:transparent;cursor:pointer;--fill:50%}
+input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:linear-gradient(to right,var(--gold) var(--fill),#4a5552 var(--fill))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:44px;height:44px;margin-top:-19px;border:0;border-radius:50%;background:radial-gradient(circle,var(--gold) 0 10px,#1b211f 10.5px 13px,transparent 13.5px)}
+input[type=range]::-moz-range-track{height:6px;border-radius:3px;background:#4a5552}
+input[type=range]::-moz-range-progress{height:6px;border-radius:3px;background:var(--gold)}
+input[type=range]::-moz-range-thumb{width:44px;height:44px;border:0;border-radius:50%;background:radial-gradient(circle,var(--gold) 0 10px,#1b211f 10.5px 13px,transparent 13.5px)}
+input[type=range]:focus-visible{outline-offset:0}
+/* 「抽選とシミュレーションについて」は行の高さ全体で開け閉めできるようにする。 */
+.detail>details{padding:0}
+.detail>details>summary{padding:14px 0}
+.detail>details[open]{padding-bottom:15px}
+/* 設定：選ぶ欄とチェックを 44px に。「設定を閉じる」は下に貼り付け、どこまで送っても見えるようにする。 */
+dialog select{min-height:44px}
+dialog label.check{min-height:44px;margin:16px 0}
+dialog label.check input{flex:none;width:20px;height:20px;margin:0}
+.dialog-foot{position:sticky;bottom:-32px;z-index:2;margin:8px -32px -32px;padding:12px 32px 20px;background:#1b2424;border-top:1px solid #3e4942}
+.dialog-foot .primary{display:block;width:100%;min-height:48px}
+@media(max-width:640px){.dialog-foot{bottom:-25px;margin:8px -25px -25px;padding:12px 25px 16px}}
+/* 台を選ぶカードの右端は「↗」（外のページへ移る記号）をやめ、選んでいる台に チェックの丸、選んでいない台に 空の丸 を出す。 */
+.machine-card>b.pick{margin:0 -4px 0 auto;display:flex;flex:none;color:#c2ac85}
+.pick svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+[aria-pressed=true]>.pick .pick-off,[aria-pressed=false]>.pick .pick-on{display:none}
+[aria-pressed=false]>.pick{color:#6f7b78}
+@media(max-width:1100px){.machine-card>b.pick{margin-right:0}}
+/* パソコンでも「↗」をやめ、「プレイ記録」「今日はここまで」の前に、スマホと同じアイコンを小さく出す。 */
+@media not all and (pointer:coarse){@media(min-width:641px){
+#history-button,#end{display:inline-flex;align-items:center;gap:6px}
+#history-button .ic,#end .ic{display:block;flex:none;width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+}}
+/* 設定の音量スライダーは、見出しの字（「効果音」）を折り返さず、残りの幅いっぱいに伸ばす。 */
+dialog label input[type=range]{flex:1 1 0;width:auto}
+/* 横向きのスマホなど高さが低い画面では、下の帯を薄くする。 */
+@media(max-height:500px){.dialog-foot{padding-bottom:10px}.dialog-foot .primary{min-height:44px}}
