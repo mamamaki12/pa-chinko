@@ -341,3 +341,16 @@ dialog label input[type=range]{flex:1 1 0;width:auto}
 }
 /* 横向きのスマホなど高さが低い画面では、帯のボタンを右のふりかえりの列の下にそろえる（横に広い休憩画面でボタンが伸びすぎない）。 */
 @media(max-height:500px){#pause .dialog-actions{max-width:440px;margin-left:auto}#pause .dialog-foot button{min-height:44px}}
+/* プレイ記録 その5（2026-11-11）：下の帯の「JSONで保存」「記録を削除」も、設定・休憩の帯と同じく帯の幅いっぱいに同じ幅で並べる。
+   削除は取り消しにくいので文字を残し、金色の主なボタンと見間違えないよう、塗りのない赤みの枠と字にする。 */
+#history-dialog .dialog-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+#history-dialog .dialog-foot .dialog-actions button{width:100%;min-height:48px;margin:0;padding:8px;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;font-size:11px}
+#history-dialog #clear-history{border:1px solid #7a4a44;border-radius:5px;color:#e0a69c;background:transparent}
+#history-dialog #clear-history:hover{background:#2a1f1e}
+@media(max-height:500px){#history-dialog .dialog-foot .dialog-actions button{min-height:44px}}
+/* 横向きのスマホなど高さが低い画面では、台の下の案内（サウンドの案内・「発射中」など）を右の列のいちばん上に置き、ページを開いた直後から見えるようにする。 */
+@media(orientation:landscape) and (max-height:500px){
+.stage>.status{grid-column:2;grid-row:2;align-self:start;margin:12px 12px 0}
+}
+/* 案内の行を上へ移したぶん、操作盤の下に案内の行と同じ高さ（40px）を残し、操作盤の位置は前と同じにする（最初の画面に入る操作を減らさない）。 */
+@media(orientation:landscape) and (max-height:500px){.stage>.machine-controls{margin-bottom:40px}}
