@@ -80,17 +80,21 @@ main{padding:8px 6px 0}
 .slot-controls .stop-group button.pressed:not(:disabled),.slot-controls .stop-group button:active:not(:disabled){transform:translateY(3px);background:radial-gradient(ellipse 60% 55% at 50% 45%,#d9efff 0 14%,#7fb9ee 40%,#255b97 78%,#132f53);box-shadow:inset 0 3px 8px #000a,0 0 0 3px #8a9294,0 0 0 4px #2b3133,0 0 8px 2px #74bbff66,0 1px 0 4px #050809}
 }
 /* スマホのパチスロは操作ボタンが増えるぶん台を少し小さくして、レバーと停止ボタンまで最初の画面に収める（パチンコも同じ考え方で、上の 100svh - 230px の式で発射ボタンまで収める）。 */
-/* 縦のスマホでは、パチスロの案内（「好きな順で停止ボタンを…」・ボーナスの知らせ）を台と操作盤の間に置き、遊んでいる間も見えるようにする。高さは2行ぶん取っておき、文の長さで停止ボタンが動かないようにする。 */
+/* 縦のスマホでは、案内（パチスロの「好きな順で停止ボタンを…」・パチンコの「右打ち…」・ボーナスの知らせ）を台と操作ボタンの間に置き、遊んでいる間も見えるようにする。高さは2行ぶん取っておき、文の長さで停止ボタン・発射ボタンが動かないようにする。パチンコは案内のぶん台を少し小さくして、発射ボタンを最初の画面に残す。 */
 @media(max-width:640px) and (orientation:portrait){
 .slot-mode .cabinet-wrap[class]{width:min(100%,max(150px,calc((100vh - 380px)*.75)));width:min(100%,max(150px,calc((100svh - 380px)*.75)))}
-.stage.slot-mode{display:flex;flex-direction:column}
-.slot-mode>.status{order:1;margin:6px 10px 0;height:3em;line-height:1.5;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
-.slot-mode>.slot-controls{order:2;margin:6px 10px 10px}
+.stage:not(.slot-mode) .cabinet-wrap[class]{width:min(100%,max(200px,calc((100vh - 272px)*.75)));width:min(100%,max(200px,calc((100svh - 272px)*.75)))}
+.stage{display:flex;flex-direction:column}
+.stage>.status{order:1;margin:6px 10px 0;height:3em;line-height:1.5;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
+.stage>.machine-controls{order:2}
+.slot-mode>.slot-controls{margin:6px 10px 10px}
+.stage>#pachinko-controls{margin:8px 10px 12px}
 }
 /* 高さの低い縦のスマホ（iPhone SE など）は、案内を1行にし、操作盤のすき間を少し詰める。 */
 @media(max-width:640px) and (orientation:portrait) and (max-height:700px){
 .slot-mode .cabinet-wrap[class]{width:min(100%,max(150px,calc((100vh - 340px)*.75)));width:min(100%,max(150px,calc((100svh - 340px)*.75)))}
-.slot-mode>.status{height:1.5em;-webkit-line-clamp:1;line-clamp:1;margin-top:4px}
+.stage:not(.slot-mode) .cabinet-wrap[class]{width:min(100%,max(200px,calc((100vh - 250px)*.75)));width:min(100%,max(200px,calc((100svh - 250px)*.75)))}
+.stage>.status{height:1.5em;-webkit-line-clamp:1;line-clamp:1;margin-top:4px}
 .slot-mode>.slot-controls{margin-top:4px;padding:8px;gap:8px}
 .slot-mode .slot-controls .stop-group{padding:6px 12px}
 }
@@ -250,3 +254,7 @@ dialog label input[type=range]{flex:1 1 0;width:auto}
 @media(prefers-reduced-motion:reduce){.aim[data-dir=right]{animation:none}}
 @media(min-width:641px){.aim{right:20px;bottom:24px}}
 @media(orientation:landscape) and (max-height:500px){.aim{right:10px;bottom:10px}}
+/* プレイ記録の行：使った玉・メダル、払出、差。数と単位の途中では折り返さず、項目の間で折り返す。 */
+.history-tally{display:block;color:#c8d2c9;font-variant-numeric:tabular-nums}
+.history-tally>span{white-space:nowrap}
+.history-tally>b{font-weight:500;color:#e3e7dd}
