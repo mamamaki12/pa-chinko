@@ -23,7 +23,7 @@ let weeklyLimit=0;
 export function readReflection(){const checked=document.querySelector('input[name="urge"]:checked'),memo=$('#memo'),value=normalizeReflection(checked?.value,memo.value);if(checked)checked.checked=false;memo.value='';return value;}
 // Date and time of one record, short enough to share a line with the machine and the play time: 11/11 5:20 (the year only when it is not this year).
 export function recordWhen(date,now=new Date()){const d=new Date(date);if(Number.isNaN(d.getTime()))return '';const md=`${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;return d.getFullYear()===now.getFullYear()?md:`${d.getFullYear()}/${md}`;}
-export function appendReflection(row,r){const parts=[];if(Number.isInteger(r.urge))parts.push(`続けたい気持ち ${r.urge}/5`);if(typeof r.memo==='string'&&r.memo)parts.push(r.memo);if(!parts.length)return;const p=document.createElement('span');p.className='history-memo';p.textContent=parts.join(' · ');row.append(p);}
+export function appendReflection(row,r){const parts=[];if(Number.isInteger(r.urge))parts.push(`続けたい気持ち ${r.urge}/5`);if(typeof r.memo==='string'&&r.memo)parts.push(r.memo);const p=document.createElement('span');p.className=parts.length?'history-memo':'history-memo none';p.textContent=parts.length?parts.join(' · '):'ふりかえりなし';row.append(p);}
 // Balls / medals of one record, from what the record already keeps (used = put in, total = paid out). Pachinko total counts only
 // jackpot payouts (the 3 balls back from START are not kept), so pachinko shows no difference; pachislot total is every payout.
 const TALLY={pachinko:{name:'パチンコ',unit:'玉',paid:'大当たりの払出',diff:false},slot:{name:'パチスロ',unit:'枚',paid:'払出',diff:true}};
