@@ -299,3 +299,30 @@ dialog label input[type=range]{flex:1 1 0;width:auto}
 @media(max-width:480px){.app-version{flex-direction:column;align-items:stretch;gap:12px}.app-version #update-app{width:100%}}
 /* 横向きのスマホなど高さが低い画面では、設定の見出しまわりと欄の間を詰め、最初の画面に入る欄を増やす。 */
 @media(max-height:500px){#settings-dialog .dialog-body{padding-top:14px}#settings-dialog .eyebrow{display:none}#settings-dialog h2{margin:0 0 4px}#settings-dialog .dialog-body>label{margin:10px 0}#settings-dialog .dialog-body>label.check{margin:8px 0}}
+/* 設定 その4（2026-11-11）：下の長い説明を場面ごとに分ける。BGMの説明はBGMのすぐ下、点滅と保存の注意は畳まずに残し、「音が出ないとき」は押すと開く。 */
+#settings-dialog .field-note{margin:-14px 0 0;font-size:11px;line-height:1.7;color:#93a198}
+#settings-dialog .help-fold{border:0;border-top:1px solid #3e4942;padding:0;margin:8px 0 0}
+#settings-dialog .help-fold>summary{display:flex;align-items:center;width:fit-content;min-height:44px;font-size:12px;color:#c8cfc4}
+#settings-dialog .help-fold>summary{gap:6px;list-style:none}#settings-dialog .help-fold>summary::-webkit-details-marker{display:none}
+#settings-dialog .help-fold .ic{display:block;width:16px;height:16px;fill:none;stroke:#93a198;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}#settings-dialog .help-fold[open] .ic{transform:rotate(180deg)}
+#settings-dialog .help-fold>p{margin:0 0 10px}#settings-dialog .help-fold+.app-version{margin-top:8px}
+@media(max-width:480px){#settings-dialog .field-note{margin-top:-8px}}
+/* プレイ記録 その4：保存のしかたの説明は一覧の下に置き、開いた直後に記録が多く見えるようにする。 */
+#history-dialog .history-about{margin:14px 0 0;line-height:1.7}
+/* 休憩画面（2026-11-11）：中身だけを送り、「ルームに戻る」「記録して終了」は下の帯にいつも見せる。 */
+#pause .dialog-actions{margin-top:0}
+#pause .dialog-foot .primary{display:inline-block;width:auto}#pause .dialog-foot button{white-space:nowrap}
+/* 小さいスマホ（高さ600px以下）では、英字の小見出しを消し、深呼吸の丸を小さくして、開いた直後から「続けたい気持ち」の1〜5が見えるようにする。 */
+@media(max-height:600px){#pause .eyebrow{display:none}#pause .breath{font-size:36px;padding:0 0 4px}#pause h2{margin-top:4px}}
+/* 横向きのスマホなど高さが低い画面では、休憩画面を横に広げ、左に見出しと時間、右にふりかえりを並べる。深呼吸の丸は小さくする。 */
+@media(max-height:500px){
+#pause{width:min(780px,94vw);max-width:94vw}
+#pause .dialog-body{display:flex;gap:24px;align-items:flex-start;padding-top:14px}
+#pause .pause-lead{flex:1 1 0;min-width:0}
+#pause .reflection{flex:1.25 1 0;min-width:0;margin:0}
+#pause .eyebrow{display:none}
+#pause .breath{font-size:30px;padding:0;text-align:left}
+#pause h2{margin:4px 0 6px}
+#pause .pause-lead p{margin:6px 0;line-height:1.6}
+#pause .reflection{padding-top:6px}#pause .reflection p{margin:4px 0}#pause .memo-label{margin:6px 0 4px!important}#pause .reflection .dialog-note{line-height:1.6}
+}
