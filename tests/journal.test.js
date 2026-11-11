@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {weekStart,weekSeconds,formatDuration,normalizeReflection,weeklySummary,normalizeSettings,SETTINGS,restartsBreak,AWAY_BREAK,exportName,sessionTally} from '../journal.js';
+import {weekStart,weekSeconds,formatDuration,normalizeReflection,weeklySummary,normalizeSettings,SETTINGS,restartsBreak,AWAY_BREAK,exportName,sessionTally,recordWhen} from '../journal.js';
 test('週は月曜0時から始まる',()=>{const s=weekStart(new Date(2026,9,25,15));assert.equal(s.getDay(),1);assert.equal(s.getDate(),19);assert.equal(s.getHours(),0);assert.equal(weekStart(new Date(2026,9,19,0,5)).getDate(),19);});
 test('今週の記録だけを合計する',()=>{const now=new Date(2026,9,25,12),h=[{date:new Date(2026,9,25,10).toISOString(),seconds:600},{date:new Date(2026,9,19,1).toISOString(),seconds:300},{date:new Date(2026,9,18,23).toISOString(),seconds:900}];assert.equal(weekSeconds(h,now),900);});
 test('ふりかえりの値を整える',()=>{assert.deepEqual(normalizeReflection('3','  雨で暇だった '),{urge:3,memo:'雨で暇だった'});assert.deepEqual(normalizeReflection(undefined,''),{});assert.deepEqual(normalizeReflection('9','x'.repeat(300)),{memo:'x'.repeat(200)});});
@@ -20,3 +20,4 @@ assert.deepEqual(sessionTally({mode:'パチンコ',seconds:60}),[]);
 assert.deepEqual(sessionTally({mode:'パチンコ',pachinko:{used:'5',total:null}}),[]);
 assert.deepEqual(sessionTally({mode:'パチスロ',slot:zero,pachinko:zero}),[]);
 });
+test('記録の日時は台・時間と1行に並ぶ短い形（今年なら年を省く）',()=>{const now=new Date(2026,10,11,12);assert.equal(recordWhen(new Date(2026,10,11,5,7).toISOString(),now),'11/11 5:07');assert.equal(recordWhen(new Date(2025,11,31,23,40).toISOString(),now),'2025/12/31 23:40');assert.equal(recordWhen('壊れた日付',now),'');});

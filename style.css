@@ -270,3 +270,26 @@ dialog label input[type=range]{flex:1 1 0;width:auto}
 .history-tally{display:block;color:#c8d2c9;font-variant-numeric:tabular-nums}
 .history-tally>span{white-space:nowrap}
 .history-tally>b{font-weight:500;color:#e3e7dd}
+/* プレイ記録 その2（2026-11-11）：週ごとの遊技時間は「今週 ◯分 · ◯回」の1行にたたみ、押すと4週分が開く。開いた直後から記録が見えるようにする。 */
+#history-dialog .week-fold{border:0;border-bottom:1px solid #2f3934;padding:0;margin:12px 0 2px}
+/* 押せる所は字の幅だけにし、右上に残る × の列（送っても上に残る）とは重ならないようにする。 */
+.week-fold>summary{display:flex;flex-wrap:wrap;align-items:center;gap:0 14px;width:fit-content;max-width:calc(100% - 36px);min-height:44px;list-style:none;font-size:12px;color:#a9b7ab}
+.week-fold>summary::-webkit-details-marker{display:none}
+.week-now b{font-weight:500;color:#e3e7dd;font-variant-numeric:tabular-nums}
+.week-fold.over .week-now b{color:#d9c79e}
+.week-more{display:inline-flex;align-items:center;gap:4px;color:#93a198;white-space:nowrap;font-size:11px}
+.week-more .ic{display:block;width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.week-fold[open] .week-more .ic{transform:rotate(180deg)}
+.week-fold #week-summary{margin:0 0 4px}
+.week-fold #week-summary li{margin:0;padding:8px 0}.week-fold #week-summary li:last-child{border-bottom:0}.week-fold #week-summary span{white-space:nowrap}
+/* 記録の1件：日時と台・時間を1行目にまとめ、行の上下の余白を詰める（使った数・払出・差の行はそのまま）。 */
+.history-row{padding:9px 0;line-height:1.65}
+.history-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 10px}
+.history-row .history-head strong{display:inline;font-variant-numeric:tabular-nums}
+/* 設定 その2（2026-11-11）：スマホの縦向きなど狭い幅では、欄の名前を上、選ぶ欄・スライダーを下の全幅に置く（名前が折れない）。 */
+@media(max-width:480px){
+#settings-dialog label:not(.check){flex-direction:column;align-items:stretch;gap:2px;margin:16px 0}
+#settings-dialog label:not(.check)>select,#settings-dialog label:not(.check)>input[type=range]{flex:none;width:100%}
+}
+/* 横向きのスマホなど高さが低い画面では、プレイ記録の見出しまわりを詰め、開いた直後から記録が1件以上見えるようにする。 */
+@media(max-height:500px){#history-dialog .dialog-body{padding-top:14px}#history-dialog .eyebrow{display:none}#history-dialog h2{margin:0 0 4px}#history-dialog .dialog-body>.dialog-note{margin:0;line-height:1.6}#history-dialog .week-fold{margin-top:4px}}
