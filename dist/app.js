@@ -85,6 +85,8 @@ $('#update-app').onclick=async()=>{if(active&&!saved&&elapsed>=60&&!updateArmed)
   if(!l){b.disabled=false;b.textContent=isNewer(build,latest)?'今すぐ更新':'最新版に更新';$('#version-status').textContent='公開中の版を確認できなかったので、更新しませんでした。インターネットにつながっているときに、もう一度押してください。';return;}location.replace(reloadUrl(location.href,l.build));};
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 $('#sound').onclick=()=>{sound=!sound;$('#sound').setAttribute('aria-pressed',String(sound));$('#sound .lbl span').textContent=`サウンド ${sound?'ON':'OFF'}`;tone('on');
+  // The page cannot tell when the phone itself is muted, so each time the sound is turned on, point to the help next to the volume sliders in the settings.
+  if(sound)say('聞こえないときは設定の「音が出ないとき」へ。');
   // Some browsers keep the audio stopped (for example after the phone was locked); say how to get it going.
   if(sound)setTimeout(()=>{if(sound&&!audioRunning())say('音が出ないときは、もう一度「サウンド」を押すか、端末の音量と消音（マナーモード）を確かめてください。');},800);};$('#power').oninput=e=>{$('#power-value').value=`${e.target.value}%`;syncAim();};function syncAim(){const b=$('#aim'),p=+$('#power').value,right=mode==='pachinko'&&!!bonus&&p<70,left=mode==='pachinko'&&!bonus&&p>=70;b.hidden=!(right||left);if(b.hidden)return;b.dataset.dir=right?'right':'left';b.querySelector('.aim-text').textContent=right?'右打ち':'左打ち';b.setAttribute('aria-label',right?'右打ちにする（発射強度を90%に）':`左打ちに戻す（発射強度を${aimBack}%に）`);}$('#aim').onclick=()=>{if(paused)return;const e=$('#power');if(bonus){aimBack=+e.value;e.value=90;}else e.value=aimBack;e.dispatchEvent(new Event('input'));say(bonus?`右打ちにしました（発射強度90%）。${launching?'':'発射ボタンで打ってください。'}`:`左打ちに戻しました（発射強度${aimBack}%）。中央のSTARTをねらえます。`);};
 // スライダーの左側（選んだところまで）を塗る。CSS の --fill で描く。

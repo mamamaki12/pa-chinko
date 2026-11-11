@@ -326,3 +326,18 @@ dialog label input[type=range]{flex:1 1 0;width:auto}
 #pause .pause-lead p{margin:6px 0;line-height:1.6}
 #pause .reflection{padding-top:6px}#pause .reflection p{margin:4px 0}#pause .memo-label{margin:6px 0 4px!important}#pause .reflection .dialog-note{line-height:1.6}
 }
+/* 休憩画面 その2（2026-11-11）：下の帯の2つのボタンは、設定・記録の帯と同じく帯の幅いっぱいに並べる。「記録して終了」は金色で広め（主なボタン）、「ルームに戻る」は枠だけで狭め。 */
+#pause .dialog-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr);gap:12px}
+#pause .dialog-foot button{width:100%;min-height:48px;padding-inline:8px}
+/* 小さいスマホ（高さ600px以下）では、見出しの下の2行と今回・今週の時間の行間を詰め、開いた直後からメモの欄まで見えるようにする。 */
+@media(max-height:600px){
+#pause .dialog-body{padding-top:16px}
+#pause .breath{font-size:28px;line-height:1;padding:0 0 2px}
+#pause h2{margin:2px 0 6px}
+#pause .pause-lead p{margin:4px 0;line-height:1.6}
+#pause .pause-lead .dialog-note{line-height:1.5}
+#pause .reflection{margin-top:10px}
+#pause .memo-label{margin:8px 0 4px!important}
+}
+/* 横向きのスマホなど高さが低い画面では、帯のボタンを右のふりかえりの列の下にそろえる（横に広い休憩画面でボタンが伸びすぎない）。 */
+@media(max-height:500px){#pause .dialog-actions{max-width:440px;margin-left:auto}#pause .dialog-foot button{min-height:44px}}
