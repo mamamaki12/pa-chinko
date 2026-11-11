@@ -354,3 +354,44 @@ dialog label input[type=range]{flex:1 1 0;width:auto}
 }
 /* 案内の行を上へ移したぶん、操作盤の下に案内の行と同じ高さ（40px）を残し、操作盤の位置は前と同じにする（最初の画面に入る操作を減らさない）。 */
 @media(orientation:landscape) and (max-height:500px){.stage>.machine-controls{margin-bottom:40px}}
+/* 記録の削除の確認（2026-11-11）：ブラウザの確認の代わりに、記録の画面の上に小さな確認を出す。「残す」（金色・左・最初に選ばれる）と「削除する」（赤みの枠）を同じ幅で並べる。 */
+#clear-confirm{width:360px;max-width:calc(100vw - 32px);padding:24px}
+#clear-confirm h2{font-size:18px;margin:0 0 10px;line-height:1.5}
+#clear-confirm p{margin:0 0 8px;line-height:1.8}
+#clear-confirm p strong{display:block;font-weight:600;color:#f0c2b9}
+#clear-confirm .dialog-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin-top:18px}
+#clear-confirm .dialog-actions button{width:100%;min-height:48px;padding:8px;white-space:nowrap;font-size:12px}
+#confirm-clear{border:1px solid #7a4a44;color:#e0a69c;background:transparent}
+#confirm-clear:hover{background:#2a1f1e}
+@media(max-height:500px){#clear-confirm{padding:18px 24px}#clear-confirm .dialog-actions{margin-top:12px}#clear-confirm .dialog-actions button{min-height:44px}}
+/* 横向き その2（2026-11-11）：開いた直後から発射ボタン・停止ボタンまで見えるようにする。
+   上の帯と上の余白を詰め、右の列は「案内の行」と「操作盤」をひとまとめにして下に置き、その下に余白を残して画面の下端より上に収める。台の大きさは今のまま。 */
+@media(orientation:landscape) and (max-height:500px){
+header{height:56px}
+main{padding-top:12px}
+.stage>.status{grid-column:2;grid-row:2;align-self:end;margin:0 12px 10px}
+.stage>.machine-controls{grid-column:2;grid-row:3;align-self:end;margin:0 12px 68px}
+}
+/* 幅も狭い横向き（667×375 など）は、台を先に、台を選ぶ欄と今回のプレイ・今週の欄を台の下に置く（開いた直後から台・案内・発射ボタンが見える）。 */
+@media(orientation:landscape) and (max-height:500px) and (max-width:760px){
+.workspace>.stage{order:-1}
+}
+/* 幅も狭い横向き（667×375 など）は「今回のプレイ」の欄が台の下に行くので、台の上の帯に「◯分で休憩」と一時停止ボタンを出し、遊んでいる間も見えるようにする。
+   帯に収まるよう、持ち玉・払出の字と間を詰める。ほかの画面では出さない。 */
+.stage-limit,.stage-break{display:none}
+@media(orientation:landscape) and (max-height:500px) and (max-width:760px){
+.stage>.stage-top{gap:10px;padding:2px 4px 2px 12px;align-items:center}
+.stage-top>.stage-time{display:inline-flex;align-items:baseline;gap:0;white-space:nowrap}
+.stage-limit{display:inline;margin-left:8px;padding-left:8px;border-left:1px solid #3e4942;font-size:10px;letter-spacing:0;color:#c8b48c;white-space:nowrap}
+.stage-count{letter-spacing:0}
+.stage-count strong{margin-left:3px}
+.stage-count .sep{margin:0 5px}
+.stage-top>.stage-count{margin-left:auto}
+.stage-break{display:inline-flex;flex:none;width:44px;min-width:44px;height:44px;min-height:44px;padding:0;margin-left:0}
+}
+@media(orientation:landscape) and (max-height:500px) and (max-width:760px){
+.stage-break .ic{display:block;flex:none;width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.stage-break .lbl{display:block;position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
+}
+/* 帯が一時停止ボタンのぶん（12px）高くなるので、操作盤の下の余白を同じだけ足し、操作盤の位置を前より下げない。 */
+@media(orientation:landscape) and (max-height:500px) and (max-width:760px){.stage>.machine-controls{margin-bottom:80px}}
