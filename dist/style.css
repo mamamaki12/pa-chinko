@@ -239,3 +239,14 @@ dialog label input[type=range]{flex:1 1 0;width:auto}
 .session-box p,.week-box p{margin:0}
 .session-box button{width:auto;margin:0 0 0 auto;white-space:nowrap}
 }
+/* 大当たり中の「右打ち」・終わったあとの「左打ち」：台の右下（ハンドルの下）に出し、1回押すだけで発射強度を変える。 */
+.cabinet-wrap{position:relative}
+.aim{position:absolute;right:16px;bottom:8px;z-index:2;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;min-width:92px;padding:0 14px;border-radius:999px;border:2px solid #ffd27a;background:#151b1de8;color:#ffe2a6;font-size:14px;font-weight:700;letter-spacing:1px;box-shadow:0 0 0 3px #0009,0 0 16px #ffb84d80;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.aim .aim-ic{display:block;flex:none;width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.aim[data-dir=left]{border-color:#9fc8e8;color:#d6ecff;box-shadow:0 0 0 3px #0009,0 0 14px #6fb3e680}
+.aim[data-dir=left] .aim-ic{transform:scaleX(-1)}
+.aim[data-dir=right]{animation:aim-glow 1.8s ease-in-out infinite}
+@keyframes aim-glow{50%{box-shadow:0 0 0 3px #0009,0 0 26px #ffcf6acc}}
+@media(prefers-reduced-motion:reduce){.aim[data-dir=right]{animation:none}}
+@media(min-width:641px){.aim{right:20px;bottom:24px}}
+@media(orientation:landscape) and (max-height:500px){.aim{right:10px;bottom:10px}}
