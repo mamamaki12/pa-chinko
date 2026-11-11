@@ -395,3 +395,24 @@ main{padding-top:12px}
 }
 /* 帯が一時停止ボタンのぶん（12px）高くなるので、操作盤の下の余白を同じだけ足し、操作盤の位置を前より下げない。 */
 @media(orientation:landscape) and (max-height:500px) and (max-width:760px){.stage>.machine-controls{margin-bottom:80px}}
+/* 横向き その3（2026-11-11）：幅のある横向き（844×390 など）では、台の名前・時間・持ち玉の帯を右の列の上に移し、台を枠の上端から置く。
+   台の大きさは変えずに枠の高さが帯のぶん低くなるので、台まで送ったときの操作盤の下の空きが減る（操作盤の位置は前より下げない）。 */
+@media(orientation:landscape) and (max-height:500px) and (min-width:761px){
+.stage{grid-template-rows:auto minmax(0,1fr) auto auto}
+.stage>.stage-top{grid-column:2;grid-row:1;display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:baseline;padding:12px 12px 10px;border-bottom:1px solid #303b3b;margin:0 0 0 0}
+.stage>.stage-top>.stage-time{justify-self:end}
+.stage>.stage-top>.stage-count{grid-column:1/-1}
+.stage .cabinet-wrap[class]{grid-row:1/-1}
+.stage>.machine-controls{margin-bottom:32px}
+}
+/* 見た目の整え（2026-11-11）：
+   1) 休憩画面の「今回の遊技時間」は時間の文と「発射とリールは停止しています。」を2行に分け、文の途中や最後の1〜2字だけが次の行に落ちないようにする。ダイアログの説明文も、行末に1字だけ残らない折り返しにする（対応するブラウザのみ）。 */
+#pause-summary{white-space:pre-line}
+dialog p,#settings-dialog .field-note{text-wrap:pretty}
+/* 2) 設定は、幅のある画面では欄の名前の列をそろえ、選ぶ欄とスライダーを同じ位置から同じ幅で並べる（選ぶ欄の幅が中身でばらばらにならない）。 */
+@media(min-width:481px){
+#settings-dialog .dialog-body>label:not(.check){display:grid;grid-template-columns:7.5em minmax(0,1fr);gap:0 16px;align-items:center}
+#settings-dialog .dialog-body>label:not(.check)>select,#settings-dialog .dialog-body>label:not(.check)>input[type=range]{width:100%}
+}
+/* 3) 記録の下の帯の知らせ（保存・削除のあと）は、説明文と同じ小さめの字にし、ファイル名は2行目に分ける（長い名前が途中で折れて3行にならない）。 */
+#storage-message{font-size:11px;line-height:1.6;color:#a9b7ab;white-space:pre-line;overflow-wrap:anywhere}
