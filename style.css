@@ -293,3 +293,9 @@ dialog label input[type=range]{flex:1 1 0;width:auto}
 }
 /* 横向きのスマホなど高さが低い画面では、プレイ記録の見出しまわりを詰め、開いた直後から記録が1件以上見えるようにする。 */
 @media(max-height:500px){#history-dialog .dialog-body{padding-top:14px}#history-dialog .eyebrow{display:none}#history-dialog h2{margin:0 0 4px}#history-dialog .dialog-body>.dialog-note{margin:0;line-height:1.6}#history-dialog .week-fold{margin-top:4px}}
+/* プレイ記録 その3（2026-11-11）：狭い幅で週の欄を開いたとき、「気持ち平均」は時間・回数の下の2行目にそろえて出す（途中で折れない）。 */
+@media(max-width:480px){#week-summary .week-urge{display:block;font-size:11px;color:#a9b7ab}#week-summary .week-urge .sep{display:none}#week-summary b{white-space:nowrap}}
+/* 設定 その3：狭い幅では「アプリのバージョン」の説明を上、「最新版に更新」を下の全幅に置く（説明が細く折れない）。 */
+@media(max-width:480px){.app-version{flex-direction:column;align-items:stretch;gap:12px}.app-version #update-app{width:100%}}
+/* 横向きのスマホなど高さが低い画面では、設定の見出しまわりと欄の間を詰め、最初の画面に入る欄を増やす。 */
+@media(max-height:500px){#settings-dialog .dialog-body{padding-top:14px}#settings-dialog .eyebrow{display:none}#settings-dialog h2{margin:0 0 4px}#settings-dialog .dialog-body>label{margin:10px 0}#settings-dialog .dialog-body>label.check{margin:8px 0}}
