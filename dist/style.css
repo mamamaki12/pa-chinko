@@ -465,3 +465,22 @@ dialog p,#settings-dialog .field-note{text-wrap:pretty}
 /* 横向きの休憩画面では、見出し（「少し、台から離れて。」）を少し小さくして、幅の狭い横向き（667×375）でも最後の「て。」だけが次の行に落ちないようにする。折り返すときは行の長さをそろえる。 */
 dialog h2{text-wrap:balance}
 @media(max-height:500px){#pause h2{font-size:20px;letter-spacing:.5px}}
+/* 見た目の整え（2026-11-12）：
+   1) 遊び方の各行は、最後の1〜2字だけが次の行に落ちない折り返しにする（対応するブラウザのみ。PC の「…大入賞口へ」は言葉のまとまりでも折り返す）。 */
+.instructions li{text-wrap:pretty}
+.instructions .nw{display:inline-block}
+/* 2) 狭いスマホ（幅360px以下）の「今回のプレイ」の欄：見出しを1行に収め、案内（10分で自動休憩）も1行に。入りきらない端末でも「10分で／自動休憩」の区切りで折り返す。今週の欄の案内も言葉の区切りで折り返す。 */
+.session-box .label-row span{white-space:nowrap}
+#limit-label,#week-label{word-break:keep-all}
+@media(max-width:360px){.session-box,.week-box{gap:8px;padding-left:10px;padding-right:10px}.session-box time{letter-spacing:2px}}
+/* 3) 台を選ぶカードが細い幅（タブレット・幅のある横向き）では、「01 / PACHINKO」の番号を省いて1行に収める（番号は台の情報の欄に出ている）。 */
+.machine-card small{white-space:nowrap}
+@media(min-width:641px) and (max-width:1100px){.machine-card .card-no{display:none}}
+@media(orientation:landscape) and (max-height:500px) and (max-width:760px){.machine-card .card-no{display:inline}}
+/* 4) スマホ：ページ下の線と文を、台の情報の欄（区切り線・リセット）と同じ左右の位置にそろえる。 */
+@media(max-width:640px){footer{margin-left:6px;margin-right:6px}}
+/* 遊び方の2行目以降は、番号の下ではなく文の始まりにそろえる。 */
+.instructions li{padding-left:26px;text-indent:-26px}
+.instructions li b{display:inline-block;width:22px;margin-right:0;text-indent:0}
+.instructions li .nw{text-indent:0}
+footer p .nw{display:inline-block}
