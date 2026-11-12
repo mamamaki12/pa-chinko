@@ -438,11 +438,13 @@ dialog p,#settings-dialog .field-note{text-wrap:pretty}
 @media(max-height:600px){#pause .breath{width:36px;height:36px;border-width:3px;margin:0 auto 12px}}
 @media(max-height:500px){#pause .breath{margin:0 0 12px}}
 /* プレイ記録 その7（2026-11-11）：メモのある行は2行で畳み、収まらないときだけ右に「開く」ボタン（44px・下向きの矢印）を出す。押すと全部見え、もう一度押すと畳む。 */
-/* ボタンは右に浮かせ、右上に残る × の列（一覧の右端から25px）とは8px以上離す（右に33px空ける）。開いたときは、ボタンの下からは全幅で読めるように回り込ませる。 */
-.history-reflect{display:flow-root}
-.history-memo.clamp{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
+/* 読み上げでは「メモの全文 → 開くボタン」の順にする（ボタンは文のあと）。ボタンは文の右の同じ場所に置いたままにし、開いても動かない（続けてもう一度押せば畳める）。
+   ボタンは週の欄と同じ枠のない矢印にし（押せる所は44px）、右上に残る × の列（一覧の右端から25px）とは8px以上離す（右に33px空ける）。 */
+.history-reflect{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start}
+.history-memo.clamp{grid-column:1;grid-row:1;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
 .history-memo.clamp.open{display:block;-webkit-line-clamp:unset;line-clamp:none;overflow:visible}
-.memo-more{float:right;display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;min-width:44px;min-height:44px;margin:-4px 33px -4px 8px;padding:0;color:#a9b7ab}
+.memo-more{grid-column:2;grid-row:1;display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;min-width:44px;min-height:44px;margin:-4px 33px -4px 4px;padding:0;border:0;background:transparent;color:#a9b7ab}
+.memo-more:hover{color:#e3e7dd}
 .memo-more .ic{display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .memo-more[aria-expanded=true] .ic{transform:rotate(180deg)}
 /* 幅のある横向き（844×390 など）では、台の上の帯に一時停止ボタンと「◯分で休憩」があるので、左の「今回のプレイ」の欄は時間と休憩までの時間だけの小さい形にし、ボタンを二重に出さない。 */
@@ -458,3 +460,8 @@ dialog p,#settings-dialog .field-note{text-wrap:pretty}
 }
 /* 横向きの休憩画面では、右の「ふりかえり」の枠の上端を左の丸の上端にそろえる。 */
 @media(max-height:500px){#pause .reflection{margin-top:0}}
+/* 幅の狭い横向き（667×375 など）も、台の帯に一時停止ボタンがあるので、台の下の「今回のプレイ」の欄の一時停止ボタンは出さない（1画面に1つ）。 */
+@media(orientation:landscape) and (max-height:500px) and (max-width:760px){.session-box #break{display:none}}
+/* 横向きの休憩画面では、見出し（「少し、台から離れて。」）を少し小さくして、幅の狭い横向き（667×375）でも最後の「て。」だけが次の行に落ちないようにする。折り返すときは行の長さをそろえる。 */
+dialog h2{text-wrap:balance}
+@media(max-height:500px){#pause h2{font-size:20px;letter-spacing:.5px}}
